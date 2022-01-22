@@ -1,0 +1,842 @@
+
+html {
+  background-color: #fff;
+  height: 100%;
+}
+
+body {
+  margin: 0px;
+  padding: 0px;
+  width: 100%;
+  height: 100%;
+
+  font-family: "Sans-serif", "Helvetica" !important;
+  background: #fff;
+}
+
+label {
+  display: inline-block;
+  width: 5em;
+}
+
+h1 {
+  font-family: "Sans-serif", "Helvetica" !important;
+  color: #1a1a1a;
+}
+
+h2 {
+  font-family: "Sans-serif", "Helvetica" !important;
+  color: #1a1a1a;
+}
+
+h3 {
+  font-family: "Sans-serif", "Helvetica" !important;
+  color: #1a1a1a;
+}
+
+sup {
+  font-weight: normal;
+}
+
+a {
+  color: #337ab7;
+  text-decoration: none;
+  background-color: transparent;
+}
+
+/* Set the position of the map */
+#map-container {
+  position:absolute;
+  top: 39px;
+  left: 0px;
+  width: 100%;
+  height: calc( 100% - 39px );
+  z-index:10;
+}
+
+/* Add a black background color to the top navigation */
+.topnav {
+  background-color: #333;
+  overflow: hidden;
+
+  background: #464b4c;
+  background-image: -webkit-linear-gradient(top, #464b4c, #3f4344);
+  background-image: -moz-linear-gradient(top, #464b4c, #3f4344);
+  background-image: -o-linear-gradient(top, #464b4c, #3f4344);
+  background-image: linear-gradient(to bottom, #464b4c, #3f4344);
+  -webkit-box-shadow: inset 0 1px rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.06);
+
+  z-index:200;
+}
+
+/* Style the links inside the navigation bar */
+.topnav a {
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 12px 14px;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.dropdown-content-checkbox {
+  padding-left: 45px !important;
+  background-image: url(/images/unchecked.png);
+  background-repeat: no-repeat;
+  background-position: 5% 50%;
+}
+
+.dropdown-content-checkbox-active {
+  background-image: url(/images/checked.png);
+}
+
+/* Hide the link that should open and close the topnav on small screens */
+.topnav .icon {
+  display: none;
+}
+
+/* Dropdown container - needed to position the dropdown content */
+.dropdown {
+  float: left;
+  overflow: hidden;
+}
+
+/* Style the dropdown button to fit inside the topnav */
+.dropdown .dropbtn {
+  font-size: 13px;
+  border: none;
+  outline: none;
+  color: white;
+  padding: 12px 14px;
+  background-color: inherit;
+  font-family: inherit;
+  margin: 0;
+}
+
+/* Style the dropdown content (hidden by default) */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 200;
+}
+
+/* Style the links inside the dropdown */
+.dropdown-content a {
+  float: none;
+  color: black;
+  padding: 12px 14px;
+  text-decoration: none;
+  display: block;
+  text-align: left;
+}
+
+/* Add a dark background on topnav links and the dropdown button on hover */
+.topnav a:hover, .dropdown:hover .dropbtn {
+  background-color: #555;
+  color: white;
+}
+
+/* Add a grey background to dropdown links on hover */
+.dropdown-content a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+/* Show the dropdown menu when the user moves the mouse over the dropdown button */
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+/* When the screen is less than 600 pixels wide, hide all links, except for the first one ("Home"). Show the link that contains should open and close the topnav (.icon) */
+@media screen and (max-width: 600px) {
+  .topnav a:not(:first-child), .dropdown .dropbtn {
+  display: none;
+  }
+  .topnav a.icon {
+  float: right;
+  display: block;
+  }
+}
+
+/* The "responsive" class is added to the topnav with JavaScript when the user clicks on the icon. This class makes the topnav look good on small screens (display the links vertically instead of horizontally) */
+@media screen and (max-width: 600px) {
+  .topnav.responsive {position: relative;}
+  .topnav.responsive a.icon {
+  position: absolute;
+  right: 0;
+  top: 0;
+  }
+  .topnav.responsive a {
+  float: none;
+  display: block;
+  text-align: left;
+  }
+  .topnav.responsive .dropdown {float: none;}
+  .topnav.responsive .dropdown-content {position: relative;}
+  .topnav.responsive .dropdown .dropbtn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  }
+}
+
+/* The Modal (background) */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 300;
+  padding-top: 100px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0,0,0);
+  background-color: rgba(0,0,0,0.4);
+}
+
+/* Modal Content */
+.modal-content, .modal-long-content {
+  background-color: #fff;
+  margin: auto;
+  padding: 0px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 1200px;
+}
+
+.modal-long-content {
+  height: 80%;
+  max-height: 1200px;
+}
+
+@media screen and (max-width: 1000px) {
+  .modal-long-content {
+    width: 95%;
+    height: 95%;
+  }
+  .modal {
+    padding-top: 10px;
+  }
+}
+
+/* Modal Close Button */
+.modal-close {
+  color: #aaaaaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  margin: 10px;
+}
+.modal-close:hover,
+.modal-close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.modal-title {
+  font-weight: bold;
+  font-size: 16pt;
+  margin: 15px 15px 15px 20px;
+  float: left;
+  font-family: "Sans-serif", "Helvetica" !important;
+}
+
+.modal-content-header {
+  width: 100%;
+  height: 55px;
+}
+
+.modal-content-body {
+  height: calc(100% - 55px);
+  margin: 0px;
+  padding: 0px;
+  overflow: hidden;
+}
+
+#modal-station-info-iframe, #modal-station-search-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  flex-grow: 1;
+  margin: 0;
+  padding: 0;
+}
+
+input[type=text], select, textarea {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  resize: vertical
+}
+
+input[type=text] {
+  padding: 11px;
+}
+
+input[type=submit] {
+  background-color: #4CAF50;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+input[type=submit]:hover {
+  background-color: #45a049;
+}
+
+.form-container {
+  margin-top: 6px;
+  margin-bottom: 16px;
+  display: inline-block;
+  width:  100%;
+}
+
+#cordinates-container {
+  clear: both;
+  padding-top:5px;
+  color: #4d4d4d;
+  font-size: 11px;
+  display: none;
+}
+
+#status-container {
+  padding-top:5px;
+  white-space:nowrap;
+  line-height: 20px;
+  font-size: 11px;
+}
+
+@media screen and (min-width: 800px) {
+  #cordinates-container {
+    display: block;
+  }
+}
+
+#right-container {
+  position: absolute;
+  right: 0px;
+  text-align: right;
+}
+
+#right-container-info, #right-container-filtered, #right-container-timetravel {
+  position:relative;
+  right:10px;
+  z-index:50;
+
+  color: #4d4d4d;
+  font-size:11px;
+  font-family: "Sans-serif", "Helvetica";
+
+  margin-bottom: 15px;
+}
+
+#right-container-filtered, #right-container-timetravel {
+  display: none;
+}
+
+.modal-inner-content {
+  max-width: 1100px;
+
+  padding-top: 10px;
+  padding-left: 30px;
+  padding-right: 30px;
+  padding-bottom: 10px;
+
+  margin-left: auto;
+  margin-right: auto;
+
+  font-size: 9pt;
+  font-family: "Sans-serif", "Helvetica";
+}
+
+
+.modal-inner-content-menu {
+  font-size: 9pt;
+  padding-top: 15px;
+  padding-bottom: 3px;
+
+}
+
+.modal-inner-content-menu a, .modal-inner-content-menu span {
+  margin-right: 20px;
+}
+
+.overview-content-summary {
+  float:left;
+  padding-right: 30px;
+}
+
+.overview-content-summary div div {
+  font-size: 9pt;
+  line-height: 14pt;
+  font-family: "Sans-serif", "Helvetica";
+  word-break: break-all;
+}
+
+.overview-content-symbol {
+  float:left;
+  width:200px;
+  text-align:left;
+  color: grey;
+  font-family: "Helvetica";
+  font-size: 13px;
+  display: none;
+  text-align: center;
+}
+
+.overview-content-symbol h3 {
+  font-size: 12px;
+  font-weight: bold;
+  color: grey;
+}
+
+.overview-content-symbol p {
+  font-size: 10px;
+  margin: 0px;
+}
+
+.overview-content-symbol div {
+  padding-bottom: 10px;
+}
+
+.overview-content-explanations, .list-explanations {
+  clear: both;
+  width: 100%;
+  font-size: 12px;
+}
+
+.overview-content-summary-cell-time {
+  color: grey;
+}
+
+.overview-content-summary-cell-weather-time {
+  color: #227152;
+}
+
+.overview-content-summary-cell-telemetry-time {
+  color: #823030;
+}
+
+.overview-content-summary-cell-position {
+  color: #754D08;
+}
+
+.overview-content-summary-cell-posambiguity {
+  color: darkred;
+}
+
+.overview-content-summary-cell-status {
+  color: #375654;
+}
+
+.overview-content-summary-cell-phg {
+  color: #440B2A;
+}
+
+.overview-content-packet-frequency span:nth-of-type(2){
+  color: grey;
+}
+
+.overview-content-number-of-packets span {
+  color: grey;
+}
+
+.overview-content-station span {
+  vertical-align: bottom;
+}
+
+.overview-content-station img {
+  vertical-align: middle;
+}
+
+.overview-content-station-list {
+  padding-top: 5px;
+}
+
+.overview-content-station-list img {
+  vertical-align: middle;
+}
+
+.overview-content-station-list span {
+  line-height: 24px;
+  vertical-align: bottom;
+}
+
+.overview-content-station-list a {
+  line-height: 24px;
+  font-weight: bold;
+}
+
+.overview-content-station-list span span {
+  color: grey;
+  float: right;
+  padding-right: 50px;
+  font-weight: normal;
+}
+
+.overview-content-summary-hr, .overview-content-summary-hr-indent{
+  font-weight: bold;
+  font-family: "Helvetica";
+  font-size: 13px;
+  padding-right:25px;
+  white-space: nowrap;
+  width: 180px;
+}
+
+.overview-content-summary-hr-indent {
+  padding-left: 20px;
+}
+
+.overview-content-divider {
+  height: 20px;
+}
+
+#raw-content-output p {
+    white-space: nowrap;
+    margin-top: 0px;
+    margin-bottom: 5px;
+    font-size: 8pt;
+    font-family: "Sans-serif", "Helvetica";
+    line-height: normal;
+    clear: both;
+}
+
+#raw-content-output a {
+    font-weight: bold;
+}
+
+.raw-packet-warning {
+    color: darkorange;
+}
+
+.raw-packet-error {
+    color: darkred;
+}
+
+.raw-packet-timestamp {
+    color:grey;
+}
+
+.telemetry-subtable {
+    display: table;
+}
+
+.telemetry-subtable div {
+    display: table-row;
+}
+
+.telemetry-subtable div div {
+    display: table-cell;
+    font-size: 8pt;
+    color: grey;
+    font-family: "Sans-serif", "Helvetica";
+    padding-right: 10px;
+    padding-top: 3px;
+}
+
+.telemetry-biton {
+    color: black;
+}
+
+.telemetry-bitoff {
+    color: lightgrey;
+    text-decoration: line-through;
+}
+
+.horizontal-line {
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  background-color: lightgrey;
+  clear: both;
+}
+
+
+@media screen and (min-width: 600px) {
+  .overview-content-summary {
+    display:table;
+    min-width: 500px;
+  }
+
+  .overview-content-summary div {
+    display:table-row;
+  }
+
+  .overview-content-summary div div {
+    display:table-cell;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .overview-content-summary-hr, .overview-content-summary-hr-indent {
+  padding-top: 8px;
+  }
+
+  .overview-content-summary-indent {
+  padding-left: 20px;
+  }
+}
+
+@media screen and (min-width: 850px) {
+  .overview-content-summary {
+    display:table;
+    min-width: 500px;
+    width: calc(100% - 300px);
+  }
+
+  .overview-content-symbol {
+    display: block;
+  }
+}
+
+.tooltiptext {
+  display:none;
+  width: 150px;
+  font-family: "Helvetica";
+  font-size: 14px;
+  line-height: 16px;
+  padding: 5px;
+}
+
+.leaflet-marker-tooltiptext {
+  padding-left: 3px !important;
+  padding-right: 0px !important;
+  padding-top: 0px !important;
+  padding-bottom: 0px !important;
+}
+
+.leaflet-marker-labeltext {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  box-shadow: none !important;
+  font-weight: bold !important;
+  font-size: 10px !important;
+  border: none !important;
+  color: #000 !important;
+}
+
+.leaflet-marker-tooltiptext::before, .leaflet-marker-labeltext::before {
+  border: none !important;
+}
+
+.leaflet-infowindow-content .leaflet-popup-content-wrapper {
+  border-radius: 2px !important;
+}
+
+.leaflet-popup-close-button {
+  height: auto !important;
+  padding: 4px !important;
+}
+
+.datagrid table {
+  border-collapse: collapse;
+  text-align: left;
+  width: 100%;
+}
+
+.datagrid {
+  font: normal 12px/150% Arial, Helvetica, sans-serif;
+  background: #fff;
+  overflow: hidden;
+  border: 1px solid #c3c3c3;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+}
+
+.datagrid table td, .datagrid table th {
+  padding: 1px 10px;
+}
+
+.datagrid table thead th {
+  background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #E8E8E8), color-stop(1, #D1D1D1) );
+  background:-moz-linear-gradient( center top, #E8E8E8 5%, #D1D1D1 100% );
+  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#E8E8E8', endColorstr='#D1D1D1');
+  background-color:#E8E8E8;
+  color:#636363;
+  font-size: 13px;
+  font-weight: bold;
+  border-left: 1px solid #A3A3A3;
+  line-height: 23px;
+}
+
+.datagrid table thead th:first-child {
+  border: none;
+}
+
+.datagrid table tbody td {
+  color: #404040;
+  border-left: 1px solid #DBDBDB;
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 22px;
+  vertical-align: top;
+}
+
+.datagrid table tbody tr:nth-child(odd) {
+  background: #F4F4F4;
+  color: #404040;
+}
+
+.datagrid table tbody td:first-child {
+  border-left: none;
+}
+
+.datagrid table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.datagrid table tbody td table td {
+  border-left: none;
+  padding: 0;
+}
+
+.datagrid table tbody td table tr {
+  background-color: rgba(255, 255, 255, 0) !important;
+  color: #404040;
+}
+
+.pagination {
+  display: inline-block;
+}
+
+.pagination a {
+  color: black;
+  float: left;
+  padding: 8px 16px;
+  text-decoration: none;
+  height: 14px;
+}
+
+.pagination a:first-child, .pagination a:last-child {
+  font-size: 9px;
+}
+
+.pagination a.active {
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 5px;
+}
+
+.pagination a:hover:not(.active) {
+  background-color: #ddd;
+  border-radius: 5px;
+}
+
+@media screen and (max-width: 600px) {
+  .pagination-rows {
+    display: none;
+  }
+
+  #raw-type {
+    display: none;
+  }
+}
+
+.decoded {
+    margin-bottom: 20px;
+}
+
+.decoded table tr td:first-child {
+    width: 150px;
+}
+
+@media screen and (max-width: 600px) {
+  .datagrid-statistics tr th:nth-child(3),
+  .datagrid-statistics tr th:nth-child(4) {
+    display:none;
+  }
+  .datagrid-statistics tr td:nth-child(3),
+  .datagrid-statistics tr td:nth-child(4) {
+    display:none;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .datagrid-weather tr th:nth-child(3),
+  .datagrid-weather tr th:nth-child(4),
+  .datagrid-weather tr th:nth-child(5),
+  .datagrid-weather tr th:nth-child(6),
+  .datagrid-weather tr th:nth-child(7),
+  .datagrid-weather tr th:nth-child(8) {
+    display:none;
+  }
+  .datagrid-weather tr td:nth-child(3),
+  .datagrid-weather tr td:nth-child(4),
+  .datagrid-weather tr td:nth-child(5),
+  .datagrid-weather tr td:nth-child(6),
+  .datagrid-weather tr td:nth-child(7),
+  .datagrid-weather tr td:nth-child(8) {
+    display:none;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .datagrid-telemetry1 tr th:nth-child(4),
+  .datagrid-telemetry1 tr th:nth-child(5),
+  .datagrid-telemetry1 tr th:nth-child(6) {
+    display:none;
+  }
+  .datagrid-telemetry1 tr td:nth-child(4),
+  .datagrid-telemetry1 tr td:nth-child(5),
+  .datagrid-telemetry1 tr td:nth-child(6) {
+    display:none;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .datagrid-telemetry2 tr th:nth-child(4),
+  .datagrid-telemetry2 tr th:nth-child(5),
+  .datagrid-telemetry2 tr th:nth-child(6),
+  .datagrid-telemetry2 tr th:nth-child(7),
+  .datagrid-telemetry2 tr th:nth-child(8),
+  .datagrid-telemetry2 tr th:nth-child(9) {
+    display:none;
+  }
+  .datagrid-telemetry2 tr td:nth-child(4),
+  .datagrid-telemetry2 tr td:nth-child(5),
+  .datagrid-telemetry2 tr td:nth-child(6),
+  .datagrid-telemetry2 tr td:nth-child(7),
+  .datagrid-telemetry2 tr td:nth-child(8),
+  .datagrid-telemetry2 tr td:nth-child(9) {
+    display:none;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .datagrid-search tr th:nth-child(3),
+  .datagrid-search tr th:nth-child(4) {
+    display:none;
+  }
+  .datagrid-search tr td:nth-child(3),
+  .datagrid-search tr td:nth-child(4) {
+    display:none;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .datagrid-search tr th:nth-child(4) {
+    display:none;
+  }
+  .datagrid-search tr td:nth-child(4) {
+    display:none;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .modal-inner-content-menu a, .modal-inner-content-menu span {
+      margin-bottom: 10px;
+      display: block;
+  }
+}
+

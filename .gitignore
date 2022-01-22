@@ -1,0 +1,14 @@
+# Python compiled
+*.pyc
+
+# Auto generated symbol images
+htdocs/public/symbols/symbol-*.png
+
+# Generated heatmaps
+htdocs/public/heatmaps/latest-heatmap.*.png
+
+# Custom config files
+config/*
+!config/trackdirect.ini
+
+ogndevices

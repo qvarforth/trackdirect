@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="24" height="24">
+ <metadata id="metadata4744"/>
+ <path d="m 0,1.1917886 24,0 L 17.938828,24 6.104348,24 z" id="path4752" inkscape:connector-curvature="0" fill="#ffff00"/>
+ <text x="2.623" y="10.633" id="text5262" sodipodi:linespacing="125%" transform="scale(0.98919696,1.010921)" fill="#0e6600" font-family="Sans" word-spacing="0" line-height="125%" font-weight="bold" letter-spacing="0" font-size="9"><tspan sodipodi:role="line" id="tspan5264" x="2.623" y="10.633">TCP</tspan>
+ </text>
+ <text x="6.773" y="22.18" id="text5262-9" sodipodi:linespacing="125%" transform="scale(1.0579262,0.94524551)" fill="#0e6600" font-family="Sans" word-spacing="0" line-height="125%" font-weight="bold" letter-spacing="0" font-size="9"><tspan sodipodi:role="line" id="tspan5264-7" x="6.773" y="22.18">IP</tspan>
+ </text>
+</svg>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="24" height="24" version="1.0">
+ <metadata id="metadata5438"/>
+ <g inkscape:label="Layer 1" inkscape:groupmode="layer" id="layer1" transform="translate(0,-104)">
+  <g id="g2984" transform="matrix(0.1875,0,0,0.1875,0,104)">
+   <rect rx="14.173" height="128" width="128" id="rect1869" fill="#204a87"/>
+   <path id="text1871" d="m 23.520836,11.511719 44.929687,0 c 13.359304,1.05e-4 23.601481,2.976664 30.726563,8.929687 7.171774,5.90634 10.757714,14.343832 10.757814,25.3125 -1e-4,11.015685 -3.58604,19.500051 -10.757814,25.453125 -7.125082,5.90629 -17.367259,8.859412 -30.726563,8.859375 l -17.859375,0 0,36.421874 -27.070312,0 0,-104.976561 m 27.070312,19.617187 0,29.320313 14.976563,0 c 5.249939,5.6e-5 9.304623,-1.265568 12.164062,-3.796875 2.859305,-2.578063 4.288991,-6.210872 4.289063,-10.898438 -7.2e-5,-4.687424 -1.429758,-8.296796 -4.289063,-10.828125 -2.859439,-2.531166 -6.914123,-3.796789 -12.164062,-3.796875 l -14.976563,0" inkscape:connector-curvature="0" fill="#ffffff"/>
+  </g>
+ </g>
+</svg>

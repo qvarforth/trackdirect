@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="24" height="24" version="1.1">
+ <metadata id="metadata3212"/>
+ <g inkscape:label="Layer 1" inkscape:groupmode="layer" id="layer1" transform="translate(0,-1028.3622)">
+  <rect id="rect3370" width="24" height="24" y="1028.36" rx="4" fill="#330080"/>
+  <g id="g3565" transform="translate(0,1.4520842)">
+   <text transform="scale(0.90797253,1.1013549)" sodipodi:linespacing="125%" id="text3391-4" y="948.63" x="9.561" font-family="sans-serif" fill="#ffffff" word-spacing="0" line-height="125%" font-weight="bold" letter-spacing="0" font-size="10.625"><tspan id="tspan3414-3" y="948.63" x="9.561" sodipodi:role="line">2</tspan>
+   </text>
+   <g transform="translate(-0.63089896,-0.05619343)" id="g3539">
+    <text x="1.457" y="945.91" id="text3391" sodipodi:linespacing="125%" transform="scale(0.90797253,1.1013549)" font-family="sans-serif" fill="#ffffff" word-spacing="0" line-height="125%" font-weight="bold" letter-spacing="0" font-size="10.625"><tspan sodipodi:role="line" x="1.457" y="945.91" id="tspan3414">H</tspan>
+    </text>
+    <text x="16.891" y="945.91" id="text3391-3" sodipodi:linespacing="125%" transform="scale(0.90797253,1.1013549)" font-family="sans-serif" fill="#ffffff" word-spacing="0" line-height="125%" font-weight="bold" letter-spacing="0" font-size="10.625"><tspan sodipodi:role="line" x="16.891" y="945.91" id="tspan3414-9">O</tspan>
+    </text>
+   </g>
+  </g>
+  <text x="-76.27" y="1019.03" id="text3554" sodipodi:linespacing="125%" font-family="sans-serif" fill="#000000" word-spacing="0" line-height="125%" font-weight="normal" letter-spacing="0" font-size="15"><tspan sodipodi:role="line" id="tspan3556" x="-76.27" y="1019.03"/>
+  </text>
+ </g>
+</svg>

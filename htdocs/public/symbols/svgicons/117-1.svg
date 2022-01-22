@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="24" height="24">
+ <circle id="path4202-7-41" cx="20.848" cy="15.639" r="1.167" fill="#999999" stroke="#000000" stroke-width="0.869"/>
+ <circle id="path4202-7-4" cx="14.889" cy="15.639" r="1.167" fill="#999999" stroke="#000000" stroke-width="0.869"/>
+ <circle id="path4202-7-3" cx="5.902" cy="15.639" r="1.167" fill="#999999" stroke="#000000" stroke-width="0.869"/>
+ <circle id="path4202-7" cx="2.566" cy="15.639" r="1.167" fill="#999999" stroke="#000000" stroke-width="0.869"/>
+ <metadata id="metadata16"/>
+ <path inkscape:connector-curvature="0" id="path1999" d="m 18.973354,8.2340634 3.694442,0.058906 1.332271,3.5694771 0,3.393518 c 0,0.236478 -0.153395,0.45247 -0.427332,0.45247 l -0.754115,0 C 22.246471,13.4291 20.049359,13.090386 19.073181,15.004593 l -2.413168,0 c -1.075877,-1.819269 -3.54604,-1.482708 -3.670026,0.68158 l -0.678704,0 c 0,-0.915452 0.928708,-2.566867 1.960699,-2.566867 l 4.725789,0 z" sodipodi:nodetypes="cccsscccccscc" color="#000000" stroke-linecap="round" fill="#330080"/>
+ <path inkscape:connector-curvature="0" id="path2003" d="m 6.4246942,13.128203 c 1.0319917,0 1.9606895,1.65139 1.9606901,2.566841 l -0.680552,0 C 7.5843514,13.591945 5.2490251,13.353691 4.5296521,14.290175 l 0.00219,0.08534 -0.680552,0 0.00219,-0.08534 C 3.1341043,13.353691 0.79877799,13.591945 0.67829706,15.695044 l -0.678363787946,0 C -6.6064736e-5,14.779593 0.92863167,13.128203 1.9606235,13.128203 l 4.4640713,0 z" color="#000000" stroke-linecap="round" fill="#330080"/>
+ <path inkscape:connector-curvature="0" id="path2018" d="m 17.408213,6.8489999 0.0041,5.9776541 -17.36951172,-0.0044 0,-5.952824 L 17.408186,6.849041 Z" color="#000000" stroke-linecap="round" fill="#330080"/>
+ <path inkscape:connector-curvature="0" id="path2020" d="m 20.388457,9.1247404 -0.0071,2.1916766 2.751974,0.335393 -0.897406,-2.5199873 -1.847486,-0.00704 z" sodipodi:nodetypes="cccccc" color="#000000" stroke-linecap="round" fill="#7f2aff"/>
+</svg>

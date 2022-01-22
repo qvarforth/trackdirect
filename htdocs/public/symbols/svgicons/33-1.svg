@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="24" height="24" viewBox="0 0 24 24">
+ <metadata id="metadata4298"/>
+ <g inkscape:groupmode="layer" id="layer1" inkscape:label="Layer 1">
+  <path sodipodi:type="star" id="path4304" sodipodi:sides="6" sodipodi:cx="11.986943" sodipodi:cy="13.815016" sodipodi:r1="13.818669" sodipodi:r2="7.8766413" sodipodi:arg1="0.52453753" sodipodi:arg2="1.0481363" inkscape:flatsided="false" inkscape:rounded="0" inkscape:randomized="0" d="m 23.94777,20.735582 -8.028911,-0.0955 -3.944888,6.993598 -3.9317502,-7.000992 -8.02907713,0.08043 4.09716173,-6.905491 -4.08418939,-6.9131722 8.02891189,0.0955 3.9448881,-6.99359774 3.93175,7.00099194 8.029077,-0.080426 -4.097162,6.9054915 z" transform="matrix(1.0010906,0,0,0.8695997,-1.6205237e-5,-0.01353359)" fill="#0000d0" stroke="#1a1a1a" stroke-linecap="round" stroke-width="0"/>
+ </g>
+ <g inkscape:groupmode="layer" id="layer2" inkscape:label="Layer 2">
+  <text x="13.13" y="14.347" id="text4323" sodipodi:linespacing="125%" transform="scale(0.9004394,1.1105689)" fill="#d8d81f" font-family="sans-serif" text-anchor="middle" text-align="center" word-spacing="0" line-height="125%" font-weight="bold" letter-spacing="0" font-size="9.717"><tspan sodipodi:role="line" id="tspan4325" x="13.13" y="14.347">PD</tspan>
+  </text>
+ </g>
+</svg>

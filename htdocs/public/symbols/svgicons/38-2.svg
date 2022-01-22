@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="24" height="24" viewBox="0 0 24 24">
+ <metadata id="metadata4733"/>
+ <g inkscape:groupmode="layer" id="layer9" inkscape:label="Layer 1">
+  <path sodipodi:type="star" id="path4741" sodipodi:sides="4" sodipodi:cx="12" sodipodi:cy="12" sodipodi:r1="11.990243" sodipodi:r2="8.4783821" sodipodi:arg1="0" sodipodi:arg2="0.78539816" inkscape:flatsided="true" inkscape:rounded="-3.469447e-18" inkscape:randomized="0" d="M 23.990243,12 12,23.990243 0.00975704,12 12,0.00975704 Z" transform="matrix(0.88484358,0,0,0.8847113,1.381877,1.3834644)" stroke="#000000" stroke-linejoin="round" stroke-linecap="round" stroke-width="3.145"/>
+ </g>
+</svg>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   width="12"
+   height="12"
+   viewBox="0 0 12 12"
+   id="svg2"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="dotColor0.svg">
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="653"
+     inkscape:window-height="480"
+     id="namedview6"
+     showgrid="false"
+     inkscape:zoom="9.8333333"
+     inkscape:cx="-0.10614088"
+     inkscape:cy="12"
+     inkscape:window-x="45"
+     inkscape:window-y="24"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg2" />
+  <metadata
+     id="metadata4182">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <path
+     id="path4197"
+     sodipodi:type="arc"
+     sodipodi:cx="6"
+     sodipodi:cy="6"
+     sodipodi:rx="2.4999955"
+     sodipodi:ry="2.4999955"
+     sodipodi:start="3.1415927"
+     sodipodi:end="3.1406327"
+     sodipodi:open="true"
+     d="M 3.5000045,5.9999999 A 2.4999955,2.4999955 0 0 1 5.9994001,3.5000046 2.4999955,2.4999955 0 0 1 8.4999952,5.9988001 2.4999955,2.4999955 0 0 1 6.0017999,8.4999948 2.4999955,2.4999955 0 0 1 3.5000057,6.0023999"
+     style="fill:#2a2aff;stroke:#1a1a1a;stroke-width:0;stroke-linecap:round" />
+</svg>

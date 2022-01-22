@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="24" height="24" version="1.1">
+ <metadata id="metadata3012"/>
+ <g inkscape:label="Layer 1" inkscape:groupmode="layer" id="layer1" transform="translate(0,-1028.3622)">
+  <g id="g3036" transform="translate(289.14285,1125.1429)">
+   <rect rx="1.995" y="-96.78" x="-289.14" height="24" width="24" id="rect3284" fill="#0078ff" fill-rule="evenodd"/>
+   <g transform="matrix(0.0525723,0,0,0.0525723,-288.14285,-100.97938)" id="g1882" fill="#e2e3db">
+    <g id="g1884">
+     <path id="path1886" d="m 89.25,279.01 c 21.59,0 39.09,-17.5 39.09,-39.08 0,-21.59 -17.5,-39.09 -39.09,-39.09 -21.585,0 -39.085,17.5 -39.085,39.09 0,21.58 17.5,39.08 39.085,39.08 z" inkscape:connector-curvature="0"/>
+     <path id="path1888" d="M 89.25,239.93" inkscape:connector-curvature="0"/>
+    </g>
+    <path id="path1890" d="m 173.65,228.84 h 156.23 c 22.92,0 36.43,14.76 36.43,34.51 V 319.9 H 173.65 v -91.06 z" inkscape:connector-curvature="0"/>
+    <path id="path1892" d="M 131.12,249.08 V 283 H 71.054 c -29,0.1 -29.047,37.38 0,37.38 H 149.8 c 11.5,0 18.7,-9.28 18.7,-19.78 v -51.52 c 0,-28.22 -37.38,-28.22 -37.38,0 z" inkscape:connector-curvature="0"/>
+    <path id="path1894" d="M 42.702,196.26 C 42.702,165.48 0,165.48 0,196.26 v 246.81 h 43.651 v -63.74 h 332.12 v 63.26 h 42.7 V 251.96 c 0,-32.48 -43.17,-32.48 -43.17,0 v 76.09 h -332.6 l 0.002,-131.79 z" inkscape:connector-curvature="0"/>
+   </g>
+  </g>
+ </g>
+</svg>

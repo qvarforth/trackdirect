@@ -1,0 +1,20 @@
+create table packet_weather (
+     "id" bigserial not null,
+     "packet_id" bigint not null,
+     "station_id" bigint not null,
+     "timestamp" bigint not null,
+     "humidity" int null,
+     "pressure" real null,
+     "rain_1h" real null,
+     "rain_24h" real null,
+     "rain_since_midnight" real null,
+     "temperature" real null,
+     "wind_direction" int null,
+     "wind_gust" real null,
+     "wind_speed" real null,
+     "luminosity" real null,
+     "snow" real null,
+     "wx_raw_timestamp" bigint null,
+     primary key (id),
+     foreign key(station_id) references station(id)
+);

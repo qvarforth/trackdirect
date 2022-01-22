@@ -1,0 +1,66 @@
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access 1 month"
+    ExpiresByType image/jpeg "access 1 month"
+    ExpiresByType image/gif "access 1 month"
+    ExpiresByType image/png "access 1 month"
+    ExpiresDefault "access 1 week"
+</IfModule>
+
+
+Options +FollowSymLinks
+RewriteEngine On
+
+# Do not do anything for already existing files and folders
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule .+ - [L]
+
+RewriteCond %{SCRIPT_FILENAME} !-d
+RewriteCond %{SCRIPT_FILENAME} !-f
+RewriteCond %{REQUEST_URI} \.(svg|png)$
+
+
+#
+# Simple svg images
+#
+
+# Regular primary table symbol (no point in using symbol.php)
+RewriteRule ^/?symbol-(\d+)-47\.svg$ ./svgicons/$1-1.svg
+
+# Regular alternative table symbol (no point in using symbol.php)
+RewriteRule ^/?symbol-(\d+)-92\.svg$ ./svgicons/$1-2.svg
+
+
+#
+# Images that needs to be handled by symbols.php
+#
+
+# Symbol with overlay (or other file extension)
+RewriteRule ^/?n?symbol-(\d+)-(\d+)\.(svg|png)$ ./symbol.php?symbol=$1&symbol_table=$2&format=$3
+
+# Symbol with overlay and course (raly used since width and height should be specified when rotating)
+RewriteRule ^/?n?symbol-(\d+)-(\d+)-(\d+)\.(svg|png)$ ./symbol.php?symbol=$1&symbol_table=$2&course=$3&format=$4
+
+# Symbol with overlay and specified width and height
+RewriteRule ^/?n?symbol-(\d+)-(\d+)-(\d+)x(\d+)\.(svg|png)$ ./symbol.php?symbol=$1&symbol_table=$2&width=$3&height=$4&format=$5
+
+# Symbol with overlay and course and specified width and height
+RewriteRule ^/?n?symbol-(\d+)-(\d+)-(\d+)-(\d+)x(\d+)\.(svg|png)$ ./symbol.php?symbol=$1&symbol_table=$2&course=$3&width=$4&height=$5&format=$6
+
+
+#
+# Images that needs to be handled by symbols.php AND also nees to be scaled
+#
+
+# Symbol with overlay (or other file extension)
+RewriteRule ^/?n?symbol-(\d+)-(\d+)-scale(\d+)x(\d+)\.(svg|png)$ ./symbol.php?symbol=$1&symbol_table=$2&scale_width=$3&scale_height=$4&format=$5
+
+# Symbol with overlay and course (raly used since width and height should be specified when rotating)
+RewriteRule ^/?n?symbol-(\d+)-(\d+)-(\d+)-scale(\d+)x(\d+)\.(svg|png)$ ./symbol.php?symbol=$1&symbol_table=$2&course=$3&scale_width=$4&scale_height=$5&format=$6
+
+# Symbol with overlay and specified width and height
+RewriteRule ^/?n?symbol-(\d+)-(\d+)-(\d+)x(\d+)-scale(\d+)x(\d+)\.(svg|png)$ ./symbol.php?symbol=$1&symbol_table=$2&width=$3&height=$4&scale_width=$5&scale_height=$6&format=$7
+
+# Symbol with overlay and course and specified width and height
+RewriteRule ^/?n?symbol-(\d+)-(\d+)-(\d+)-(\d+)x(\d+)-scale(\d+)x(\d+)\.(svg|png)$ ./symbol.php?symbol=$1&symbol_table=$2&course=$3&width=$4&height=$5&scale_width=$6&scale_height=$7&format=$8

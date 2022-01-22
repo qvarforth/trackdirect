@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="24" height="24">
+ <metadata id="metadata3276"/>
+ <path sodipodi:type="arc" id="path3280" sodipodi:cx="11.898305" sodipodi:cy="12.101695" sodipodi:rx="12.20339" sodipodi:ry="12.20339" d="m 24.101695,12.101695 a 12.20339,12.20339 0 1 1 -24.40678018,0 12.20339,12.20339 0 1 1 24.40678018,0 z" transform="matrix(0.9201921,0,0,0.9201921,1.0512738,0.86411581)" fill="#cccccc" stroke="#000000" stroke-width="1.675"/>
+ <path sodipodi:type="arc" id="path3282" sodipodi:cx="12" sodipodi:cy="11.898305" sodipodi:rx="7.2203388" sodipodi:ry="7.2203388" d="m 19.220339,11.898305 a 7.2203388,7.2203388 0 1 1 -14.4406778,0 7.2203388,7.2203388 0 1 1 14.4406778,0 z" transform="matrix(0.93617311,0,0,0.93617311,0.76592268,0.86112686)" fill="#999999" stroke="#000000" stroke-width="1.582"/>
+ <path sodipodi:type="arc" id="path3284" sodipodi:cx="11.79661" sodipodi:cy="12" sodipodi:rx="1.2203389" sodipodi:ry="1.2203389" d="m 13.016949,12 a 1.2203389,1.2203389 0 1 1 -2.440678,0 1.2203389,1.2203389 0 1 1 2.440678,0 z" transform="translate(0.20339012,0)" fill="#0000ff" stroke="#0000ff" stroke-width="1.582"/>
+</svg>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="24" height="24">
+ <metadata id="metadata5621"/>
+ <g inkscape:groupmode="layer" id="layer1" inkscape:label="Lager">
+  <rect id="rect5627" width="19.622" height="19.622" x="2.189" y="2.189" fill="#ff0000" stroke="#ff0000" stroke-linejoin="round" stroke-linecap="round" stroke-width="0.904" rx="5.293"/>
+ </g>
+ <g inkscape:groupmode="layer" id="layer3" inkscape:label="Lager#2">
+  <path d="M 12,4.3728815 C 12,19.627118 12,19.627118 12,19.627118" id="path6162" inkscape:connector-curvature="0" fill="none" stroke="#000000" stroke-linecap="round" stroke-width="1.5"/>
+  <path d="M 18.864407,5.1864406 C 5.237288,18.813559 5.237288,18.813559 5.237288,18.813559 l -0.1016949,0" id="path6168" inkscape:connector-curvature="0" fill="none" stroke="#000000" stroke-linecap="round" stroke-width="1.5"/>
+  <path d="M 5.135593,5.1864412 C 18.762712,18.813559 18.762712,18.813559 18.762712,18.813559 l 0.101695,0" id="path6168-7" inkscape:connector-curvature="0" fill="none" stroke="#000000" stroke-linecap="round" stroke-width="1.5"/>
+  <path d="M 19.627118,12 C 4.372882,12 4.372882,12 4.372882,12" id="path6162-2" inkscape:connector-curvature="0" fill="none" stroke="#000000" stroke-linecap="round" stroke-width="1.5"/>
+ </g>
+ <g inkscape:groupmode="layer" id="layer2" inkscape:label="Lager#1" opacity="0.94">
+  <rect id="rect6157" width="3.751" height="3.675" x="10.124" y="10.163" rx="0" ry="1.837" fill="#ffff00" stroke="#ffff00" stroke-linejoin="round" stroke-linecap="round" stroke-width="1.28"/>
+ </g>
+</svg>

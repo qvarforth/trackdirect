@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" viewBox="0 0 24 24" version="1.0" width="24" height="24">
+ <g id="layer1" inkscape:label="Layer 1" inkscape:groupmode="layer" transform="translate(0,-24)">
+  <rect id="rect3508" width="24" height="24" y="24" rx="4" fill="#e6e6e6" fill-rule="evenodd"/>
+  <text x="1.346" y="32.758" id="text3510" sodipodi:linespacing="125%" font-family="sans-serif" word-spacing="0" line-height="125%" font-weight="bold" letter-spacing="0" font-size="10"><tspan sodipodi:role="line" id="tspan3512" x="1.346" y="32.758">MIC</tspan>
+  </text>
+  <text x="8.492" y="46.935" id="text3514" sodipodi:linespacing="125%" font-family="sans-serif" word-spacing="0" line-height="125%" font-weight="bold" letter-spacing="0" font-size="10"><tspan sodipodi:role="line" id="tspan3516" x="8.492" y="46.935">E</tspan>
+  </text>
+  <path sodipodi:type="arc" id="path5701" sodipodi:cx="12.000047" sodipodi:cy="36" sodipodi:rx="1.8725199" sodipodi:ry="1.8725199" d="m 10.127527,36 a 1.8725199,1.8725199 0 0 1 1.87207,-1.87252 1.8725199,1.8725199 0 0 1 1.872969,1.871621 1.8725199,1.8725199 0 0 1 -1.871171,1.873418 1.8725199,1.8725199 0 0 1 -1.873867,-1.870721" sodipodi:start="3.1415927" sodipodi:end="3.1406327" sodipodi:open="true" fill="#ff0000" stroke="#ff0000" stroke-linejoin="round" stroke-linecap="round" stroke-width="1.674"/>
+ </g>
+ <metadata id="metadata88"/>
+</svg>
