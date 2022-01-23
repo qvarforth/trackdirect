@@ -42,15 +42,7 @@ sudo python2 get-pip.py
 
 Install needed python libs
 ```
-pip2 install psycopg2-binary
-pip2 install wheel
-pip2 install setuptools
-pip2 install autobahn[twisted]
-pip2 install twisted
-pip2 install pympler
-pip2 install image_slicer
-pip2 install jsmin
-pip2 install psutil
+pip2 install psycopg2-binary wheel setuptools autobahn[twisted] twisted pympler image_slicer jsmin psutil
 ```
 
 Install the python aprs lib (aprs-python)
@@ -68,7 +60,43 @@ cd heatmap-2.2.1
 sudo python2 setup.py install
 ```
 
-### Installing
+### Set up aprsc
+You should not to connect to a public APRS server (APRS-IS, CWOP-IS or OGN server). The collector will use a full feed connection and each websocket client will use a filtered feed connection. To not cause extra load on public servers it is better to run your own aprsc server and let your collector and all websocket connections connect to that instead (will result in only one full feed connection to a public APRS server).
+
+Note that it seems like aprsc needs to run on a server with a public ip, otherwise uplink won't work.
+
+#### Installation
+Follow the instructions found [here](http://he.fi/aprsc/INSTALLING.html).
+
+#### Config file
+You must modify the configuration file before starting aprsc.
+```
+sudo vi /opt/aprsc/etc/aprsc.conf
+```
+
+Uplink examples:
+```
+# Uplink "APRS-IS" ro tcp rotate.aprs.net 10152
+# Uplink "CWOP" ro tcp cwop.aprs.net 10152
+# Uplink "OGN" ro tcp aprs.glidernet.org 10152
+```
+Only use one of them, if you are going to use multiple sources you should set up muliple aprsc servers and run multiple collectors. That will enable you to have different settings for different sources.
+
+#### Start aprsc server
+Start aprsc
+```
+sudo systemctl start aprsc
+```
+
+If you run multiple aprsc instances you need to select different data och log directories (and of course different tcp ports in configuration file). Running multiple aprsc instances is only needed if you fetch data from multiple sources (like both APRS-IS and CWOP-IS).
+
+Should be possible to start multiple aprsc instances by using something like this:
+```
+sudo /opt/aprsc/sbin/aprsc -u aprsc -t /opt/aprsc -c /etc/aprsc.conf -r /logs -o file -f
+sudo /opt/aprsc/sbin/aprsc -u aprsc -t /opt/aprsc2 -c /etc/aprsc2.conf -r /logs2 -o file -f
+```
+
+### Installing Track Direct
 
 Start by cloning the repository
 ```
@@ -81,9 +109,9 @@ Set up the database (connect to database using: "sudo -u postgres psql")
 ```
 CREATE DATABASE trackdirect;
 
-CREATE USER {my_linux_username} WITH PASSWORD 'foobar';
-ALTER ROLE {my_linux_username} WITH SUPERUSER;
-GRANT ALL PRIVILEGES ON DATABASE "trackdirect" to {my_linux_username};
+CREATE USER {USER} WITH PASSWORD 'foobar';
+ALTER ROLE {USER} WITH SUPERUSER;
+GRANT ALL PRIVILEGES ON DATABASE "trackdirect" to {USER};
 ```
 
 Remember to add password to password-file:
@@ -117,41 +145,6 @@ If you are using data from OGN (Open Glider Network) it is IMPORTANT to keep the
 ~/trackdirect/server/scripts/ogn_devices_install.sh trackdirect 5432
 ```
 
-#### Set up aprsc
-You should not to connect to a public APRS server (APRS-IS, CWOP-IS or OGN server). The collector will use a full feed connection and each websocket client will use a filtered feed connection. To not cause extra load on public servers it is better to run your own aprsc server and let your collector and all websocket connections connect to that instead (will result in only one full feed connection to a public APRS server).
-
-Note that it seems like aprsc needs to run on a server with a public ip, otherwise uplink won't work.
-
-##### Download and install
-```
-wget http://he.fi/aprsc/down/aprsc-latest.tar.gz
-tar xvfz aprsc-latest.tar.gz
-cd aprsc-*/src
-./configure
-make
-sudo make install
-```
-
-##### Create user
-Create user to avoid running aprsc as root
-```
-sudo useradd -r -s /bin/false aprsc
-sudo chown -R aprsc /opt/aprsc
-sudo chgrp -R aprsc /opt/aprsc
-```
-
-##### Config file
-You can find an example aprsc configuration file in the misc directory. Note that you need to modify the configuration file to make it work.
-```
-sudo cp ~/trackdirect/misc/aprsc.conf /opt/aprsc/etc/
-```
-
-##### Start aprsc server
-Start the aprsc server using the configuration file that you selected. Note that if you run multiple aprsc instances you need to select different data och log directories (and of course different tcp ports in configuration file).
-```
-sudo /opt/aprsc/sbin/aprsc -u aprsc -t /opt/aprsc -c /etc/aprsc_aprs.conf -r /logs -o file -f
-```
-
 #### Start the collectors
 Before starting the collector you need to update the trackdirect configuration file (trackdirect/config/trackdirect.ini).
 
@@ -163,6 +156,11 @@ Start the collector using the provided shell-script. Note that if you have confi
 #### Start the websocket server
 ```
 ~/trackdirect/server/scripts/wsserver.sh trackdirect.ini
+```
+
+If you have enabled a firewall, make sure the selected port is open (we are using port 9000 by default).
+```
+sudo ufw allow 9000
 ```
 
 #### Start generating heatmaps
@@ -195,37 +193,34 @@ If you make no changes, at least add contact information to yourself, I do not w
 #### Set up webserver
 Webserver should already be up and running (if you installed all specified ubuntu packages).
 
-Let's redirect the html-directory to our htdocs/public directory (requires "Options FollowSymLinks" to be enabled).
+Add the following to /etc/apache2/sites-enabled/000-default.conf
 ```
-cd /var/www
-sudo mv html html_old
-sudo ln -s /home/xyz/trackdirect/htdocs html
-```
-
-To enable the use of the .htaccess files you need to edit the file /etc/apache2/sites-enabled/000-default.conf (or whatever it is called in your system), and add "AllowOverride All".
-```
-<VirtualHost *:80>
-    ...
-    DocumentRoot /home/xyz/trackdirect/htdocs/public
+<Directory "/home/USER/trackdirect/htdocs">
+    Options SymLinksIfOwnerMatch
     AllowOverride All
-    ...
-</VirtualHost>
-
+    Require all granted
+</Directory>
 ```
 
-Enable rewrite by running this command
+Change the VirtualHost DocumentRoot: (in /etc/apache2/sites-enabled/000-default.conf):
+```
+DocumentRoot /home/USER/trackdirect/htdocs
+```
+
+Enable rewrite and restart apache
 ```
 sudo a2enmod rewrite
-```
-
-Restart apache
-```
 sudo systemctl restart apache2
 ```
 
 For the symbols cache to work we need to make sure the webserver has write access to our htdocs/public/symbols directory (the following permission may be a little bit too generous...)
 ```
 chmod 777 ~/trackdirect/htdocs/public/symbols
+```
+
+If you have enabled a firewall, make sure port 80 is open.
+```
+sudo ufw allow 80
 ```
 
 ## Deployment
