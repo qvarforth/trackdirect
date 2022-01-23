@@ -66,10 +66,8 @@
                     <select name ="seconds" style="width: 280px;">
                         <option <?php echo ($seconds == 0 ? 'selected' : ''); ?> value="0">Include all known stations in search</option>
                         <option <?php echo ($seconds == 60 ? 'selected' : ''); ?> value="60">Only stations active latest hour</option>
-                        <option <?php echo ($seconds == 120 ? 'selected' : ''); ?> value="120">Only stations active latest 2 hours</option>
                         <option <?php echo ($seconds == 360 ? 'selected' : ''); ?> value="360">Only stations active latest 6 hours</option>
                         <option <?php echo ($seconds == 720 ? 'selected' : ''); ?> value="720">Only stations active latest 12 hours</option>
-                        <option <?php echo ($seconds == 3600 ? 'selected' : ''); ?> value="3600">Only stations active latest 24 hours</option>
                     </select>
                 </div>
                 <div>

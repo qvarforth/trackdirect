@@ -435,10 +435,9 @@
                                 <?php if ($station->getLiklyHamRadioCallsign() !== null) : ?>
                                     <div>Search for <a href="https://www.qrz.com/db/<?php echo $station->getLiklyHamRadioCallsign(); ?>" target="_blank"><?php echo htmlspecialchars($station->getLiklyHamRadioCallsign()); ?></a> at QRZ</div>
                                 <?php endif; ?>
-
-                                <div>Export <a href="http://localhost/kml.php?sid=<?php echo $station->id; ?>"><?php echo htmlspecialchars($station->name); ?></a> data to KML</div>
-
                             <?php endif; ?>
+
+                            <div>Export <a href="/kml.php?sid=<?php echo $station->id; ?>"><?php echo htmlspecialchars($station->name); ?></a> data to KML</div>
                         </div>
                         <div style="clear: both;"></div>
                     <?php endif; ?>
