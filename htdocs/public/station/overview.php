@@ -428,7 +428,6 @@
                                 <div>
                                     Search for <a href="https://www.jetphotos.com/registration/<?php echo $station->getOgnDevice()->registration; ?>" target="_blank"><?php echo htmlspecialchars($station->getOgnDevice()->registration); ?></a> photos!
                                 </div>
-                                <p>(Link to www.jetphotos.com)</p>
                             <?php endif; ?>
 
                             <?php if ($station->sourceId == 1) : ?>
