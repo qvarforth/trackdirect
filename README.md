@@ -21,7 +21,7 @@ What things you need to install and how to install them. These instructions are 
 
 Install some ubuntu packages
 ```
-sudo apt-get install libpq-dev postgresql-12 postgresql-client-common postgresql-client libevent-dev apache2 php libapache2-mod-php php-pgsql libmagickwand-dev imagemagick php-imagick inkscape
+sudo apt-get install libpq-dev postgresql-12 postgresql-client-common postgresql-client libevent-dev apache2 php libapache2-mod-php php-dom php-pgsql libmagickwand-dev imagemagick php-imagick inkscape
 ```
 
 #### Install python
