@@ -1,6 +1,6 @@
 <?php require "../../includes/bootstrap.php"; ?>
 
-<?php $station = StationRepository::getInstance()->getObjectById($_GET['id']); ?>
+<?php $station = StationRepository::getInstance()->getObjectById($_GET['id'] ?? null); ?>
 <?php if ($station->isExistingObject()) : ?>
     <?php $days = 10; ?>
     <?php $senderStats = PacketPathRepository::getInstance()->getSenderPacketPathSatistics($station->id, time() - (60*60*24*$days)); ?>
@@ -49,7 +49,7 @@
                     <a title="Raw packets" href="/station/raw.php?id=<?php echo $station->id ?>&imperialUnits=<?php echo $_GET['imperialUnits'] ?? 0; ?>">Raw packets</a>
                 </div>
 
-                <div class="horizontal-line" style="margin-bottom: 15px;">&nbsp;</div>
+                <div class="horizontal-line">&nbsp;</div>
 
                 <p>
                     The communication statistics that we show here may differ from similar communication statistics on other websites, the reason is probably that this website is not collecting packets from the same APRS servers. Each APRS server performes duplicate filtering, and which packet that is considered to be a duplicate may differ depending on which APRS server you receive your data from.

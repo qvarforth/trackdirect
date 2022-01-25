@@ -1,6 +1,6 @@
 <?php require "../../includes/bootstrap.php"; ?>
 
-<?php $station = StationRepository::getInstance()->getObjectById($_GET['id']); ?>
+<?php $station = StationRepository::getInstance()->getObjectById($_GET['id'] ?? null); ?>
 <?php if ($station->isExistingObject()) : ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -57,7 +57,7 @@
                     <a title="Raw packets" href="/station/raw.php?id=<?php echo $station->id ?>&imperialUnits=<?php echo $_GET['imperialUnits'] ?? 0; ?>">Raw packets</a>
                 </div>
 
-                <div class="horizontal-line" style="margin-bottom: 15px;">&nbsp;</div>
+                <div class="horizontal-line">&nbsp;</div>
 
                 <div class="overview-content-summary">
                     <div>
@@ -449,8 +449,6 @@
                     <!-- Related stations -->
                     <?php $relatedStations = StationRepository::getInstance()->getRelatedObjectListByStationId($station->id, 15); ?>
                     <?php if (count($relatedStations) > 1) : ?>
-                        <div class="overview-content-divider"></div>
-
                         <div>
                             <?php $relatedStattionNote = true; ?>
                             <div class="overview-content-summary-hr">Related stations/objects:</div>
@@ -464,15 +462,13 @@
                                 <?php endforeach; ?>
                             </div>
                         </div>
+                        <div class="overview-content-divider"></div>
                     <?php endif; ?>
 
 
                     <!-- Close by stations -->
                     <?php $closeByStations = StationRepository::getInstance()->getCloseByObjectListByStationId($station->id, 15); ?>
                     <?php if (count($closeByStations) > 1) : ?>
-
-                        <div class="overview-content-divider"></div>
-
                         <div>
                             <div class="overview-content-summary-hr">Nearby stations/objects:</div>
                             <div class="overview-content-station-list" title="The closest stations/objects at the current position">
@@ -504,16 +500,14 @@
                                 <?php endforeach; ?>
                             </div>
                         </div>
+                        <div class="overview-content-divider"></div>
                     <?php endif; ?>
-
-                    <div class="overview-content-divider"></div>
                 </div>
 
                 <?php if (count($relatedStations) > 1 || count($closeByStations) > 1) : ?>
                     <div class="horizontal-line">&nbsp;</div>
                 <?php endif; ?>
 
-                <br/>
                 <div class="overview-content-explanations">
                     <ul>
 

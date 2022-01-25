@@ -1,6 +1,6 @@
 <?php require "../../includes/bootstrap.php"; ?>
 
-<?php $station = StationRepository::getInstance()->getObjectById($_GET['id']); ?>
+<?php $station = StationRepository::getInstance()->getObjectById($_GET['id'] ?? null); ?>
 <?php if ($station->isExistingObject()) : ?>
     <?php
         $maxDays = 10;
@@ -73,7 +73,7 @@
                     <a title="Raw packets" href="/station/raw.php?id=<?php echo $station->id ?>&imperialUnits=<?php echo $_GET['imperialUnits'] ?? 0; ?>">Raw packets</a>
                 </div>
 
-                <div class="horizontal-line" style="margin-bottom: 15px;">&nbsp;</div>
+                <div class="horizontal-line">&nbsp;</div>
 
                 <?php if (count($weatherPackets) > 0) : ?>
 

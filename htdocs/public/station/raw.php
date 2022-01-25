@@ -1,6 +1,6 @@
 <?php require "../../includes/bootstrap.php"; ?>
 
-<?php $station = StationRepository::getInstance()->getObjectById($_GET['id']); ?>
+<?php $station = StationRepository::getInstance()->getObjectById($_GET['id'] ?? null); ?>
 <?php if ($station->isExistingObject()) : ?>
 
     <?php
@@ -89,7 +89,7 @@
                     <span>Raw packets</span>
                 </div>
 
-                <div class="horizontal-line" style="margin-bottom: 15px;">&nbsp;</div>
+                <div class="horizontal-line">&nbsp;</div>
 
                 <p>
                     This is the latest recevied packets stored in our database for station/object <?php echo $station->name; ?>. If no packets are shown the sender has not sent any packets the latest 24 hours.
