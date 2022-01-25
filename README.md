@@ -1,6 +1,6 @@
 # APRS Track Direct
 
-APRS Track Direct is a collection of tools that can be used to run an APRS website. You can use data from APRS-IS, CWOP-IS, OGN, HUBHAB, CBAPRS or any other source that uses the APRS specification.
+APRS Track Direct is a collection of tools that can be used to run an APRS website. You can use data from APRS-IS, CWOP-IS, OGN, HABHUB, CBAPRS or any other source that uses the APRS specification.
 
 Tools included are an APRS data collector, a websocket server, a javascript library (websocket client and more), a heatmap generator and a website example (which can of course be used as is).
 
@@ -148,24 +148,30 @@ If you are using data from OGN (Open Glider Network) it is IMPORTANT to keep the
 #### Start the collectors
 Before starting the collector you need to update the trackdirect configuration file (trackdirect/config/trackdirect.ini).
 
-Start the collector using the provided shell-script. Note that if you have configured multiple collectors (fetching from multiple aprs servers, for example both APRS-IS and CWOP-IS) you need to call the shell-script multiple times.
+Start the collector by using the provided shell-script. Note that if you have configured multiple collectors (fetching from multiple aprs servers, for example both APRS-IS and CWOP-IS) you need to call the shell-script multiple times.
 ```
 ~/trackdirect/server/scripts/collector.sh trackdirect.ini 0
 ```
 
 #### Start the websocket server
+Before starting the websocket server you need to update the trackdirect configuration file (trackdirect/config/trackdirect.ini).
+
+When the user interacts with the map we want it to be populated with objects from the backend. To achive good performance we avoid using background HTTP requests (also called AJAX requests), instead we use websocket communication. The included trackdirect js library (trackdirect.min.js) will connect to our websocket server and request objects for the current map view.
+
+Start the websocket server by using the provided shell script.
 ```
 ~/trackdirect/server/scripts/wsserver.sh trackdirect.ini
 ```
 
-If you have enabled a firewall, make sure the selected port is open (we are using port 9000 by default).
+If you have enabled a firewall, make sure the selected port is open (we are using port 9000 by default, can be changed in trackdirect.ini).
 ```
 sudo ufw allow 9000
 ```
 
 #### Start generating heatmaps
-I recommend generating new heatmaps once every hour in production (I suggest that you schedule it using cron).
+When you zoom out the map, it is usually too demanding to render all the objects on the map, instead we have to show something else. What we do is that we show a heat map that tells the user where in the world we have the highest APRS activity.
 
+I recommend generating new heatmaps once every hour in production (I suggest that you schedule it using cron).
 ```
 ~/trackdirect/server/scripts/heatmapcreator.sh trackdirect.ini ~/trackdirect/htdocs/public/heatmaps
 ```
@@ -175,7 +181,9 @@ Generating heatmaps might take a while, look in log file to see the current stat
 tail -f ~/trackdirect/server/log/heatmap.log
 ```
 
-#### Javascript library (jslib)
+#### Trackdirect js library
+All the map view magic is handled by the trackdirect js library, it contains functionality for rendering the map (using Google Maps API or Leaflet), functionality used to communicate with backend websocket server and much more.
+
 If you do changes in the js library (jslib directory) you need to execute build.sh to deploy the changes to the htdocs directory.
 
 ```
@@ -227,27 +235,18 @@ sudo ufw allow 80
 
 If you want to set up a public website you should install a firewall and setup SSL certificates. For an easy solution I would use ufw to handle iptables, Nginx as a reverse proxy and use let’s encrypt for SSL certificates.
 
-### Stuff to start on boot
-- apache2
-- aprsc (see topic "Start aprsc server")
-- collector (see topic "Start the collectors")
-- wsserver (see topic "Start the websocket server")
+### Schedule things using cron
+We recommend that your schedule the heatmapcreator shell script to be executed once every hour. If you do not have infinite storage we recommend that you delete old packets, schedule the remover.sh script to be executed about once every hour. And again, if you are using OGN as data source you need to run the ogn_devices_install.sh script at least once every hour.
 
 Note that the collector and wsserver shell scripts can be scheduled to start once every minute (nothing will happen if it is already running). I even recommend doing this as the collector and websocket server are built to shut down if something serious goes wrong (eg lost connection to database).
 
-### Schedule things using crontab
-We recommend that your schedule the heatmapcreator shell script to be executed once every hour. If you do not have infinite storage we recommend that you delete old packets, schedule the remover.sh script to be executed at least once every day.
-
-Use cron!
-
+Crontab example
 ```
 10 * * * * ~/trackdirect/server/scripts/heatmapcreator.sh trackdirect.ini ~/trackdirect/htdocs/public/heatmaps
-40 1 * * * ~/trackdirect/server/scripts/remover.sh trackdirect.ini
-```
-
-And again, if you are using OGN as data source you need to run the ogn_devices_install.sh script at least once every hour
-```
+40 * * * * ~/trackdirect/server/scripts/remover.sh trackdirect.ini
 0 * * * * ~/trackdirect/server/scripts/ogn_devices_install.sh trackdirect 5432
+* * * * * ~/trackdirect/server/scripts/wsserver.sh trackdirect.ini
+* * * * * ~/trackdirect/server/scripts/collector.sh trackdirect.ini 0
 ```
 
 ### Server Requirements
@@ -261,4 +260,4 @@ How powerful server you need depends on what type of data source you are going t
 Contributions are welcome. Create a fork and make a pull request. Thank you!
 
 ## Disclaimer
-This software is provided "as is" and "with all it's faults". We do not make any commitments or guarantees of any kind regarding security, suitability, errors or other harmful components of this software. You are solely responsible for ensuring that data collected and published using this software complies with all data protection regulations. You are also solely responsible for the protection of your equipment and the backup of your data, and we will not be liable for any damages that you may suffer in connection with the use, modification or distribution of this software.
+These software tools are provided "as is" and "with all it's faults". We do not make any commitments or guarantees of any kind regarding security, suitability, errors or other harmful components of this source code. You are solely responsible for ensuring that data collected and published using these tools complies with all data protection regulations. You are also solely responsible for the protection of your equipment and the backup of your data, and we will not be liable for any damages that you may suffer in connection with the use, modification or distribution of these software tools.
