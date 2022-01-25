@@ -84,17 +84,19 @@
                 // Set this setting to false if you want to stop animations
                 options['animate'] = true;
 
+                // Use Stockholm as default position (will be used if we fail to fetch location from ip-location service)
+                options['defaultLatitude'] = '59.30928';
+                options['defaultLongitude'] = '18.08830';
+
                 // Tip: request position from some ip->location service (here using freegeoip as an example)
                 $.getJSON('https://freegeoip.app/json/', function(data) {
                     if (data.latitude && data.longitude) {
                         options['defaultLatitude'] = data.latitude;
                         options['defaultLongitude'] = data.longitude;
-                    } else {
-                        // Default to Stockholm :-)
-                        options['defaultLatitude'] = '59.30928';
-                        options['defaultLongitude'] = '18.08830';
                     }
-
+                }).fail(function() {
+                    console.log('Failed to fetch location, using default location');
+                }).always(function() {
                     <?php if ($mapapi == 'leaflet-vector') : ?>
                         var maptilerKey = '<insert map key here>';
                         options['mapboxGLStyle'] = 'https://api.maptiler.com/maps/bright/style.json?optimize=true&key=' + maptilerKey;
