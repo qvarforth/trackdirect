@@ -1,0 +1,23 @@
+FROM ubuntu:20.04
+
+RUN apt-get update && apt-get install -y \
+  gnupg \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN printf "deb http://aprsc-dist.he.fi/aprsc/apt focal main" >> /etc/apt/sources.list
+RUN gpg --keyserver keyserver.ubuntu.com --recv C51AA22389B5B74C3896EF3CA72A581E657A2B8D
+RUN gpg --export C51AA22389B5B74C3896EF3CA72A581E657A2B8D | apt-key add -
+
+RUN apt-get update && apt-get install -y \
+  aprsc \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN rm /opt/aprsc/etc/aprsc.conf
+VOLUME /opt/aprsc/etc/aprsc.conf
+
+EXPOSE 10152
+EXPOSE 14580
+EXPOSE 10155
+EXPOSE 14501
+
+CMD /opt/aprsc/sbin/aprsc -u aprsc -t /opt/aprsc -c /etc/aprsc.conf
