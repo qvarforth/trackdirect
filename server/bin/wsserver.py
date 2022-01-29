@@ -47,7 +47,7 @@ def master(options, trackDirectLogger):
                 childFDs={0: 0, 1: 1, 2: 2, port.fileno(): port.fileno()},
                 env=os.environ)
 
-        # reactor.run()
+        reactor.run()
     except Exception as e:
         trackDirectLogger.error(e, exc_info=1)
 
