@@ -24,7 +24,8 @@
         <!-- Map api javascripts and related dependencies -->
         <?php $mapapi = $_GET['mapapi'] ?? 'leaflet'; ?>
         <?php if ($mapapi == 'google') : ?>
-            <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?key=<insert map key here>&libraries=visualization,geometry"></script>
+            <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?libraries=visualization,geometry"></script>
+            <!-- <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?key=<insert map key here>&libraries=visualization,geometry"></script> -->
             <script src="https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier/1.0.3/oms.min.js" integrity="sha512-/3oZy+rGpR6XGen3u37AEGv+inHpohYcJupz421+PcvNWHq2ujx0s1QcVYEiSHVt/SkHPHOlMFn5WDBb/YbE+g==" crossorigin="anonymous"></script>
 
         <?php elseif ($mapapi == 'leaflet' || $mapapi == 'leaflet-vector'): ?>
@@ -52,9 +53,6 @@
         <script>
             // Start everything!!!
             $(document).ready(function() {
-                var wsServerUrl = 'ws://<?php echo $_SERVER['HTTP_HOST']; ?>:9000/ws'; // When using this in production you probably need to change this!!
-                var mapElementId = 'map-container';
-
                 var options = {};
                 options['isMobile'] = false;
                 options['useImperialUnit'] = <?php echo (isImperialUnitUser() ? 'true': 'false'); ?>;
@@ -69,6 +67,7 @@
                 options['zoom'] =       "<?php echo $_GET['zoom'] ?? '' ?>";        // Zoom level
                 options['timetravel'] = "<?php echo $_GET['timetravel'] ?? '' ?>";  // Unix timestamp to travel to
                 options['maptype'] =    "<?php echo $_GET['maptype'] ?? '' ?>";     // May be "roadmap", "terrain" or "satellite"
+                options['mid'] =        "<?php echo $_GET['mid'] ?? '' ?>";         // Render map from "Google My Maps" (requires https)
 
                 options['filters'] = {};
                 options['filters']['sid'] = "<?php echo $_GET['sid'] ?? '' ?>";     // Station id to filter on
@@ -124,6 +123,13 @@
 
                     var supportsWebSockets = 'WebSocket' in window || 'MozWebSocket' in window;
                     if (supportsWebSockets) {
+                        <?php if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') : ?>
+                            var wsServerUrl = 'wss://<?php echo $_SERVER['HTTP_HOST']; ?>:9000/ws';
+                        <?php else : ?>
+                            var wsServerUrl = 'ws://<?php echo $_SERVER['HTTP_HOST']; ?>:9000/ws';
+                        <?php endif; ?>
+                        var mapElementId = 'map-container';
+
                         trackdirect.init(wsServerUrl, mapElementId, options);
                     } else {
                         alert('This service require HTML 5 features to be able to feed you APRS data in real-time. Please upgrade your browser.');
@@ -242,7 +248,11 @@
                 </div>
             </div>
 
-            <a href="javascript:void(0);"onclick="$('#modal-about').show();">
+            <a href="javascript:void(0);"
+                onclick="
+                    $('#modal-about-iframe').attr('src', '/about.php');
+                    $('#modal-about').show();"
+                title="More about this website!">
                 About
             </a>
 
@@ -360,28 +370,13 @@
         </div>
 
         <div id="modal-about" class="modal">
-            <div class="modal-content">
+            <div class="modal-long-content">
                 <div class="modal-content-header">
                     <span class="modal-close" onclick="$('#modal-about').hide();">&times;</span>
                     <span class="modal-title">About</h2>
                 </div>
-                <div class="modal-content-body" style="margin: 0px 20px 20px 20px;">
-                    <p>
-                        Maintainer of this website: <a href="mailto:no@name.com">No Name</a>
-                    </p>
-
-                    <h4>What is APRS?</h4>
-                    <p>
-                        APRS (Automatic Packet Reporting System) is a digital communications system that uses packet radio to send real time tactical information. The APRS network is used by ham radio operators all over the world.
-                    </p>
-                    <p>
-                        Information shared over the APRS network is for example coordinates, altitude, speed, heading, text messages, alerts, announcements, bulletins and weather data.
-                    </p>
-
-                    <h4>APRS Track Direct</h4>
-                    <p>
-                        This website is based on the APRS Track Direct tools. Read more on <a href="https://github.com/qvarforth/trackdirect" target="_blank">GitHub</a>. But please note that the maintainer of APRS Track Direct has nothing to do with this website.
-                    </p>
+                <div class="modal-content-body">
+                    <iframe id="modal-about-iframe" src=""></iframe>
                 </div>
             </div>
         </div>
