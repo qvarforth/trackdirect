@@ -90,8 +90,8 @@
                 options['defaultLatitude'] = '59.30928';
                 options['defaultLongitude'] = '18.08830';
 
-                // Tip: request position from some ip->location service (here using freegeoip as an example)
-                $.getJSON('https://freegeoip.app/json/', function(data) {
+                // Tip: request position from some ip->location service (https://freegeoip.app/json and https://ipapi.co/json is two examples)
+                $.getJSON('https://ipapi.co/json', function(data) {
                     if (data.latitude && data.longitude) {
                         options['defaultLatitude'] = data.latitude;
                         options['defaultLongitude'] = data.longitude;
