@@ -148,15 +148,14 @@ class PacketRepository extends ModelRepository
      * Get latest packet data list by station id  (useful for creating a chart)
      *
      * @param  int   $stationId
-     * @param  int   $startTimestamp
-     * @param  int   $endTimestamp
+     * @param  int   $numberOfHours
      * @param  array $columns
      * @return Array
      */
-    public function getLatestDataListByStationId($stationId, $startTimestamp, $endTimestamp, $columns)
+    public function getLatestDataListByStationId($stationId, $numberOfHours, $columns)
     {
         $result = Array();
-        if (!isInt($stationId) || !isInt($startTimestamp) || !isInt($endTimestamp)) {
+        if (!isInt($stationId) || !isInt($numberOfHours)) {
             return $result;
         }
 
@@ -165,27 +164,13 @@ class PacketRepository extends ModelRepository
             $columns[] = 'timestamp';
         }
 
-        if ($endTimestamp < time()-60) {
-            // Fetching old values
-            $sql = 'select ' . implode(',', $columns) . ', position_timestamp from packet
-                where station_id = ?
-                    and timestamp >= ?
-                    and (timestamp <= ? or (position_timestamp is not null and position_timestamp <= ?))
-                    and (speed is not null or altitude is not null)
-                    and map_id in (1,12,5,7,9)
-                order by timestamp';
-            $arg = [$stationId, $startTimestamp, $endTimestamp, $endTimestamp];
-        } else {
-            // Fetching recent values
-            $sql = 'select ' . implode(',', $columns) . ', position_timestamp from packet
-                where station_id = ?
-                    and timestamp >= ?
-                    and timestamp <= ?
-                    and (speed is not null or altitude is not null)
-                    and map_id in (1,12,5,7,9)
-                order by timestamp';
-            $arg = [$stationId, $startTimestamp, $endTimestamp];
-        }
+        $sql = 'select ' . implode(',', $columns) . ', position_timestamp from packet
+            where station_id = ?
+                and timestamp >= ?
+                and (speed is not null or altitude is not null)
+                and map_id in (1,12,5,7,9)
+            order by timestamp';
+        $arg = [$stationId, time() - $numberOfHours*60*60];
 
         $pdo = PDOConnection::getInstance();
         $stmt = $pdo->prepareAndExec($sql, $arg);
