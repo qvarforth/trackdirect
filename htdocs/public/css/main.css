@@ -93,6 +93,10 @@ a {
   background-image: url(/images/checked.png);
 }
 
+.dropdown-content-checkbox-hidden {
+  display: none !important;
+}
+
 /* Hide the link that should open and close the topnav on small screens */
 .topnav .icon {
   display: none;
