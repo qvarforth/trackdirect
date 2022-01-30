@@ -19,7 +19,6 @@ from trackdirect.database.DatabaseConnection import DatabaseConnection
 from trackdirect.repositories.StationRepository import StationRepository
 from trackdirect.objects.Packet import Packet
 
-
 class TrackDirectDataCollector():
     """An TrackDirectDataCollector instance connects to the data source and saves all received packets to the database
 
@@ -28,12 +27,14 @@ class TrackDirectDataCollector():
         This is useful if you want one connection to the regular APRS-IS network and one connection to the CWOP network.
     """
 
-    def __init__(self, collectorOptions):
+    def __init__(self, collectorOptions, saveOgnStationsWithMissingIdentity):
         """The __init__ method.
 
         Args:
-            collectorOptions (dict):   Contains data like host, port, callsign, passcode, source id
+            collectorOptions (dict):                       Contains data like host, port, callsign, passcode, source id
+            saveOgnStationsWithMissingIdentity (boolean):  True if we should not ignore stationss with a missing identity
         """
+        self.saveOgnStationsWithMissingIdentity = saveOgnStationsWithMissingIdentity
         self.sourceHostname = collectorOptions['host']
         self.sourcePort = collectorOptions['port_full']
         self.numbersInBatch = collectorOptions['numbers_in_batch']
@@ -142,7 +143,7 @@ class TrackDirectDataCollector():
                     'Collector has a delay on %s seconds', self.delay)
 
             packetDict = aprslib.parse(line)
-            parser = AprsPacketParser(self.db)
+            parser = AprsPacketParser(self.db, self.saveOgnStationsWithMissingIdentity)
             parser.setSourceId(self.sourceId)
             packet = parser.getPacket(packetDict, timestamp)
 
@@ -177,7 +178,7 @@ class TrackDirectDataCollector():
         try:
             line = line.decode('utf-8', 'ignore')
             packetDict = self.basicParse(line)
-            parser = AprsPacketParser(self.db)
+            parser = AprsPacketParser(self.db, self.saveOgnStationsWithMissingIdentity)
             parser.setSourceId(self.sourceId)
             packet = parser.getPacket(packetDict, timestamp, True)
             packet.markerId = 1

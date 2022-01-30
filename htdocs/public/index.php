@@ -299,62 +299,70 @@
                     <span class="modal-title">Travel in time</h2>
                 </div>
                 <div class="modal-content-body" style="margin: 0px 20px 20px 20px;">
-                    <p>Select date and time to show map data for (enter time for your locale time zone). The regular time length select box can still be used to select how old data that should be shown (relative to selected date and time).</p>
-                    <p>*Note that the heatmap will still based on data from the latest hour (not the selected date and time).</p>
-                    <p>Date and time:</p>
+                    <?php if (!isTimeTravelAllowed()) : ?>
+                        <div style="text-align: center;">
+                            <p style="max-width: 800px; display: inline-block; color: red;">
+                                The time travel feature that allows you to see the map as it looked like an earlier date is disabled on this website. The reason is probably that it is a requirement from the data source used.
+                            </p>
+                        </div>
+                    <?php else : ?>
+                        <p>Select date and time to show map data for (enter time for your locale time zone). The regular time length select box can still be used to select how old data that should be shown (relative to selected date and time).</p>
+                        <p>*Note that the heatmap will still based on data from the latest hour (not the selected date and time).</p>
+                        <p>Date and time:</p>
 
-                    <form id="timetravel-form">
-                        <select id="timetravel-date" class="timetravel-select form-control">
-                            <option value="0" selected>Select date</option>
-                            <?php for($i=0; $i <= 10; $i++) : ?>
-                                <?php $date = date('Y-m-d', strtotime("-$i days")); ?>
-                                <option value="<?php echo $date; ?>"><?php echo $date; ?></option>
-                            <?php endfor; ?>
-                        </select>
+                        <form id="timetravel-form">
+                            <select id="timetravel-date" class="timetravel-select form-control"
+                                <option value="0" selected>Select date</option>
+                                <?php for($i=0; $i <= 10; $i++) : ?>
+                                    <?php $date = date('Y-m-d', strtotime("-$i days")); ?>
+                                    <option value="<?php echo $date; ?>"><?php echo $date; ?></option>
+                                <?php endfor; ?>
+                            </select>
 
-                        <select id="timetravel-time" class="timetravel-select form-control">
-                            <option value="0" selected>Select time</option>
-                            <option value="00:00">00:00</option>
-                            <option value="01:00">01:00</option>
-                            <option value="02:00">02:00</option>
-                            <option value="03:00">03:00</option>
-                            <option value="04:00">04:00</option>
-                            <option value="05:00">05:00</option>
-                            <option value="06:00">06:00</option>
-                            <option value="07:00">07:00</option>
-                            <option value="08:00">08:00</option>
-                            <option value="09:00">09:00</option>
-                            <option value="10:00">10:00</option>
-                            <option value="11:00">11:00</option>
-                            <option value="12:00">12:00</option>
-                            <option value="13:00">13:00</option>
-                            <option value="14:00">14:00</option>
-                            <option value="15:00">15:00</option>
-                            <option value="16:00">16:00</option>
-                            <option value="17:00">17:00</option>
-                            <option value="18:00">18:00</option>
-                            <option value="19:00">19:00</option>
-                            <option value="20:00">20:00</option>
-                            <option value="21:00">21:00</option>
-                            <option value="22:00">22:00</option>
-                            <option value="23:00">23:00</option>
-                        </select>
-                        <input type="submit"
-                            value="Ok"
-                            onclick="
-                                if ($('#timetravel-date').val() != '0' && $('#timetravel-time').val() != '0') {
-                                    trackdirect.setTimeLength(60, false);
-                                    var ts = moment($('#timetravel-date').val() + ' ' + $('#timetravel-time').val(), 'YYYY-MM-DD HH:mm').unix();
-                                    trackdirect.setTimeTravelTimestamp(ts);
-                                    $('#right-container-timetravel-content').html('Time travel to ' + $('#timetravel-date').val() + ' ' + $('#timetravel-time').val());
-                                    $('#right-container-timetravel').show();
-                                } else {
-                                    trackdirect.setTimeTravelTimestamp(0, true);
-                                    $('#right-container-timetravel').hide();
-                                }
-                                $('#modal-timetravel').hide();
-                                return false;"/>
-                    </form>
+                            <select id="timetravel-time" class="timetravel-select form-control">
+                                <option value="0" selected>Select time</option>
+                                <option value="00:00">00:00</option>
+                                <option value="01:00">01:00</option>
+                                <option value="02:00">02:00</option>
+                                <option value="03:00">03:00</option>
+                                <option value="04:00">04:00</option>
+                                <option value="05:00">05:00</option>
+                                <option value="06:00">06:00</option>
+                                <option value="07:00">07:00</option>
+                                <option value="08:00">08:00</option>
+                                <option value="09:00">09:00</option>
+                                <option value="10:00">10:00</option>
+                                <option value="11:00">11:00</option>
+                                <option value="12:00">12:00</option>
+                                <option value="13:00">13:00</option>
+                                <option value="14:00">14:00</option>
+                                <option value="15:00">15:00</option>
+                                <option value="16:00">16:00</option>
+                                <option value="17:00">17:00</option>
+                                <option value="18:00">18:00</option>
+                                <option value="19:00">19:00</option>
+                                <option value="20:00">20:00</option>
+                                <option value="21:00">21:00</option>
+                                <option value="22:00">22:00</option>
+                                <option value="23:00">23:00</option>
+                            </select>
+                            <input type="submit"
+                                value="Ok"
+                                onclick="
+                                    if ($('#timetravel-date').val() != '0' && $('#timetravel-time').val() != '0') {
+                                        trackdirect.setTimeLength(60, false);
+                                        var ts = moment($('#timetravel-date').val() + ' ' + $('#timetravel-time').val(), 'YYYY-MM-DD HH:mm').unix();
+                                        trackdirect.setTimeTravelTimestamp(ts);
+                                        $('#right-container-timetravel-content').html('Time travel to ' + $('#timetravel-date').val() + ' ' + $('#timetravel-time').val());
+                                        $('#right-container-timetravel').show();
+                                    } else {
+                                        trackdirect.setTimeTravelTimestamp(0, true);
+                                        $('#right-container-timetravel').hide();
+                                    }
+                                    $('#modal-timetravel').hide();
+                                    return false;"/>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

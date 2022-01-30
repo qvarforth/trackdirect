@@ -42,6 +42,10 @@ class AprsISPayloadCreator():
         self.config = TrackDirectConfig()
         self.stationHashTimestamps = {}
 
+        self.saveOgnStationsWithMissingIdentity = False
+        if (self.config.saveOgnStationsWithMissingIdentity) :
+            self.saveOgnStationsWithMissingIdentity = True
+
 
     def getPayloads(self, line, sourceId):
         """Takes a raw packet and returnes a dict with the parsed result
@@ -85,7 +89,7 @@ class AprsISPayloadCreator():
             Packet
         """
         basicPacketDict = aprslib.parse(line)
-        parser = AprsPacketParser(self.db)
+        parser = AprsPacketParser(self.db, self.saveOgnStationsWithMissingIdentity)
         parser.setDatabaseWriteAccess(False)
         parser.setSourceId(sourceId)
         try :
