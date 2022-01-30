@@ -37,6 +37,7 @@ var trackdirect = {
   _trackdirectInitDone: false,
 
   isMobile: false,
+  coverageDataUrl: null,
   settings: {},
 
   /**
@@ -184,9 +185,12 @@ var trackdirect = {
    * @return None
    */
   setCenter: function (latitude, longitude, zoom) {
-    latitude = typeof latitude !== "undefined" ? latitude : this._defaultLatitude;
-    longitude = typeof longitude !== "undefined" ? longitude : this._defaultLongitude;
-    zoom = typeof zoom !== "undefined" ? zoom : this.settings.defaultCurrentZoom;
+    latitude =
+      typeof latitude !== "undefined" ? latitude : this._defaultLatitude;
+    longitude =
+      typeof longitude !== "undefined" ? longitude : this._defaultLongitude;
+    zoom =
+      typeof zoom !== "undefined" ? zoom : this.settings.defaultCurrentZoom;
 
     if (this._map !== null) {
       this._map.setCenter({ lat: latitude, lng: longitude }, zoom);
@@ -418,6 +422,99 @@ var trackdirect = {
 
       // This method will hide marker when infowindow is closed, if nessecery
       marker.hide(5000, true);
+    }
+  },
+
+  /**
+   * Toggle station coverage
+   * @param {int} stationId
+   * @param {string} coverageLinkElementClass
+   */
+  toggleStationCoverage: function (stationId, coverageLinkElementClass) {
+    coverageLinkElementClass =
+      typeof coverageLinkElementClass !== "undefined"
+        ? coverageLinkElementClass
+        : null;
+
+    var coveragePolygon =
+      this._map.markerCollection.getStationCoverage(stationId);
+    if (coveragePolygon !== null && coveragePolygon.isRequestedToBeVisible()) {
+      coveragePolygon.hide();
+      if (coverageLinkElementClass !== null) {
+        $("." + coverageLinkElementClass).html("Coverage");
+      }
+    } else {
+      if (coveragePolygon !== null) {
+        coveragePolygon.show();
+
+        if (!coveragePolygon.hasContent()) {
+          alert(
+            "Currently we do not have enough data to create a max range coverage plot for this station. Try again later!"
+          );
+        } else {
+          if (coverageLinkElementClass !== null) {
+            $("." + coverageLinkElementClass).html("Hide coverage");
+          }
+        }
+      } else {
+        var packet =
+          this._map.markerCollection.getStationLatestPacket(stationId);
+        var center = {
+          lat: parseFloat(packet.latitude),
+          lng: parseFloat(packet.longitude),
+        };
+        var coveragePolygon = new trackdirect.models.StationCoveragePolygon(
+          center,
+          this._map,
+          true
+        );
+        this._map.markerCollection.addStationCoverage(
+          stationId,
+          coveragePolygon
+        );
+        coveragePolygon.showWhenDone();
+
+        if (coverageLinkElementClass !== null) {
+          $("." + coverageLinkElementClass).html(
+            'Loading <i class="fa fa-spinner fa-spin" style="font-size:12px"></i>'
+          );
+          coveragePolygon.addTdListener(
+            "visible",
+            function () {
+              if (!coveragePolygon.hasContent()) {
+                coveragePolygon.hide();
+                alert(
+                  "Currently we do not have enough data to create a max range coverage plot for this station. Try again later!"
+                );
+                $("." + coverageLinkElementClass).html("Coverage");
+              } else {
+                $("." + coverageLinkElementClass).html("Hide coverage");
+              }
+            },
+            true
+          );
+        }
+
+        var me = this;
+        $.getJSON(this.coverageDataUrl + "?id=" + stationId, function (data) {
+          if ("station_id" in data && "coverage" in data) {
+            coveragePolygon.setData(data["coverage"]);
+            var marker =
+              me._map.markerCollection.getStationLatestMarker(stationId);
+            if (marker.isVisible()) {
+              if (coveragePolygon.isRequestedToBeVisible()) {
+                coveragePolygon.show();
+              }
+            }
+          }
+        })
+          .fail(function () {
+            coveragePolygon.hide();
+            alert("Failed to fetch coverage data. Try again later!");
+            $("." + coverageLinkElementClass).html("Coverage");
+          })
+          .always(function () {});
+      }
     }
   },
 
@@ -937,6 +1034,9 @@ var trackdirect = {
     }
     if (typeof options["isMobile"] !== undefined) {
       this.isMobile = options["isMobile"];
+    }
+    if (typeof options["coverageDataUrl"] !== undefined) {
+      this.coverageDataUrl = options["coverageDataUrl"];
     }
     if (typeof options["time"] !== undefined) {
       this._time = options["time"];

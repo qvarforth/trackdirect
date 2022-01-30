@@ -1,0 +1,24 @@
+<?php
+
+require "../../includes/bootstrap.php";
+
+$response = [];
+$station = StationRepository::getInstance()->getObjectById($_GET['id'] ?? null);
+if ($station->isExistingObject()) {
+    $response['station_id'] = $station->id;
+    $response['coverage'] = [];
+
+    $numberOfHours = 10*24; // latest 10 days should be enough
+    $limit = 10000; // Limit number of packets to reduce load on server (and browser)
+    $packetPaths = PacketPathRepository::getInstance()->getLatestDataListByReceivingStationId($_GET['id'] ?? null, $numberOfHours, $limit);
+    foreach ($packetPaths as $path) {
+        $row = [];
+        $row['latitude'] = $path['sending_latitude'];
+        $row['longitude'] = $path['sending_longitude'];
+        $row['distance'] = $path['distance'];
+        $response['coverage'][] = $row;
+    }
+}
+
+header('Content-type: application/json');
+echo json_encode($response);

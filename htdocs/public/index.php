@@ -20,6 +20,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js" integrity="sha512-jGsMH83oKe9asCpkOVkBnUrDDTp8wl+adkB2D+//JtlxO4SrLoJdhbOysIFQJloQFD+C4Fl1rMsQZF76JjV0eQ==" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment-with-locales.min.js" integrity="sha512-LGXaggshOkD/at6PFNcp2V2unf9LzFq6LE+sChH7ceMTDP0g2kn6Vxwgg7wkPP7AAtX+lmPqPdxB47A0Nz0cMQ==" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/autolinker/3.14.2/Autolinker.min.js" integrity="sha512-qyoXjTIJ69k6Ik7CxNVKFAsAibo8vW/s3WV3mBzvXz6Gq0yGup/UsdZBDqFwkRuevQaF2g7qhD3E4Fs+OwS4hw==" crossorigin="anonymous"></script>
+        <script src="/js/convex-hull.js" crossorigin="anonymous"></script>
 
         <!-- Map api javascripts and related dependencies -->
         <?php $mapapi = $_GET['mapapi'] ?? 'leaflet'; ?>
@@ -56,6 +57,7 @@
                 var options = {};
                 options['isMobile'] = false;
                 options['useImperialUnit'] = <?php echo (isImperialUnitUser() ? 'true': 'false'); ?>;
+                options['coverageDataUrl'] = 'data/coverage.php';;
 
                 var md = new MobileDetect(window.navigator.userAgent);
                 if (md.mobile() !== null) {
