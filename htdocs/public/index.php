@@ -20,11 +20,13 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js" integrity="sha512-jGsMH83oKe9asCpkOVkBnUrDDTp8wl+adkB2D+//JtlxO4SrLoJdhbOysIFQJloQFD+C4Fl1rMsQZF76JjV0eQ==" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment-with-locales.min.js" integrity="sha512-LGXaggshOkD/at6PFNcp2V2unf9LzFq6LE+sChH7ceMTDP0g2kn6Vxwgg7wkPP7AAtX+lmPqPdxB47A0Nz0cMQ==" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/autolinker/3.14.2/Autolinker.min.js" integrity="sha512-qyoXjTIJ69k6Ik7CxNVKFAsAibo8vW/s3WV3mBzvXz6Gq0yGup/UsdZBDqFwkRuevQaF2g7qhD3E4Fs+OwS4hw==" crossorigin="anonymous"></script>
+        <script src="/js/convex-hull.js" crossorigin="anonymous"></script>
 
         <!-- Map api javascripts and related dependencies -->
         <?php $mapapi = $_GET['mapapi'] ?? 'leaflet'; ?>
         <?php if ($mapapi == 'google') : ?>
-            <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?key=<insert map key here>&libraries=visualization,geometry"></script>
+            <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?libraries=visualization,geometry"></script>
+            <!-- <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?key=<insert map key here>&libraries=visualization,geometry"></script> -->
             <script src="https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier/1.0.3/oms.min.js" integrity="sha512-/3oZy+rGpR6XGen3u37AEGv+inHpohYcJupz421+PcvNWHq2ujx0s1QcVYEiSHVt/SkHPHOlMFn5WDBb/YbE+g==" crossorigin="anonymous"></script>
 
         <?php elseif ($mapapi == 'leaflet' || $mapapi == 'leaflet-vector'): ?>
@@ -52,12 +54,11 @@
         <script>
             // Start everything!!!
             $(document).ready(function() {
-                var wsServerUrl = 'ws://<?php echo $_SERVER['HTTP_HOST']; ?>:9000/ws'; // When using this in production you probably need to change this!!
-                var mapElementId = 'map-container';
-
                 var options = {};
                 options['isMobile'] = false;
                 options['useImperialUnit'] = <?php echo (isImperialUnitUser() ? 'true': 'false'); ?>;
+                options['coverageDataUrl'] = 'data/coverage.php';;
+                options['defaultTimeLength'] = 60; // In minutes
 
                 var md = new MobileDetect(window.navigator.userAgent);
                 if (md.mobile() !== null) {
@@ -69,6 +70,7 @@
                 options['zoom'] =       "<?php echo $_GET['zoom'] ?? '' ?>";        // Zoom level
                 options['timetravel'] = "<?php echo $_GET['timetravel'] ?? '' ?>";  // Unix timestamp to travel to
                 options['maptype'] =    "<?php echo $_GET['maptype'] ?? '' ?>";     // May be "roadmap", "terrain" or "satellite"
+                options['mid'] =        "<?php echo $_GET['mid'] ?? '' ?>";         // Render map from "Google My Maps" (requires https)
 
                 options['filters'] = {};
                 options['filters']['sid'] = "<?php echo $_GET['sid'] ?? '' ?>";     // Station id to filter on
@@ -88,8 +90,8 @@
                 options['defaultLatitude'] = '59.30928';
                 options['defaultLongitude'] = '18.08830';
 
-                // Tip: request position from some ip->location service (here using freegeoip as an example)
-                $.getJSON('https://freegeoip.app/json/', function(data) {
+                // Tip: request position from some ip->location service (https://freegeoip.app/json and https://ipapi.co/json is two examples)
+                $.getJSON('https://ipapi.co/json', function(data) {
                     if (data.latitude && data.longitude) {
                         options['defaultLatitude'] = data.latitude;
                         options['defaultLongitude'] = data.longitude;
@@ -124,6 +126,13 @@
 
                     var supportsWebSockets = 'WebSocket' in window || 'MozWebSocket' in window;
                     if (supportsWebSockets) {
+                        <?php if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') : ?>
+                            var wsServerUrl = 'wss://<?php echo $_SERVER['HTTP_HOST']; ?>:9000/ws';
+                        <?php else : ?>
+                            var wsServerUrl = 'ws://<?php echo $_SERVER['HTTP_HOST']; ?>:9000/ws';
+                        <?php endif; ?>
+                        var mapElementId = 'map-container';
+
                         trackdirect.init(wsServerUrl, mapElementId, options);
                     } else {
                         alert('This service require HTML 5 features to be able to feed you APRS data in real-time. Please upgrade your browser.');
@@ -165,12 +174,12 @@
                 <div class="dropdown-content" id="tdTopnavTimelength">
                     <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(10); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">10 minutes</a>
                     <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(30); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">30 minutes</a>
-                    <a href="javascript:void(0);" id="tdTopnavTimelength60" onclick="trackdirect.setTimeLength(60); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox dropdown-content-checkbox-active">1 hour</a>
+                    <a href="javascript:void(0);" id="tdTopnavTimelengthDefault" onclick="trackdirect.setTimeLength(60); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">1 hour</a>
                     <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(180); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">3 hours</a>
                     <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(360); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">6 hours</a>
-                    <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(720); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">12 hours</a>
-                    <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(1080); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">18 hours</a>
-                    <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(1440); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">24 hours</a>
+                    <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(720); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox dropdown-content-checkbox-only-filtering dropdown-content-checkbox-hidden">12 hours</a>
+                    <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(1080); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox dropdown-content-checkbox-only-filtering dropdown-content-checkbox-hidden">18 hours</a>
+                    <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(1440); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox dropdown-content-checkbox-only-filtering dropdown-content-checkbox-hidden">24 hours</a>
                 </div>
             </div>
 
@@ -242,7 +251,11 @@
                 </div>
             </div>
 
-            <a href="javascript:void(0);"onclick="$('#modal-about').show();">
+            <a href="javascript:void(0);"
+                onclick="
+                    $('#modal-about-iframe').attr('src', '/about.php');
+                    $('#modal-about').show();"
+                title="More about this website!">
                 About
             </a>
 
@@ -287,62 +300,70 @@
                     <span class="modal-title">Travel in time</h2>
                 </div>
                 <div class="modal-content-body" style="margin: 0px 20px 20px 20px;">
-                    <p>Select date and time to show map data for (enter time for your locale time zone). The regular time length select box can still be used to select how old data that should be shown (relative to selected date and time).</p>
-                    <p>*Note that the heatmap will still based on data from the latest hour (not the selected date and time).</p>
-                    <p>Date and time:</p>
+                    <?php if (!isTimeTravelAllowed()) : ?>
+                        <div style="text-align: center;">
+                            <p style="max-width: 800px; display: inline-block; color: red;">
+                                The time travel feature that allows you to see the map as it looked like an earlier date is disabled on this website. The reason is probably that it is a requirement from the data source used.
+                            </p>
+                        </div>
+                    <?php else : ?>
+                        <p>Select date and time to show map data for (enter time for your locale time zone). The regular time length select box can still be used to select how old data that should be shown (relative to selected date and time).</p>
+                        <p>*Note that the heatmap will still based on data from the latest hour (not the selected date and time).</p>
+                        <p>Date and time:</p>
 
-                    <form id="timetravel-form">
-                        <select id="timetravel-date" class="timetravel-select form-control">
-                            <option value="0" selected>Select date</option>
-                            <?php for($i=0; $i <= 10; $i++) : ?>
-                                <?php $date = date('Y-m-d', strtotime("-$i days")); ?>
-                                <option value="<?php echo $date; ?>"><?php echo $date; ?></option>
-                            <?php endfor; ?>
-                        </select>
+                        <form id="timetravel-form">
+                            <select id="timetravel-date" class="timetravel-select form-control"
+                                <option value="0" selected>Select date</option>
+                                <?php for($i=0; $i <= 10; $i++) : ?>
+                                    <?php $date = date('Y-m-d', strtotime("-$i days")); ?>
+                                    <option value="<?php echo $date; ?>"><?php echo $date; ?></option>
+                                <?php endfor; ?>
+                            </select>
 
-                        <select id="timetravel-time" class="timetravel-select form-control">
-                            <option value="0" selected>Select time</option>
-                            <option value="00:00">00:00</option>
-                            <option value="01:00">01:00</option>
-                            <option value="02:00">02:00</option>
-                            <option value="03:00">03:00</option>
-                            <option value="04:00">04:00</option>
-                            <option value="05:00">05:00</option>
-                            <option value="06:00">06:00</option>
-                            <option value="07:00">07:00</option>
-                            <option value="08:00">08:00</option>
-                            <option value="09:00">09:00</option>
-                            <option value="10:00">10:00</option>
-                            <option value="11:00">11:00</option>
-                            <option value="12:00">12:00</option>
-                            <option value="13:00">13:00</option>
-                            <option value="14:00">14:00</option>
-                            <option value="15:00">15:00</option>
-                            <option value="16:00">16:00</option>
-                            <option value="17:00">17:00</option>
-                            <option value="18:00">18:00</option>
-                            <option value="19:00">19:00</option>
-                            <option value="20:00">20:00</option>
-                            <option value="21:00">21:00</option>
-                            <option value="22:00">22:00</option>
-                            <option value="23:00">23:00</option>
-                        </select>
-                        <input type="submit"
-                            value="Ok"
-                            onclick="
-                                if ($('#timetravel-date').val() != '0' && $('#timetravel-time').val() != '0') {
-                                    trackdirect.setTimeLength(60, false);
-                                    var ts = moment($('#timetravel-date').val() + ' ' + $('#timetravel-time').val(), 'YYYY-MM-DD HH:mm').unix();
-                                    trackdirect.setTimeTravelTimestamp(ts);
-                                    $('#right-container-timetravel-content').html('Time travel to ' + $('#timetravel-date').val() + ' ' + $('#timetravel-time').val());
-                                    $('#right-container-timetravel').show();
-                                } else {
-                                    trackdirect.setTimeTravelTimestamp(0, true);
-                                    $('#right-container-timetravel').hide();
-                                }
-                                $('#modal-timetravel').hide();
-                                return false;"/>
-                    </form>
+                            <select id="timetravel-time" class="timetravel-select form-control">
+                                <option value="0" selected>Select time</option>
+                                <option value="00:00">00:00</option>
+                                <option value="01:00">01:00</option>
+                                <option value="02:00">02:00</option>
+                                <option value="03:00">03:00</option>
+                                <option value="04:00">04:00</option>
+                                <option value="05:00">05:00</option>
+                                <option value="06:00">06:00</option>
+                                <option value="07:00">07:00</option>
+                                <option value="08:00">08:00</option>
+                                <option value="09:00">09:00</option>
+                                <option value="10:00">10:00</option>
+                                <option value="11:00">11:00</option>
+                                <option value="12:00">12:00</option>
+                                <option value="13:00">13:00</option>
+                                <option value="14:00">14:00</option>
+                                <option value="15:00">15:00</option>
+                                <option value="16:00">16:00</option>
+                                <option value="17:00">17:00</option>
+                                <option value="18:00">18:00</option>
+                                <option value="19:00">19:00</option>
+                                <option value="20:00">20:00</option>
+                                <option value="21:00">21:00</option>
+                                <option value="22:00">22:00</option>
+                                <option value="23:00">23:00</option>
+                            </select>
+                            <input type="submit"
+                                value="Ok"
+                                onclick="
+                                    if ($('#timetravel-date').val() != '0' && $('#timetravel-time').val() != '0') {
+                                        trackdirect.setTimeLength(60, false);
+                                        var ts = moment($('#timetravel-date').val() + ' ' + $('#timetravel-time').val(), 'YYYY-MM-DD HH:mm').unix();
+                                        trackdirect.setTimeTravelTimestamp(ts);
+                                        $('#right-container-timetravel-content').html('Time travel to ' + $('#timetravel-date').val() + ' ' + $('#timetravel-time').val());
+                                        $('#right-container-timetravel').show();
+                                    } else {
+                                        trackdirect.setTimeTravelTimestamp(0, true);
+                                        $('#right-container-timetravel').hide();
+                                    }
+                                    $('#modal-timetravel').hide();
+                                    return false;"/>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -360,28 +381,13 @@
         </div>
 
         <div id="modal-about" class="modal">
-            <div class="modal-content">
+            <div class="modal-long-content">
                 <div class="modal-content-header">
                     <span class="modal-close" onclick="$('#modal-about').hide();">&times;</span>
                     <span class="modal-title">About</h2>
                 </div>
-                <div class="modal-content-body" style="margin: 0px 20px 20px 20px;">
-                    <p>
-                        Maintainer of this website: <a href="mailto:no@name.com">No Name</a>
-                    </p>
-
-                    <h4>What is APRS?</h4>
-                    <p>
-                        APRS (Automatic Packet Reporting System) is a digital communications system that uses packet radio to send real time tactical information. The APRS network is used by ham radio operators all over the world.
-                    </p>
-                    <p>
-                        Information shared over the APRS network is for example coordinates, altitude, speed, heading, text messages, alerts, announcements, bulletins and weather data.
-                    </p>
-
-                    <h4>APRS Track Direct</h4>
-                    <p>
-                        This website is based on the APRS Track Direct tools. Read more on <a href="https://github.com/qvarforth/trackdirect" target="_blank">GitHub</a>. But please note that the maintainer of APRS Track Direct has nothing to do with this website.
-                    </p>
+                <div class="modal-content-body">
+                    <iframe id="modal-about-iframe" src=""></iframe>
                 </div>
             </div>
         </div>

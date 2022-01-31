@@ -11,7 +11,7 @@ body {
   height: 100%;
 
   font-family: "Sans-serif", "Helvetica" !important;
-  font-size: 14px;
+  font-size: 12px;
   background: #fff;
 }
 
@@ -91,6 +91,10 @@ a {
 
 .dropdown-content-checkbox-active {
   background-image: url(/images/checked.png);
+}
+
+.dropdown-content-checkbox-hidden {
+  display: none !important;
 }
 
 /* Hide the link that should open and close the topnav on small screens */
@@ -264,7 +268,7 @@ a {
   overflow: hidden;
 }
 
-#modal-station-info-iframe, #modal-station-search-iframe {
+#modal-station-info-iframe, #modal-station-search-iframe, #modal-about-iframe {
   width: 100%;
   height: 100%;
   border: none;

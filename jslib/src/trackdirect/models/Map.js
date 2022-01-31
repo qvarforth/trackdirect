@@ -446,6 +446,11 @@ trackdirect.models.Map.prototype.resetAllMarkers = function () {
         marker.hide();
         marker.hideMarkerPrevPosition();
         marker.hideMarkerTail();
+
+        var stationCoverage = this.markerCollection.getStationCoverage(marker.packet.station_id);
+        if (stationCoverage) {
+          stationCoverage.hide();
+        }
       }
       this.markerCollection.removeMarker(i);
     }
@@ -1129,6 +1134,20 @@ trackdirect.models.Map.prototype._showMarkersInNewVisibleMapSectors = function (
               []
             );
           }
+        }
+      }
+    }
+
+    // Also make sure all stations with a visible coverage is shown
+    var stationIdList =
+      this.markerCollection.getStationIdListWithVisibleCoverage();
+    for (var i = 0; i < stationIdList.length; i++) {
+      var latestMarker = this.markerCollection.getStationLatestMarker(
+        stationIdList[i]
+      );
+      if (latestMarker !== null) {
+        if (latestMarker.shouldMarkerBeVisible() && latestMarker.showAsMarker) {
+          latestMarker.show();
         }
       }
     }

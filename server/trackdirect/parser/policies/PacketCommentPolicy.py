@@ -36,7 +36,7 @@ class PacketCommentPolicy():
         return self._formatComment(comment)
 
     def _formatComment(self, comment):
-        """Remove junk from comment (probably characters that should have been picked up during earlier parsing)
+        """Remove junk from comment
 
         Args:
             comment (string):   Comment from packet
@@ -54,13 +54,13 @@ class PacketCommentPolicy():
         comment = self._rchop(comment, "_%")
         comment = self._lchop(comment, "_#")
         comment = self._rchop(comment, "_#")
-        comment = self._rchop(comment, "_\"")
         comment = self._lchop(comment, "_\"")
+        comment = self._rchop(comment, "_\"")
         comment = self._lchop(comment, "_$")
         comment = self._rchop(comment, "_$")
         comment = self._lchop(comment, "_)")
-        comment = self._lchop(comment, "_(")
         comment = self._rchop(comment, "_)")
+        comment = self._lchop(comment, "_(")
         comment = self._rchop(comment, "_(")
         comment = self._lchop(comment, "()")
         comment = self._rchop(comment, "()")
@@ -75,8 +75,8 @@ class PacketCommentPolicy():
         comment = self._lchop(comment, "1}")
         comment = self._rchop(comment, "1}")
         comment = self._lchop(comment, "_1")
-        comment = self._lchop(comment, "_1")
-        comment = self._rchop(comment, "\"(}")
+        comment = self._rchop(comment, "_1")
+        comment = self._lchop(comment, "\"(}")
         comment = self._rchop(comment, "\"(}")
         comment = self._rchop(comment, "=")
         comment = self._lchop(comment, "]")

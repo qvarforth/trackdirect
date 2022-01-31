@@ -48,6 +48,15 @@ class TrackDirectConfig(Singleton):
         self.daysToSaveTelemetryData = int(configParser.get(
             'database', 'days_to_save_telemetry_data').strip('"'))
 
+        self.saveOgnStationsWithMissingIdentity = False
+        try:
+            saveOgnStationsWithMissingIdentity = configParser.get(
+                'database', 'save_ogn_stations_with_missing_identity').strip('"')
+            if (saveOgnStationsWithMissingIdentity == "1"):
+                self.saveOgnStationsWithMissingIdentity = True
+        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+            pass
+
         # Websocket server
         self.websocketHostname = configParser.get(
             'websocket_server', 'host').strip('"')
@@ -69,11 +78,11 @@ class TrackDirectConfig(Singleton):
 
         allowTimeTravel = configParser.get(
             'websocket_server', 'allow_time_travel').strip('"')
-        self.allowTimeTravel = True
-        if (allowTimeTravel == "0"):
-            self.allowTimeTravel = False
+        self.allowTimeTravel = False
+        if (allowTimeTravel == "1"):
+            self.allowTimeTravel = True
 
-        # Websocket server APRS-IS connection
+        # Websocket server APRS connection (we support 2 different sources, more can be added...)
         try:
             self.websocketAprsHost1 = configParser.get(
                 'websocket_server', 'aprs_host1').strip('"')
@@ -97,6 +106,14 @@ class TrackDirectConfig(Singleton):
             self.websocketAprsSourceId2 = None
             self.websocketAprsHost2 = None
             self.websocketAprsPort2 = None
+
+        if (self.websocketAprsSourceId1 == 5 or self.websocketAprsSourceId2 == 5) :
+            # At least one source is of type OGN, disable display of older data
+            self.allowTimeTravel = False
+            if (self.maxDefaultTime > 1440) :
+                self.maxDefaultTime = 1440
+            if (self.maxFilterTime > 1440) :
+                self.maxDefaultTime = 1440
 
         # Collectors
         for collectorNumber in range(0, 5):
@@ -128,6 +145,13 @@ class TrackDirectConfig(Singleton):
 
                 self.collector[collectorNumber]['error_log'] = configParser.get(
                     'collector' + str(collectorNumber), 'error_log').strip('"')
+
+                if (self.websocketAprsSourceId1 == 5 or self.websocketAprsSourceId2 == 5) :
+                    # source is of type OGN, make sure we do not save to many packets (will cause to high load on db)
+                    if (self.collector[collectorNumber]['frequency_limit'] < 10) :
+                        self.collector[collectorNumber]['frequency_limit'] = 10
+                    self.collector[collectorNumber]['save_fast_packets'] = False
+
 
             except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
                 self.collector[collectorNumber]['source_id'] = None

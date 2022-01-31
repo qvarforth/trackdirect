@@ -51,13 +51,15 @@ class AprsPacketParser():
     """AprsPacketParser tackes a aprslib output and converts it to a Trackdirect Packet
     """
 
-    def __init__(self, db):
+    def __init__(self, db, saveOgnStationsWithMissingIdentity):
         """The __init__ method.
 
         Args:
-            db (psycopg2.Connection):    Database connection
+            db (psycopg2.Connection):                       Database connection
+            saveOgnStationsWithMissingIdentity (boolean):   True if we should not ignore stationss with a missing identity
         """
         self.db = db
+        self.saveOgnStationsWithMissingIdentity = saveOgnStationsWithMissingIdentity
         self.logger = logging.getLogger('trackdirect')
 
         self.databaseWriteAccess = True
@@ -315,6 +317,9 @@ class AprsPacketParser():
                 return
 
             elif (not ognDataPolicy.isAllowedToIdentify):
+                if (not self.saveOgnStationsWithMissingIdentity) :
+                    self.packet.mapId = 15
+                    return
                 self.isHiddenStation = True
                 self.data["from"] = self._getHiddenStationName()
                 self.data["object_name"] = None

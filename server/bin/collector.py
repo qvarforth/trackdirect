@@ -26,6 +26,10 @@ if __name__ == '__main__':
         collectorNumber = int(sys.argv[2])
     collectorOptions = config.collector[collectorNumber]
 
+    saveOgnStationsWithMissingIdentity = False
+    if (config.saveOgnStationsWithMissingIdentity) :
+        saveOgnStationsWithMissingIdentity = True
+
     fh = logging.handlers.RotatingFileHandler(filename=os.path.expanduser(
         collectorOptions['error_log']), mode='a', maxBytes=1000000, backupCount=10)
     fh.setLevel(logging.WARNING)
@@ -47,7 +51,8 @@ if __name__ == '__main__':
 
     try:
         trackDirectDataCollector = trackdirect.TrackDirectDataCollector(
-            collectorOptions)
+            collectorOptions,
+            saveOgnStationsWithMissingIdentity)
         trackDirectDataCollector.run()
     except Exception as e:
         trackDirectLogger.error(e, exc_info=1)

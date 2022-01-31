@@ -1224,6 +1224,14 @@ trackdirect.models.InfoWindow.prototype._getMenuDiv = function (
     menuUl.append(this._getMenuDivCenterLink(isInfoWindowOpen));
   }
   menuUl.append(this._getMenuDivZoomLink(isInfoWindowOpen));
+  if (
+    !trackdirect.isEmbedded &&
+    !inIframe() &&
+    !this._marker.isMovingStation() &&
+    this._marker.packet.source_id != 2
+  ) {
+    menuUl.append(this._getMenuDivCoverageLink());
+  }
   return menuWrapperDiv;
 };
 
@@ -1355,6 +1363,41 @@ trackdirect.models.InfoWindow.prototype._getMenuDivFilterLink = function () {
   } else {
     menuLink.html("Filter");
     menuLink.attr("href", "/sid/" + this._marker.packet.station_id);
+  }
+  menuLi.append(menuLink);
+  return menuLi;
+};
+
+/**
+ * Get the info window menu coverage link
+ * @return {object}
+ */
+trackdirect.models.InfoWindow.prototype._getMenuDivCoverageLink = function () {
+  var coverageLinkElementClass =
+    "stationCoverageLink" + this._marker.packet.station_id;
+  var menuLi = $(document.createElement("li"));
+  menuLi.css(this._getMenuDivLinkCss());
+  var menuLink = $(document.createElement("a"));
+  menuLink.css("color", "#337ab7");
+  menuLink.css("white-space", "nowrap");
+  menuLink.attr("href", "#");
+  menuLink.addClass(coverageLinkElementClass);
+  menuLink.attr(
+    "onclick",
+    "trackdirect.toggleStationCoverage(" +
+      this._marker.packet.station_id +
+      ', "' +
+      coverageLinkElementClass +
+      '"); return false;'
+  );
+
+  var coveragePolygon = this._defaultMap.markerCollection.getStationCoverage(
+    this._marker.packet.station_id
+  );
+  if (coveragePolygon !== null && coveragePolygon.isRequestedToBeVisible()) {
+    menuLink.html("Hide Coverage");
+  } else {
+    menuLink.html("Coverage");
   }
   menuLi.append(menuLink);
   return menuLi;

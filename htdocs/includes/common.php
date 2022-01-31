@@ -1745,3 +1745,34 @@ function getSymbolDescription($symbolTable, $symbol, $includeUndefinedOverlay)
         }
     }
 }
+
+
+/**
+ * Returnes true if the time travel feature works
+ *
+ * @return boolean
+ */
+function isTimeTravelAllowed() {
+    $isTimeTravelAllowed = false;
+    $config = parse_ini_file(ROOT . '/../config/trackdirect.ini', true);
+
+    if (isset($config['websocket_server'])) {
+        if (isset($config['websocket_server']['allow_time_travel'])) {
+            if ($config['websocket_server']['allow_time_travel'] == '1') {
+                $isTimeTravelAllowed = true;
+            }
+        }
+
+        if (isset($config['websocket_server']['aprs_source_id1']) && $config['websocket_server']['aprs_source_id1'] == 5) {
+            // Data source is OGN, disable time travel (server will block it anyway)
+            $isTimeTravelAllowed = false;
+        }
+
+        if (isset($config['websocket_server']['aprs_source_id2']) && $config['websocket_server']['aprs_source_id2'] == 5) {
+            // Data source is OGN, disable time travel (server will block it anyway)
+            $isTimeTravelAllowed = false;
+        }
+    }
+
+    return $isTimeTravelAllowed;
+}
