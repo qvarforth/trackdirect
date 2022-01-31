@@ -7,16 +7,9 @@ name: Create and publish a Docker image
 
 on: [push, pull_request]
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   docker:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -31,25 +24,26 @@ jobs:
           context: .
           file: aprsc.dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/aprsc:latest
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: db.dockerfile
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/trackdirect-db:latest
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: trackdirect-apache.dockerfile
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/trackdirect-apache:latest
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: trackdirect-python2.dockerfile
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/trackdirect-python2:latest
+          tags: peterus/aprsc
+#      - name: Build and push Docker image
+#        uses: docker/build-push-action@v2
+#        with:
+#          context: .
+#          file: db.dockerfile
+#          push: true
+#          tags: ${{ secrets.DOCKERHUB_USERNAME }}/trackdirect-db:latest
+#      - name: Build and push Docker image
+#        uses: docker/build-push-action@v2
+#        with:
+#          context: .
+#          file: trackdirect-apache.dockerfile
+#          push: true
+#          tags: ${{ secrets.DOCKERHUB_USERNAME }}/trackdirect-apache:latest
+#      - name: Build and push Docker image
+#        uses: docker/build-push-action@v2
+#        with:
+#          context: .
+#          file: trackdirect-python2.dockerfile
+#          push: true
+#          tags: ${{ secrets.DOCKERHUB_USERNAME }}/trackdirect-python2:latest
+#
