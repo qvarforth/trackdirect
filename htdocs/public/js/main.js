@@ -19,6 +19,11 @@ if (!inIframe()) {
   $("#tdTopnav").hide();
 }
 
+// Set correct time length option to active
+jQuery(document).ready(function ($) {
+  $("#tdTopnavTimelengthDefault").addClass("dropdown-content-checkbox-active");
+});
+
 // Open station dialog if user clicked on station name
 jQuery(document).ready(function ($) {
   trackdirect.addListener("station-name-clicked", function (data) {
@@ -86,9 +91,10 @@ jQuery(document).ready(function ($) {
       // Time travel is stopped when filtering is stopped
       $("#right-container-timetravel").hide();
 
-      // Tail length is reset to 60 minutes when filtering is stopped
-      $("#tdTopnavTimelength>a").removeClass("active");
-      $("#tdTopnavTimelength60").addClass("active");
+      // Reset tail length to default when filtering is stopped
+      $("#tdTopnavTimelength>a").removeClass("dropdown-content-checkbox-active");
+      $("#tdTopnavTimelengthDefault").addClass("dropdown-content-checkbox-active");
+      $(".dropdown-content-checkbox-only-filtering").addClass("dropdown-content-checkbox-hidden");
     } else {
       var counts = {};
       for (var i = 0; i < packets.length; i++) {
@@ -102,6 +108,7 @@ jQuery(document).ready(function ($) {
         "Filtering on " + Object.keys(counts).length + " station(s)"
       );
       $("#right-container-filtered").show();
+      $(".dropdown-content-checkbox-only-filtering").removeClass("dropdown-content-checkbox-hidden");
     }
   });
 });

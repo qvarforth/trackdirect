@@ -35,6 +35,9 @@ trackdirect.models.MarkerCollection = function () {
   // Contains arrays of markerKeys and is indexed by mapSectorId
   this._mapSectorMarkerIdKeys = {};
 
+  // Contains coverage values indexed by stationId
+  this._stationCoverage = {};
+
   this.resetAllMarkers();
 };
 
@@ -274,6 +277,67 @@ trackdirect.models.MarkerCollection.prototype.hasDotMarkers = function (
     markerIdKey in this._dotMarkers &&
     this._dotMarkers[markerIdKey] !== null &&
     this._dotMarkers[markerIdKey].length > 0
+  ) {
+    return true;
+  }
+  return false;
+};
+
+/*
+ * Add dot marker for specified markerIdKey
+ * @param {int} markerIdKey
+ * @param {object} dotMarker
+ */
+trackdirect.models.MarkerCollection.prototype.addStationCoverage = function (
+  stationId,
+  stationCoveragePolygon
+) {
+  this._stationCoverage[stationId] = stationCoveragePolygon;
+};
+
+/**
+ * Returns the station coverage
+ * @param {int} stationId
+ * @return {StationCoveragePolygon}
+ */
+trackdirect.models.MarkerCollection.prototype.getStationCoverage = function (
+  stationId
+) {
+  if (
+    stationId in this._stationCoverage &&
+    this._stationCoverage[stationId] !== null
+  ) {
+    return this._stationCoverage[stationId];
+  }
+  return null;
+};
+
+/**
+ * Returns an array of stations the has a visible coverage
+ * @return {array}
+ */
+trackdirect.models.MarkerCollection.prototype.getStationIdListWithVisibleCoverage =
+  function () {
+    var result = [];
+    for (var stationId in this._stationCoverage) {
+      if (this._stationCoverage[stationId].isRequestedToBeVisible()) {
+        result.push(stationId);
+      }
+    }
+    return result;
+  };
+
+/**
+ * Returns true if specified station has a coverage polygon
+ * @param {int} stationId
+ * @return {boolean}
+ */
+trackdirect.models.MarkerCollection.prototype.hasCoveragePolygon = function (
+  stationId
+) {
+  if (
+    stationId in this._stationCoverage &&
+    this._stationCoverage[stationId] !== null
   ) {
     return true;
   }
@@ -727,6 +791,7 @@ trackdirect.models.MarkerCollection.prototype.resetAllMarkers = function () {
   this._senderLastMarker = {};
   this._positionMarkersIdKeys = {};
   this._mapSectorMarkerIdKeys = {};
+  this._stationCoverage = {};
 };
 
 /**

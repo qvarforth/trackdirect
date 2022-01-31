@@ -1,6 +1,6 @@
 # APRS Track Direct
 
-APRS Track Direct is a collection of tools that can be used to run an APRS website. You can use data from APRS-IS, CWOP-IS, OGN, HABHUB, CBAPRS or any other source that uses the APRS specification.
+APRS Track Direct is a collection of tools that can be used to run an APRS website. You can use data from APRS-IS, CWOP-IS, OGN or any other source that uses the APRS specification.
 
 Tools included are an APRS data collector, a websocket server, a javascript library (websocket client and more), a heatmap generator and a website example (which can of course be used as is).
 
@@ -61,7 +61,7 @@ sudo python2 setup.py install
 ```
 
 ### Set up aprsc
-You should not to connect to a public APRS server (APRS-IS, CWOP-IS or OGN server). The collector will use a full feed connection and each websocket client will use a filtered feed connection. To not cause extra load on public servers it is better to run your own aprsc server and let your collector and all websocket connections connect to that instead (will result in only one full feed connection to a public APRS server).
+You should not to connect your collector and websocket server directly to a public APRS server (APRS-IS, CWOP-IS or OGN server). The collector will use a full feed connection and each websocket client will use a filtered feed connection (through the websocket server). To not cause extra load on public servers it is better to run your own aprsc server and let your collector and all websocket connections connect to that instead (will result in only one full feed connection to a public APRS server).
 
 Note that it seems like aprsc needs to run on a server with a public ip, otherwise uplink won't work.
 
@@ -114,7 +114,7 @@ ALTER ROLE {USER} WITH SUPERUSER;
 GRANT ALL PRIVILEGES ON DATABASE "trackdirect" to {USER};
 ```
 
-Remember to add password to password-file:
+Might be good to add password to password-file:
 ```
 vi ~/.pgpass
 ```

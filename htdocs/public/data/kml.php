@@ -1,9 +1,9 @@
 <?php
 
-require "../includes/bootstrap.php";
+require "../../includes/bootstrap.php";
 
-if (isset($_GET['sid']) && isInt($_GET['sid'])) {
-    $station = StationRepository::getInstance()->getObjectById($_GET['sid']);
+if (isset($_GET['id']) && isInt($_GET['id'])) {
+    $station = StationRepository::getInstance()->getObjectById($_GET['id']);
 } else {
     $station = new Station(null);
 }

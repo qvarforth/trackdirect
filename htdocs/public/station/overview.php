@@ -52,6 +52,7 @@
                 <div class="modal-inner-content-menu">
                     <span>Overview</span>
                     <a title="Statistics" href="/station/statistics.php?id=<?php echo $station->id ?>&imperialUnits=<?php echo $_GET['imperialUnits'] ?? 0; ?>">Statistics</a>
+                    <a title="Trail Chart" href="/station/trail.php?id=<?php echo $station->id ?>&imperialUnits=<?php echo $_GET['imperialUnits'] ?? 0; ?>">Trail Chart</a>
                     <a title="Weather" href="/station/weather.php?id=<?php echo $station->id ?>&imperialUnits=<?php echo $_GET['imperialUnits'] ?? 0; ?>">Weather</a>
                     <a title="Telemetry" href="/station/telemetry.php?id=<?php echo $station->id ?>&imperialUnits=<?php echo $_GET['imperialUnits'] ?? 0; ?>">Telemetry</a>
                     <a title="Raw packets" href="/station/raw.php?id=<?php echo $station->id ?>&imperialUnits=<?php echo $_GET['imperialUnits'] ?? 0; ?>">Raw packets</a>
@@ -436,7 +437,7 @@
                                 <?php endif; ?>
                             <?php endif; ?>
 
-                            <div>Export <a href="/kml.php?sid=<?php echo $station->id; ?>"><?php echo htmlspecialchars($station->name); ?></a> data to KML</div>
+                            <div>Export <a href="/data/kml.php?id=<?php echo $station->id; ?>"><?php echo htmlspecialchars($station->name); ?></a> data to KML</div>
                         </div>
                         <div style="clear: both;"></div>
                     <?php endif; ?>

@@ -232,7 +232,7 @@ class PacketBatchInserter():
                         distance = packet.getTransmitDistance()
 
                         pathTuples.append(
-                            (packet.id, stationId, packet.stationId, latitude, longitude, packet.timestamp, distance, number))
+                            (packet.id, stationId, latitude, longitude, packet.timestamp, distance, number, packet.stationId, packet.latitude, packet.longitude))
                         number += 1
             i += 1
 
@@ -240,9 +240,9 @@ class PacketBatchInserter():
         if pathTuples:
             try:
                 argString = ','.join(cur.mogrify(
-                    "(%s, %s, %s, %s, %s, %s, %s, %s)", x) for x in pathTuples)
+                    "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in pathTuples)
                 cur.execute("insert into " + packetPathTable +
-                            "(packet_id, station_id, sending_station_id, latitude, longitude, timestamp, distance, number) values " + argString)
+                            "(packet_id, station_id, latitude, longitude, timestamp, distance, number, sending_station_id, sending_latitude, sending_longitude) values " + argString)
             except psycopg2.InterfaceError as e:
                 # Connection to database is lost, better just exit
                 raise e
