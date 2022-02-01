@@ -73,3 +73,5 @@ services:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: foobar
       POSTGRES_DB: trackdirect
+    volumes:
+      - $PWD/db:/var/lib/postgresql/data
