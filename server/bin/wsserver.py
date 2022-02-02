@@ -26,7 +26,8 @@ def master(options, trackDirectLogger):
 
     try:
         factory = WebSocketServerFactory(
-            "ws://" + config.websocketHostname + ":" + str(config.websocketPort))
+            "ws://" + config.websocketHostname + ":" + str(config.websocketPort),
+            externalPort = config.websocketExternalPort)
         factory.protocol = trackdirect.TrackDirectWebsocketServer
 
         resource = WebSocketResource(factory)
@@ -66,7 +67,8 @@ def worker(options, trackDirectLogger):
         trackDirectLogger.warning("Starting worker with PID " + str(workerPid))
 
         factory = WebSocketServerFactory(
-            "ws://" + config.websocketHostname + ":" + str(config.websocketPort))
+            "ws://" + config.websocketHostname + ":" + str(config.websocketPort),
+            externalPort = config.websocketExternalPort)
         factory.protocol = trackdirect.TrackDirectWebsocketServer
 
         # Enable WebSocket extension "permessage-deflate".
@@ -98,7 +100,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Track Direct WebSocket Server')
     parser.add_argument('--config', dest='config', type=str, default=None,
-                        help='The Track Direct config file, e.g. aprsdirect.ini')
+                        help='The Track Direct config file, e.g. trackdirect.ini')
     parser.add_argument('--workers', dest='workers', type=int, default=DEFAULT_WORKERS,
                         help='Number of workers to spawn - should fit the number of (physical) CPU cores.')
     parser.add_argument('--fd', dest='fd', type=int, default=None,
