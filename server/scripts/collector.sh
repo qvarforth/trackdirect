@@ -17,6 +17,6 @@ else
 
     export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect:$CURRENTDIR/../../heatmap-2.2.1/
     cd $CURRENTDIR/..
-    python2 ./bin/collector.py $CONFIGFILE $COLLECTORNUMBER 2>&1 &
+    python2 ./bin/collector.py $CONFIGFILE $COLLECTORNUMBER
     exit 0
 fi
