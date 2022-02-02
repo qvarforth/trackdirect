@@ -20,31 +20,35 @@ if __name__ == '__main__':
     config = trackdirect.TrackDirectConfig()
     config.populate(sys.argv[1])
 
-    if (len(sys.argv) < 3) :
+    if (len(sys.argv) < 3):
         collectorNumber = 0
-    else :
+    else:
         collectorNumber = int(sys.argv[2])
     collectorOptions = config.collector[collectorNumber]
 
     saveOgnStationsWithMissingIdentity = False
-    if (config.saveOgnStationsWithMissingIdentity) :
+    if (config.saveOgnStationsWithMissingIdentity):
         saveOgnStationsWithMissingIdentity = True
 
     fh = logging.handlers.RotatingFileHandler(filename=os.path.expanduser(
         collectorOptions['error_log']), mode='a', maxBytes=1000000, backupCount=10)
-    fh.setLevel(logging.WARNING)
 
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
 
+    consoleHandler = logging.StreamHandler()
+    consoleHandler.setFormatter(formatter)
+
     trackDirectLogger = logging.getLogger('trackdirect')
     trackDirectLogger.addHandler(fh)
-    trackDirectLogger.setLevel(logging.WARNING)
+    trackDirectLogger.addHandler(consoleHandler)
+    trackDirectLogger.setLevel(logging.INFO)
 
     aprslibLogger = logging.getLogger('aprslib.IS')
     aprslibLogger.addHandler(fh)
-    aprslibLogger.setLevel(logging.WARNING)
+    aprslibLogger.addHandler(consoleHandler)
+    aprslibLogger.setLevel(logging.INFO)
 
     trackDirectLogger.warning("Starting (Collecting from " + collectorOptions['host'] + ":" + str(
         collectorOptions['port_full']) + " using " + collectorOptions['callsign'] + " and " + str(collectorOptions['passcode']) + ")")

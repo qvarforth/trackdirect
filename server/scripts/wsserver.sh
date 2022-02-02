@@ -15,6 +15,6 @@ else
 
     export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect:$CURRENTDIR/../../heatmap-2.2.1/
     cd $CURRENTDIR/..
-    python2 $CURRENTDIR/../bin/wsserver.py --config $CONFIGFILE 2>&1 &
+    python2 $CURRENTDIR/../bin/wsserver.py --config $CONFIGFILE
     exit 0
 fi

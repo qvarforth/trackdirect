@@ -35,9 +35,8 @@ def master(options, trackDirectLogger):
         site = Site(root)
 
         port = reactor.listenTCP(config.websocketPort, site)
-        port.stopReading()
 
-        for i in range(options.workers):
+        for i in range(options.workers - 1):
             args = [sys.executable, "-u", __file__]
             args.extend(sys.argv[1:])
             args.extend(["--fd", str(port.fileno()), "--cpuid", str(i)])
@@ -47,7 +46,7 @@ def master(options, trackDirectLogger):
                 childFDs={0: 0, 1: 1, 2: 2, port.fileno(): port.fileno()},
                 env=os.environ)
 
-        # reactor.run()
+        reactor.run()
     except Exception as e:
         trackDirectLogger.error(e, exc_info=1)
 
@@ -116,20 +115,25 @@ if __name__ == '__main__':
 
     fh = logging.handlers.RotatingFileHandler(filename=os.path.expanduser(
         config.errorLog), mode='a', maxBytes=1000000, backupCount=10)
-    fh.setLevel(logging.WARNING)
     fh.setFormatter(formatter)
+
+    consoleHandler = logging.StreamHandler()
+    consoleHandler.setFormatter(formatter)
 
     trackDirectLogger = logging.getLogger('trackdirect')
     trackDirectLogger.addHandler(fh)
+    trackDirectLogger.addHandler(consoleHandler)
+    trackDirectLogger.setLevel(logging.INFO)
 
     fh2 = logging.handlers.RotatingFileHandler(filename=os.path.expanduser(
         config.errorLog), mode='a', maxBytes=1000000, backupCount=10)
     # aprslib is logging non important "socket error on ..." using ERROR-level
-    fh2.setLevel(logging.CRITICAL)
     fh2.setFormatter(formatter)
 
     aprslibLogger = logging.getLogger('aprslib.IS')
     aprslibLogger.addHandler(fh2)
+    aprslibLogger.addHandler(consoleHandler)
+    aprslibLogger.setLevel(logging.INFO)
 
     if options.fd is not None:
         worker(options, trackDirectLogger)
