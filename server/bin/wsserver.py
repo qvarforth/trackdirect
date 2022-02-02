@@ -116,20 +116,25 @@ if __name__ == '__main__':
 
     fh = logging.handlers.RotatingFileHandler(filename=os.path.expanduser(
         config.errorLog), mode='a', maxBytes=1000000, backupCount=10)
-    fh.setLevel(logging.WARNING)
     fh.setFormatter(formatter)
+
+    consoleHandler = logging.StreamHandler()
+    consoleHandler.setFormatter(formatter)
 
     trackDirectLogger = logging.getLogger('trackdirect')
     trackDirectLogger.addHandler(fh)
+    trackDirectLogger.addHandler(consoleHandler)
+    trackDirectLogger.setLevel(logging.INFO)
 
     fh2 = logging.handlers.RotatingFileHandler(filename=os.path.expanduser(
         config.errorLog), mode='a', maxBytes=1000000, backupCount=10)
     # aprslib is logging non important "socket error on ..." using ERROR-level
-    fh2.setLevel(logging.CRITICAL)
     fh2.setFormatter(formatter)
 
     aprslibLogger = logging.getLogger('aprslib.IS')
     aprslibLogger.addHandler(fh2)
+    aprslibLogger.addHandler(consoleHandler)
+    aprslibLogger.setLevel(logging.INFO)
 
     if options.fd is not None:
         worker(options, trackDirectLogger)
