@@ -33,14 +33,17 @@ if __name__ == '__main__':
     try:
         fh = logging.handlers.RotatingFileHandler(filename=os.path.expanduser(
             '~/trackdirect/server/log/stationremover.log'), mode='a', maxBytes=1000000, backupCount=10)
-        fh.setLevel(logging.INFO)
 
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
 
+        consoleHandler = logging.StreamHandler()
+        consoleHandler.setFormatter(formatter)
+
         trackDirectLogger = logging.getLogger('trackdirect')
         trackDirectLogger.addHandler(fh)
+        trackDirectLogger.addHandler(consoleHandler)
         trackDirectLogger.setLevel(logging.INFO)
 
         trackDirectLogger.info("Starting")

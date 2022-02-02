@@ -26,7 +26,8 @@ def master(options, trackDirectLogger):
 
     try:
         factory = WebSocketServerFactory(
-            "ws://" + config.websocketHostname + ":" + str(config.websocketPort))
+            "ws://" + config.websocketHostname + ":" + str(config.websocketPort),
+            externalPort = config.websocketExternalPort)
         factory.protocol = trackdirect.TrackDirectWebsocketServer
 
         resource = WebSocketResource(factory)
@@ -35,9 +36,8 @@ def master(options, trackDirectLogger):
         site = Site(root)
 
         port = reactor.listenTCP(config.websocketPort, site)
-        port.stopReading()
 
-        for i in range(options.workers):
+        for i in range(options.workers - 1):
             args = [sys.executable, "-u", __file__]
             args.extend(sys.argv[1:])
             args.extend(["--fd", str(port.fileno()), "--cpuid", str(i)])
@@ -67,7 +67,8 @@ def worker(options, trackDirectLogger):
         trackDirectLogger.warning("Starting worker with PID " + str(workerPid))
 
         factory = WebSocketServerFactory(
-            "ws://" + config.websocketHostname + ":" + str(config.websocketPort))
+            "ws://" + config.websocketHostname + ":" + str(config.websocketPort),
+            externalPort = config.websocketExternalPort)
         factory.protocol = trackdirect.TrackDirectWebsocketServer
 
         # Enable WebSocket extension "permessage-deflate".
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Track Direct WebSocket Server')
     parser.add_argument('--config', dest='config', type=str, default=None,
-                        help='The Track Direct config file, e.g. aprsdirect.ini')
+                        help='The Track Direct config file, e.g. trackdirect.ini')
     parser.add_argument('--workers', dest='workers', type=int, default=DEFAULT_WORKERS,
                         help='Number of workers to spawn - should fit the number of (physical) CPU cores.')
     parser.add_argument('--fd', dest='fd', type=int, default=None,
@@ -116,20 +117,25 @@ if __name__ == '__main__':
 
     fh = logging.handlers.RotatingFileHandler(filename=os.path.expanduser(
         config.errorLog), mode='a', maxBytes=1000000, backupCount=10)
-    fh.setLevel(logging.WARNING)
     fh.setFormatter(formatter)
+
+    consoleHandler = logging.StreamHandler()
+    consoleHandler.setFormatter(formatter)
 
     trackDirectLogger = logging.getLogger('trackdirect')
     trackDirectLogger.addHandler(fh)
+    trackDirectLogger.addHandler(consoleHandler)
+    trackDirectLogger.setLevel(logging.INFO)
 
     fh2 = logging.handlers.RotatingFileHandler(filename=os.path.expanduser(
         config.errorLog), mode='a', maxBytes=1000000, backupCount=10)
     # aprslib is logging non important "socket error on ..." using ERROR-level
-    fh2.setLevel(logging.CRITICAL)
     fh2.setFormatter(formatter)
 
     aprslibLogger = logging.getLogger('aprslib.IS')
     aprslibLogger.addHandler(fh2)
+    aprslibLogger.addHandler(consoleHandler)
+    aprslibLogger.setLevel(logging.INFO)
 
     if options.fd is not None:
         worker(options, trackDirectLogger)

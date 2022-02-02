@@ -62,6 +62,14 @@ class TrackDirectConfig(Singleton):
             'websocket_server', 'host').strip('"')
         self.websocketPort = int(configParser.get(
             'websocket_server', 'port').strip('"'))
+
+        self.websocketExternalPort = self.websocketPort
+        try :
+            self.websocketExternalPort = int(configParser.get(
+                'websocket_server', 'external_port').strip('"'))
+        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+            pass
+
         self.errorLog = configParser.get(
             'websocket_server', 'error_log').strip('"')
         self.websocketFrequencyLimit = configParser.get(
