@@ -17,6 +17,6 @@ else
 
     export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect:$CURRENTDIR/../../heatmap-2.2.1/
     cd $CURRENTDIR/..
-    python2 $CURRENTDIR/../bin/stationremover.py $CONFIGFILE $STATIONID 2>&1 &
+    python2 $CURRENTDIR/../bin/stationremover.py $CONFIGFILE $STATIONID
     exit 0
 fi

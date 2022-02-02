@@ -16,6 +16,6 @@ else
 
     export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect:$CURRENTDIR/../../heatmap-2.2.1/
     cd $CURRENTDIR/..
-    python2 $CURRENTDIR/../bin/remover.py $CONFIGFILE 2>&1 &
+    python2 $CURRENTDIR/../bin/remover.py $CONFIGFILE
     exit 0
 fi
