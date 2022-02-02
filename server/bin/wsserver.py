@@ -35,9 +35,8 @@ def master(options, trackDirectLogger):
         site = Site(root)
 
         port = reactor.listenTCP(config.websocketPort, site)
-        port.stopReading()
 
-        for i in range(options.workers):
+        for i in range(options.workers - 1):
             args = [sys.executable, "-u", __file__]
             args.extend(sys.argv[1:])
             args.extend(["--fd", str(port.fileno()), "--cpuid", str(i)])
