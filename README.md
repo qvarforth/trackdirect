@@ -252,6 +252,35 @@ Crontab example
 ### Server Requirements
 How powerful server you need depends on what type of data source you are going to use. If you, for example, receive data from the APRS-IS network, you will probably need at least a server with 4 CPUs and 8 GB of RAM, but I recommend using a server with 8 CPUs and 16 GB of RAM.
 
+
+## Getting Started - Docker
+There is everything prepared to run trackdirect inside of some docker containers. As there is a Docker-Compose file the setup is very simple and fast.
+
+### Install Docker and Docker-Compose
+Install [docker](https://docs.docker.com/get-docker/) and [docker-compose](https://docs.docker.com/compose/install/) from the published websites.
+
+### Config file
+Adopt your config in `config/aprsc.conf` and `config/trackdirect.ini`.
+
+
+### Run Docker-Compose for development containers
+To startup trackdirect in an development container run this docker-compose command:
+
+```
+docker-compose up
+```
+
+If you want to run the container in daemon mode add `-d` to the command.
+
+### Run Docker-Compose for the last published docker images
+
+@peterus is creating regular docker images from this repository. With the release Docker-Compose file you do not need to install and compile everything by your own.
+
+```
+docker-compose -f docker-compose-rel.yml up
+```
+
+
 ## TODO
 - Rewrite backend to use Python 3 instead of Python 2.
 - Create a REST-API and replace the current website example with a new frontend written in Angular.
