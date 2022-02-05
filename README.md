@@ -262,7 +262,7 @@ There is everything prepared to run trackdirect inside of some docker containers
 Install [docker](https://docs.docker.com/get-docker/) and [docker-compose](https://docs.docker.com/compose/install/) from the published websites.
 
 ### Config file
-Adopt your config in `config/aprsc.conf` and `config/trackdirect.ini`.
+Adopt your config in `config/aprsc.conf` and `config/trackdirect.ini`. In `trackdirect.ini` search for 'docker' and change the lines as described in the comments.
 
 
 ### Run Docker-Compose for development containers
