@@ -164,13 +164,14 @@ class PacketRepository extends ModelRepository
             $columns[] = 'timestamp';
         }
 
+        $startTimestamp = time() - $numberOfHours*60*60;
         $sql = 'select ' . implode(',', $columns) . ', position_timestamp from packet
             where station_id = ?
                 and timestamp >= ?
                 and (speed is not null or altitude is not null)
                 and map_id in (1,12,5,7,9)
             order by timestamp';
-        $arg = [$stationId, time() - $numberOfHours*60*60];
+        $arg = [$stationId, time() - $startTimestamp];
 
         $pdo = PDOConnection::getInstance();
         $stmt = $pdo->prepareAndExec($sql, $arg);

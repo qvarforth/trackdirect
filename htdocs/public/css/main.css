@@ -205,6 +205,10 @@ a {
   background-color: rgba(0,0,0,0.4);
 }
 
+#td-modal {
+  display: block;
+}
+
 /* Modal Content */
 .modal-content, .modal-long-content {
   background-color: #fff;
@@ -262,19 +266,10 @@ a {
 }
 
 .modal-content-body {
-  height: calc(100% - 55px);
+  height: calc(100% - 56px);
   margin: 0px;
   padding: 0px;
-  overflow: hidden;
-}
-
-#modal-station-info-iframe, #modal-station-search-iframe, #modal-about-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-  flex-grow: 1;
-  margin: 0;
-  padding: 0;
+  overflow: auto;
 }
 
 input[type=text], select, textarea {
@@ -377,6 +372,18 @@ input[type=submit]:hover {
 
 .modal-inner-content-menu a, .modal-inner-content-menu span {
   margin-right: 20px;
+}
+
+.modal-inner-content-about h2:not(:first-child) {
+    padding-top: 20px;
+}
+
+.modal-inner-content-about h2 {
+    font-weight: normal;
+}
+
+.modal-inner-content-about h3 {
+    padding-top: 15px;
 }
 
 .overview-content-summary {

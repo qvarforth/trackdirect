@@ -1,3 +1,15 @@
+jQuery(document).ready(function ($) {
+  $('#td-modal-content-nojs').remove();
+  if ($('#td-modal-content').text().trim() == '') {
+    $('#td-modal').hide();
+  } else {
+    var title = $('#td-modal-content title').text();
+    if (title != '') {
+      $("#td-modal-title").text(title);
+    }
+  }
+});
+
 // Init local time presentation
 jQuery(document).ready(function ($) {
   var locale = window.navigator.userLanguage || window.navigator.language;
@@ -24,20 +36,50 @@ jQuery(document).ready(function ($) {
   $("#tdTopnavTimelengthDefault").addClass("dropdown-content-checkbox-active");
 });
 
+// Open all internal url's in dialog
+function loadView(url) {
+  var view = url.split('/').pop().split("?")[0];
+  if (view != '') {
+    var requestUrl = '/views/' + url.split('/').pop();
+    $("#td-modal-content").text('');
+    $("#td-modal-title").text('');
+    $("#td-modal").show();
+    $("#td-modal-content").load(requestUrl, {'modal': true},
+      function() {
+        history.replaceState(null, "", requestUrl);
+        var title = $('#td-modal-content title').text();
+        $("#td-modal-title").text(title);
+
+        $("#td-modal-content .tdlink").unbind('click').bind('click', function(e) {
+          loadView(this.href);
+          e.preventDefault();
+        });
+      }
+    );
+  }
+}
+jQuery(document).ready(function ($) {
+  $(".tdlink").bind('click', function(e) {
+    loadView(this.href);
+    e.preventDefault();
+  });
+});
+
+// Handle dialog close
+jQuery(document).ready(function ($) {
+  $("#td-modal-close").bind('click', function(e) {
+    $('#td-modal').hide();
+    history.replaceState(null, "", "/");
+  });
+});
+
 // Open station dialog if user clicked on station name
 jQuery(document).ready(function ($) {
   trackdirect.addListener("station-name-clicked", function (data) {
-    $("#modal-station-info").show();
     if (trackdirect.isImperialUnits()) {
-      $("#modal-station-info-iframe").attr(
-        "src",
-        "/station/overview.php?id=" + data.station_id + "&imperialUnits=1"
-      );
+      loadView("/views/overview.php?id=" + data.station_id + "&imperialUnits=1");
     } else {
-      $("#modal-station-info-iframe").attr(
-        "src",
-        "/station/overview.php?id=" + data.station_id + "&imperialUnits=0"
-      );
+      loadView("/views/overview.php?id=" + data.station_id + "&imperialUnits=0");
     }
   });
 });
@@ -51,32 +93,34 @@ jQuery(document).ready(function ($) {
     }
 
     newUrlTimeoutId = window.setTimeout(function () {
-      var url = window.location.href.replace(/^(?:\/\/|[^/]+)*\//, "");
-      var newLat = Math.round(data.center.lat * 10000) / 10000;
-      var newLng = Math.round(data.center.lng * 10000) / 10000;
-      var newZoom = data.zoom;
+      if ($("#td-modal").is(":hidden")) {
+        var url = window.location.href.split('/').pop();
+        var newLat = Math.round(data.center.lat * 10000) / 10000;
+        var newLng = Math.round(data.center.lng * 10000) / 10000;
+        var newZoom = data.zoom;
 
-      if (!url.includes("center=")) {
-        if (!url.includes("?")) {
-          url += "?center=" + newLat + "," + newLng;
+        if (!url.includes("center=")) {
+          if (!url.includes("?")) {
+            url += "?center=" + newLat + "," + newLng;
+          } else {
+            url += "&center=" + newLat + "," + newLng;
+          }
         } else {
-          url += "&center=" + newLat + "," + newLng;
+          url = url.replace(/center=[^&]*/i, "center=" + newLat + "," + newLng);
         }
-      } else {
-        url = url.replace(/center=[^&]*/i, "center=" + newLat + "," + newLng);
-      }
 
-      if (!url.includes("zoom=")) {
-        if (!url.includes("?")) {
-          url += "?zoom=" + newZoom;
+        if (!url.includes("zoom=")) {
+          if (!url.includes("?")) {
+            url += "?zoom=" + newZoom;
+          } else {
+            url += "&zoom=" + newZoom;
+          }
         } else {
-          url += "&zoom=" + newZoom;
+          url = url.replace(/zoom=[^&]*/i, "zoom=" + newZoom);
         }
-      } else {
-        url = url.replace(/zoom=[^&]*/i, "zoom=" + newZoom);
-      }
 
-      history.replaceState(null, "", url);
+        history.replaceState(null, "", url);
+      }
     }, 1000);
   });
 });

@@ -1,12 +1,12 @@
 <?php
 
-require "../../includes/bootstrap.php";
+require "${_SERVER["DOCUMENT_ROOT"]}/includes/bootstrap.php";
 
 $response = [];
 $station = StationRepository::getInstance()->getObjectById($_GET['id'] ?? null);
 if ($station->isExistingObject()) {
     $numberOfHours = $_GET['hours'] ?? 1;
-error_log($numberOfHours);
+
     $columns = ['timestamp'];
     $type = 'speed';
     if ($_GET['type'] == 'speed') {
@@ -40,7 +40,7 @@ error_log($numberOfHours);
         if ($type == 'speed' && count($response) > 1) {
             if (isset($response[count($response) - 1])) {
                 $prevTimestamp = $response[count($response) - 1][0];
-                if ($prevTimestamp < ($timestamp - 60*60)) {
+                if ($prevTimestamp < ($packet['timestamp'] - 60*60)) {
                     // Previous value is old, make sure we have a break in graph
                     $response[] = array($prevTimestamp + 1, null);
                 }
