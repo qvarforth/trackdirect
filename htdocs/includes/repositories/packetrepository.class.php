@@ -171,7 +171,7 @@ class PacketRepository extends ModelRepository
                 and (speed is not null or altitude is not null)
                 and map_id in (1,12,5,7,9)
             order by timestamp';
-        $arg = [$stationId, time() - $startTimestamp];
+        $arg = [$stationId, $startTimestamp];
 
         $pdo = PDOConnection::getInstance();
         $stmt = $pdo->prepareAndExec($sql, $arg);
