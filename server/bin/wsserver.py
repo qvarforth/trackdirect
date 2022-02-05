@@ -22,7 +22,9 @@ def master(options, trackDirectLogger):
     config.populate(options.config)
 
     workerPid = os.getpid()
-    trackDirectLogger.warning("Starting master with PID " + str(workerPid))
+    p = psutil.Process(workerPid)
+    p.cpu_affinity([0])
+    trackDirectLogger.warning("Starting master with PID " + str(workerPid) + " (on CPU id(s): " + ','.join(map(str, p.cpu_affinity())) + ")")
 
     try:
         factory = WebSocketServerFactory(
@@ -37,7 +39,7 @@ def master(options, trackDirectLogger):
 
         port = reactor.listenTCP(config.websocketPort, site)
 
-        for i in range(options.workers - 1):
+        for i in range(1, options.workers):
             args = [sys.executable, "-u", __file__]
             args.extend(sys.argv[1:])
             args.extend(["--fd", str(port.fileno()), "--cpuid", str(i)])
@@ -47,6 +49,7 @@ def master(options, trackDirectLogger):
                 childFDs={0: 0, 1: 1, 2: 2, port.fileno(): port.fileno()},
                 env=os.environ)
 
+        reactor.suggestThreadPoolSize(25)
         reactor.run()
     except Exception as e:
         trackDirectLogger.error(e, exc_info=1)
@@ -64,7 +67,7 @@ def worker(options, trackDirectLogger):
         p = psutil.Process(workerPid)
         p.cpu_affinity([options.cpuid])
 
-        trackDirectLogger.warning("Starting worker with PID " + str(workerPid))
+        trackDirectLogger.warning("Starting worker with PID " + str(workerPid) + " (on CPU id(s): " + ','.join(map(str, p.cpu_affinity())) + ")")
 
         factory = WebSocketServerFactory(
             "ws://" + config.websocketHostname + ":" + str(config.websocketPort),
