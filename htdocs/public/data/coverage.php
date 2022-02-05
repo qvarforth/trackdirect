@@ -1,6 +1,6 @@
 <?php
 
-require "../../includes/bootstrap.php";
+require "${_SERVER["DOCUMENT_ROOT"]}/includes/bootstrap.php";
 
 $response = [];
 $station = StationRepository::getInstance()->getObjectById($_GET['id'] ?? null);
@@ -9,7 +9,7 @@ if ($station->isExistingObject()) {
     $response['coverage'] = [];
 
     $numberOfHours = 10*24; // latest 10 days should be enough
-    $limit = 10000; // Limit number of packets to reduce load on server (and browser)
+    $limit = 5000; // Limit number of packets to reduce load on server (and browser)
     $packetPaths = PacketPathRepository::getInstance()->getLatestDataListByReceivingStationId($_GET['id'] ?? null, $numberOfHours, $limit);
     foreach ($packetPaths as $path) {
         $row = [];

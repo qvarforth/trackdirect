@@ -10,5 +10,9 @@
 Options +FollowSymLinks
 RewriteEngine on
 
-# Remove version number on js and css files
-RewriteRule ^(/?(js|css)/.+?)\.\d+\.(js|css)$ $1.$2 [L]
+# Avoid rewriting existing dirs
+RewriteRule ^/?(js|css|images|symbols|data|heatmaps|crossdomain.*|favicon.*|\.well-known|browserconfig\.xml|robots\.txt)($|/) - [L]
+
+# Rewrite url
+RewriteCond %{REQUEST_METHOD} !=POST
+RewriteRule ^(.*)$ index.php?view=$1 [NC,L,QSA]

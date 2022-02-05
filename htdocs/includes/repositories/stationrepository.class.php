@@ -108,6 +108,75 @@ class StationRepository extends ModelRepository
         return $cache[$key];
     }
 
+
+    /**
+     * Get object list
+     *
+     * @param  int   $activeDuringLatestNumberOfSeconds
+     * @param  int   $limit
+     * @param  int   $offset
+     * @return array
+     */
+    public function getObjectList($activeDuringLatestNumberOfSeconds = (24*60*60), $limit, $offset)
+    {
+        if ($activeDuringLatestNumberOfSeconds == 0) {
+            $activeDuringLatestNumberOfSeconds = time();
+        }
+
+        $pdo = PDOConnection::getInstance();
+        $stmt = $pdo->prepare(
+            'select * from station
+            where latest_confirmed_packet_timestamp is not null
+                and latest_confirmed_packet_timestamp > ?
+                and (source_id != 5 or latest_confirmed_packet_timestamp > ?)
+            order by latest_confirmed_packet_timestamp desc
+            limit ? offset ?'
+        );
+        $stmt->bindValue(1, (time() - $activeDuringLatestNumberOfSeconds));
+        $stmt->bindValue(2, (time() - (60*60*24))); // OGN data should be deleted after 24h, but just to be safe we avoid including older data when searching
+        $stmt->bindValue(3, $limit);
+        $stmt->bindValue(4, $offset);
+
+        $stmt->execute();
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (is_array($records) && !empty($records)) {
+            return $this->_getObjectListFromRecords($records);
+        }
+
+        // No object found, return empty array
+        return [];
+    }
+
+    /**
+     * Get number of stations
+     *
+     * @param  int   $activeDuringLatestNumberOfSeconds
+     * @return int
+     */
+    public function getNumberOfStations($activeDuringLatestNumberOfSeconds = (24*60*60))
+    {
+        if ($activeDuringLatestNumberOfSeconds == 0) {
+            $activeDuringLatestNumberOfSeconds = time();
+        }
+
+        $sql = 'select count(*) c from station
+            where latest_confirmed_packet_timestamp is not null
+                and latest_confirmed_packet_timestamp > ?
+                and (source_id != 5 or latest_confirmed_packet_timestamp > ?)';
+        $parameters = [(time() - $activeDuringLatestNumberOfSeconds), (time() - (60*60*24))];
+
+        $pdo = PDOConnection::getInstance();
+        $stmt = $pdo->prepareAndExec($sql, $parameters);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $sum = 0;
+        foreach($rows as $row) {
+            $sum += $row['c'];
+        }
+
+        return $sum;
+    }
+
     /**
      * Get object list by query string
      *

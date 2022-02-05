@@ -1,9 +1,10 @@
-<?php require "../includes/bootstrap.php"; ?>
+<?php require "${_SERVER["DOCUMENT_ROOT"]}/includes/bootstrap.php"; ?>
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="utf-8" />
-        <title>APRS Track Direct Demo</title>
+        <title><?php echo getWebsiteConfig('title'); ?></title>
 
         <!-- Mobile meta -->
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
@@ -12,6 +13,7 @@
 
         <!-- JS libs used by this website (not a dependency for the track direct js lib) -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/mobile-detect/1.4.5/mobile-detect.min.js" integrity="sha512-1vJtouuOb2tPm+Jh7EnT2VeiCoWv0d7UQ8SGl/2CoOU+bkxhxSX4gDjmdjmbX4OjbsbCBN+Gytj4RGrjV3BLkQ==" crossorigin="anonymous"></script>
+        <script type="text/javascript" src="//www.gstatic.com/charts/loader.js"></script>
 
         <!-- Stylesheets used by this website (not a dependency for the track direct js lib) -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" integrity="sha512-HK5fgLBL+xu6dm/Ii3z4xhlSUyZgTT9tuc/hSrtw6uzJOvgRr2a9jyxxT1ely+B+xFAmJKVSTbpM/CuL7qxO8w==" crossorigin="anonymous" />
@@ -54,10 +56,12 @@
         <script>
             // Start everything!!!
             $(document).ready(function() {
+                google.charts.load('current', {'packages':['corechart', 'timeline']});
+
                 var options = {};
                 options['isMobile'] = false;
                 options['useImperialUnit'] = <?php echo (isImperialUnitUser() ? 'true': 'false'); ?>;
-                options['coverageDataUrl'] = 'data/coverage.php';;
+                options['coverageDataUrl'] = '/data/coverage.php';
                 options['defaultTimeLength'] = 60; // In minutes
 
                 var md = new MobileDetect(window.navigator.userAgent);
@@ -73,8 +77,10 @@
                 options['mid'] =        "<?php echo $_GET['mid'] ?? '' ?>";         // Render map from "Google My Maps" (requires https)
 
                 options['filters'] = {};
-                options['filters']['sid'] = "<?php echo $_GET['sid'] ?? '' ?>";     // Station id to filter on
-                options['filters']['sname'] = "<?php echo $_GET['sname'] ?? '' ?>"; // Station name to filter on
+                options['filters']['sid'] = "<?php echo $_GET['sid'] ?? '' ?>";         // Station id to filter on
+                options['filters']['sname'] = "<?php echo $_GET['sname'] ?? '' ?>";     // Station name to filter on
+                options['filters']['sidlist'] = "<?php echo $_GET['sidlist'] ?? '' ?>";     // Station id list to filter on (colon separated)
+                options['filters']['snamelist'] = "<?php echo $_GET['snamelist'] ?? '' ?>"; // Station name list to filter on (colon separated)
 
                 // Tell jslib which html element to use to show connection status and mouse cordinates
                 options['statusContainerElementId'] = 'status-container';
@@ -231,12 +237,16 @@
                 </button>
                 <div class="dropdown-content">
 
-                    <a href="javascript:void(0);"
-                        onclick="
-                            $('#modal-station-search-iframe').attr('src', '/search.php?imperialUnits=' + (trackdirect.isImperialUnits() ? '1':'0'));
-                            $('#modal-station-search').show();"
+                    <a href="/views/search.php"
+                        class="tdlink"
                         title="Search for a station/vehicle here!">
                         Station search
+                    </a>
+
+                    <a href="/views/latest.php"
+                        class="tdlink"
+                        title="List latest heard stations!">
+                        Latest heard
                     </a>
 
                     <a href="javascript:void(0);"
@@ -251,10 +261,8 @@
                 </div>
             </div>
 
-            <a href="javascript:void(0);"
-                onclick="
-                    $('#modal-about-iframe').attr('src', '/about.php');
-                    $('#modal-about').show();"
+            <a href="/views/about.php"
+                class="tdlink"
                 title="More about this website!">
                 About
             </a>
@@ -281,14 +289,32 @@
             </div>
         </div>
 
-        <div id="modal-station-info" class="modal">
+        <div id="td-modal" class="modal">
             <div class="modal-long-content">
                 <div class="modal-content-header">
-                    <span class="modal-close" onclick="$('#modal-station-info').hide(); $('#modal-station-info-iframe').attr('src', 'about:blank');">&times;</span>
-                    <span class="modal-title">Station information</h2>
+                    <span class="modal-close" id="td-modal-close">&times;</span>
+                    <span class="modal-title" id="td-modal-title"><?php echo getWebsiteConfig('title'); ?></h2>
                 </div>
                 <div class="modal-content-body">
-                    <iframe id="modal-station-info-iframe"></iframe>
+                    <div id="td-modal-content">
+                        <?php $view = getView($_GET['view']); ?>
+                        <?php if ($view) : ?>
+                            <?php include($view); ?>
+                        <?php else: ?>
+                            <div id="td-modal-content-nojs">
+                                <div class="modal-inner-content">
+                                    <div class="modal-inner-content-menu">
+                                        <a href="/views/about.php" class="tdlink" title="More about this website!">About</a>
+                                        <a href="/views/latest.php" class="tdlink" title="List latest heard stations!">Latest heard</a>
+                                        <a href="/views/search.php" class="tdlink"title="Search for a station/vehicle here!">Station search</a>
+                                    </div>
+                                    <div class="horizontal-line">&nbsp;</div>
+                                    <p>Welcome to this APRS tracking website!</p>
+                                    <p>This website is based on the APRS Track Direct tools. Read more on <a href="https://github.com/qvarforth/trackdirect" target="_blank">GitHub</a>.</p>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -300,10 +326,10 @@
                     <span class="modal-title">Travel in time</h2>
                 </div>
                 <div class="modal-content-body" style="margin: 0px 20px 20px 20px;">
-                    <?php if (!isTimeTravelAllowed()) : ?>
+                    <?php if (!isAllowedToShowOlderData()) : ?>
                         <div style="text-align: center;">
                             <p style="max-width: 800px; display: inline-block; color: red;">
-                                The time travel feature that allows you to see the map as it looked like an earlier date is disabled on this website. The reason is probably that it is a requirement from the data source used.
+                                The time travel feature that allows you to see the map as it looked like an earlier date is disabled on this website.
                             </p>
                         </div>
                     <?php else : ?>
@@ -364,30 +390,6 @@
                                     return false;"/>
                         </form>
                     <?php endif; ?>
-                </div>
-            </div>
-        </div>
-
-        <div id="modal-station-search" class="modal">
-            <div class="modal-long-content">
-                <div class="modal-content-header">
-                    <span class="modal-close" onclick="$('#modal-station-search').hide();">&times;</span>
-                    <span class="modal-title">Station search</h2>
-                </div>
-                <div class="modal-content-body">
-                    <iframe id="modal-station-search-iframe" src=""></iframe>
-                </div>
-            </div>
-        </div>
-
-        <div id="modal-about" class="modal">
-            <div class="modal-long-content">
-                <div class="modal-content-header">
-                    <span class="modal-close" onclick="$('#modal-about').hide();">&times;</span>
-                    <span class="modal-title">About</h2>
-                </div>
-                <div class="modal-content-body">
-                    <iframe id="modal-about-iframe" src=""></iframe>
                 </div>
             </div>
         </div>

@@ -1748,31 +1748,69 @@ function getSymbolDescription($symbolTable, $symbol, $includeUndefinedOverlay)
 
 
 /**
- * Returnes true if the time travel feature works
+ * Returnes true if we may show data older than 24h
  *
  * @return boolean
  */
-function isTimeTravelAllowed() {
-    $isTimeTravelAllowed = false;
+function isAllowedToShowOlderData() {
+    $isAllowedToShowOlderData = false;
     $config = parse_ini_file(ROOT . '/../config/trackdirect.ini', true);
 
     if (isset($config['websocket_server'])) {
         if (isset($config['websocket_server']['allow_time_travel'])) {
             if ($config['websocket_server']['allow_time_travel'] == '1') {
-                $isTimeTravelAllowed = true;
+                $isAllowedToShowOlderData = true;
             }
         }
 
         if (isset($config['websocket_server']['aprs_source_id1']) && $config['websocket_server']['aprs_source_id1'] == 5) {
             // Data source is OGN, disable time travel (server will block it anyway)
-            $isTimeTravelAllowed = false;
+            $isAllowedToShowOlderData = false;
         }
 
         if (isset($config['websocket_server']['aprs_source_id2']) && $config['websocket_server']['aprs_source_id2'] == 5) {
             // Data source is OGN, disable time travel (server will block it anyway)
-            $isTimeTravelAllowed = false;
+            $isAllowedToShowOlderData = false;
         }
     }
 
-    return $isTimeTravelAllowed;
+    return $isAllowedToShowOlderData;
+}
+
+/**
+ * Returnes valid view path
+ *
+ * @param {string} $request
+ * @return string
+ */
+function getView($request) {
+    $parts = explode("/", trim($request, '/'));
+    if (count($parts) >= 2) {
+        $view = array_pop($parts);
+        $dir = array_pop($parts);
+        if ($view && $dir == 'views') {
+            $path = "${_SERVER["DOCUMENT_ROOT"]}/public/views";
+            foreach (scandir($path) as $file) {
+                if ($file == $view) {
+                    return "$path/$view";
+                }
+            }
+        }
+    }
+    return null;
+}
+
+/**
+ * Returnes an assoc array containing website related values from config
+ *
+ * @param {string} $key
+ * @return string
+ * */
+function getWebsiteConfig($key) {
+    $config = parse_ini_file(ROOT . '/../config/trackdirect.ini', true);
+    if (isset($config['website']) && isset($config['website'][$key])) {
+        return $config['website'][$key];
+    }
+
+    return null;
 }
