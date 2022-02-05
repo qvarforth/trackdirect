@@ -61,7 +61,7 @@
                 var options = {};
                 options['isMobile'] = false;
                 options['useImperialUnit'] = <?php echo (isImperialUnitUser() ? 'true': 'false'); ?>;
-                options['coverageDataUrl'] = 'data/coverage.php';;
+                options['coverageDataUrl'] = '/data/coverage.php';
                 options['defaultTimeLength'] = 60; // In minutes
 
                 var md = new MobileDetect(window.navigator.userAgent);
