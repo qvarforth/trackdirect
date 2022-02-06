@@ -20,5 +20,7 @@ RUN a2enmod rewrite
 RUN chmod a+rx / && chmod a+rx -R /root
 RUN chmod 777 /root/trackdirect/htdocs/public/symbols
 
+RUN rm /root/trackdirect/config/trackdirect.ini
+
 VOLUME /root/trackdirect/config/trackdirect.ini
 VOLUME /root/trackdirect/htdocs/public/heatmaps
