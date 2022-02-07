@@ -11,6 +11,7 @@ import datetime
 import time
 import psycopg2
 import psycopg2.extras
+import os
 import re
 
 from trackdirect.TrackDirectConfig import TrackDirectConfig
@@ -63,11 +64,11 @@ class TrackDirectWebsocketServer(WebSocketServerProtocol):
         """
         try:
             if ('x-forwarded-for' in request.headers):
-                self.logger.warning("Client connecting from origin: {0}, x-forwarded-for: {1}".format(
-                    request.origin, request.headers['x-forwarded-for']))
+                self.logger.warning("Client connecting from origin: {0}, x-forwarded-for: {1} (server pid {2})".format(
+                    request.origin, request.headers['x-forwarded-for'], str(os.getpid())))
             else:
                 self.logger.warning(
-                    "Client connecting from origin: {0}".format(request.origin))
+                    "Client connecting from origin: {0} (server pid {1})".format(request.origin, str(os.getpid())))
 
         except Exception as e:
             self.logger.error(e, exc_info=1)
