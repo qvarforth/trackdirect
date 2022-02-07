@@ -15,6 +15,8 @@ Information shared over the APRS network is for example coordinates, altitude, s
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes (but they are of course also valid for you who want to set up a public website).
 
+Further down you will find some information how to install trackdirect with Docker and Docker-Compose.
+
 ### Prerequisites
 
 What things you need to install and how to install them. These instructions are for Ubuntu 20.04
@@ -251,6 +253,35 @@ Crontab example
 
 ### Server Requirements
 How powerful server you need depends on what type of data source you are going to use. If you, for example, receive data from the APRS-IS network, you will probably need at least a server with 4 CPUs and 8 GB of RAM, but I recommend using a server with 8 CPUs and 16 GB of RAM.
+
+
+## Getting Started - Docker
+There is everything prepared to run trackdirect inside of some docker containers. As there is a Docker-Compose file the setup is very simple and fast.
+
+### Install Docker and Docker-Compose
+Install [docker](https://docs.docker.com/get-docker/) and [docker-compose](https://docs.docker.com/compose/install/) from the published websites.
+
+### Config file
+Adopt your config in `config/aprsc.conf` and `config/trackdirect.ini`. In `trackdirect.ini` search for 'docker' and change the lines as described in the comments.
+
+
+### Run Docker-Compose for development containers
+To startup trackdirect in an development container run this docker-compose command:
+
+```
+docker-compose up
+```
+
+If you want to run the container in daemon mode add `-d` to the command.
+
+### Run Docker-Compose for the last published docker images
+
+@peterus is creating regular docker images from this repository. With the release Docker-Compose file you do not need to install and compile everything by your own.
+
+```
+docker-compose -f docker-compose-rel.yml up
+```
+
 
 ## TODO
 - Rewrite backend to use Python 3 instead of Python 2.

@@ -12,3 +12,7 @@ config/*
 !config/trackdirect.ini
 
 ogndevices
+
+heatmaps
+
+db
