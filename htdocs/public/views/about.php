@@ -4,7 +4,7 @@
 <div class="modal-inner-content modal-inner-content-about" style="padding-bottom: 30px;">
     <h2>1. I have a question. Who may I contact?</h2>
     <p>
-        Maintainer of this website is <a href="<?php echo getWebsiteConfig('owner_email'); ?>"><?php echo getWebsiteConfig('owner_name'); ?></a>.
+        Maintainer of this website is <a href="mailto:<?php echo getWebsiteConfig('owner_email'); ?>"><?php echo getWebsiteConfig('owner_name'); ?></a>.
     </p>
 
     <h2>2. What is APRS?</h2>
