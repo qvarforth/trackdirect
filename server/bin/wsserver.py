@@ -49,8 +49,9 @@ def master(options, trackDirectLogger):
                 childFDs={0: 0, 1: 1, 2: 2, port.fileno(): port.fileno()},
                 env=os.environ)
 
-        reactor.suggestThreadPoolSize(25)
-        reactor.run()
+        options.fd = port.fileno()
+        listen(options, trackDirectLogger)
+
     except Exception as e:
         trackDirectLogger.error(e, exc_info=1)
 
@@ -69,32 +70,38 @@ def worker(options, trackDirectLogger):
 
         trackDirectLogger.warning("Starting worker with PID " + str(workerPid) + " (on CPU id(s): " + ','.join(map(str, p.cpu_affinity())) + ")")
 
-        factory = WebSocketServerFactory(
-            "ws://" + config.websocketHostname + ":" + str(config.websocketPort),
-            externalPort = config.websocketExternalPort)
-        factory.protocol = trackdirect.TrackDirectWebsocketServer
+        listen(options, trackDirectLogger)
 
-        # Enable WebSocket extension "permessage-deflate".
-        # Function to accept offers from the client ..
-        def accept(offers):
-            for offer in offers:
-                if isinstance(offer, PerMessageDeflateOffer):
-                    return PerMessageDeflateOfferAccept(offer)
-        factory.setProtocolOptions(perMessageCompressionAccept=accept)
-
-        reactor.suggestThreadPoolSize(25)
-
-        resource = WebSocketResource(factory)
-        root = File(".")
-        root.putChild(b"ws", resource)
-        site = Site(root)
-
-        # The master already created the socket, just start listening and accepting
-        reactor.adoptStreamPort(options.fd, AF_INET, factory)
-
-        reactor.run()
     except Exception as e:
         trackDirectLogger.error(e, exc_info=1)
+
+
+def listen(options, trackDirectLogger) :
+    """
+    Start to listen on websocket requests.
+    """
+    config = trackdirect.TrackDirectConfig()
+    config.populate(options.config)
+
+    factory = WebSocketServerFactory(
+        "ws://" + config.websocketHostname + ":" + str(config.websocketPort),
+        externalPort = config.websocketExternalPort)
+    factory.protocol = trackdirect.TrackDirectWebsocketServer
+
+    # Enable WebSocket extension "permessage-deflate".
+    # Function to accept offers from the client ..
+    def accept(offers):
+        for offer in offers:
+            if isinstance(offer, PerMessageDeflateOffer):
+                return PerMessageDeflateOfferAccept(offer)
+    factory.setProtocolOptions(perMessageCompressionAccept=accept)
+
+    reactor.suggestThreadPoolSize(25)
+
+    # Socket already created, just start listening and accepting
+    reactor.adoptStreamPort(options.fd, AF_INET, factory)
+
+    reactor.run()
 
 
 if __name__ == '__main__':
