@@ -1,4 +1,4 @@
-<?php require "../../includes/bootstrap.php"; ?>
+<?php require "../includes/bootstrap.php"; ?>
 
 <!DOCTYPE html>
 <html lang="en">
