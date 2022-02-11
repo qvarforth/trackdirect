@@ -1,4 +1,4 @@
-<?php require "${_SERVER["DOCUMENT_ROOT"]}/includes/bootstrap.php"; ?>
+<?php require "../../includes/bootstrap.php"; ?>
 
 <!DOCTYPE html>
 <html lang="en">
