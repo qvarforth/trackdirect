@@ -1,6 +1,6 @@
 <?php
 
-require "${_SERVER["DOCUMENT_ROOT"]}/../includes/bootstrap.php";
+require "../../includes/bootstrap.php";
 
 $response = [];
 $station = StationRepository::getInstance()->getObjectById($_GET['id'] ?? null);
