@@ -107,13 +107,13 @@ git clone https://github.com/qvarforth/trackdirect
 
 #### Set up database
 
-Set up the database (connect to database using: "sudo -u postgres psql")
+Set up the database (connect to database using: "sudo -u postgres psql"). You need to replace "my_username".
 ```
 CREATE DATABASE trackdirect;
 
-CREATE USER {USER} WITH PASSWORD 'foobar';
-ALTER ROLE {USER} WITH SUPERUSER;
-GRANT ALL PRIVILEGES ON DATABASE "trackdirect" to {USER};
+CREATE USER my_username WITH PASSWORD 'foobar';
+ALTER ROLE my_username WITH SUPERUSER;
+GRANT ALL PRIVILEGES ON DATABASE "trackdirect" to my_username;
 ```
 
 Might be good to add password to password-file:
@@ -137,12 +137,13 @@ sudo /etc/init.d/postgresql restart
 ```
 
 ##### Set up database tables
+The script should be executed by the user that owns the database "trackdirect".
 ```
 ~/trackdirect/server/scripts/db_setup.sh trackdirect 5432 ~/trackdirect/misc/database/tables/
 ```
 
 #### Set up OGN device data
-If you are using data from OGN (Open Glider Network) it is IMPORTANT to keep the OGN data updated (the database table ogn_devices). This is important since otherwise you might show airplanes that you are not allowed to show. I recommend that you run this script at least once every hour (or more often).
+If you are using data from OGN (Open Glider Network) it is IMPORTANT to keep the OGN data updated (the database table ogn_devices). This is important since otherwise you might show airplanes that you are not allowed to show. I recommend that you run this script at least once every hour (or more often). The script should be executed by the user that you granted access to the database "trackdirect".
 ```
 ~/trackdirect/server/scripts/ogn_devices_install.sh trackdirect 5432
 ```
@@ -150,7 +151,7 @@ If you are using data from OGN (Open Glider Network) it is IMPORTANT to keep the
 #### Start the collectors
 Before starting the collector you need to update the trackdirect configuration file (trackdirect/config/trackdirect.ini).
 
-Start the collector by using the provided shell-script. Note that if you have configured multiple collectors (fetching from multiple aprs servers, for example both APRS-IS and CWOP-IS) you need to call the shell-script multiple times.
+Start the collector by using the provided shell-script. Note that if you have configured multiple collectors (fetching from multiple aprs servers, for example both APRS-IS and CWOP-IS) you need to call the shell-script multiple times. The script should be executed by the user that you granted access to the database "trackdirect".
 ```
 ~/trackdirect/server/scripts/collector.sh trackdirect.ini 0
 ```
@@ -160,7 +161,7 @@ Before starting the websocket server you need to update the trackdirect configur
 
 When the user interacts with the map we want it to be populated with objects from the backend. To achive good performance we avoid using background HTTP requests (also called AJAX requests), instead we use websocket communication. The included trackdirect js library (trackdirect.min.js) will connect to our websocket server and request objects for the current map view.
 
-Start the websocket server by using the provided shell script.
+Start the websocket server by using the provided shell scripti, the script should be executed by the user that you granted access to the database "trackdirect".
 ```
 ~/trackdirect/server/scripts/wsserver.sh trackdirect.ini
 ```
@@ -173,7 +174,7 @@ sudo ufw allow 9000
 #### Start generating heatmaps
 When you zoom out the map, it is usually too demanding to render all the objects on the map, instead we have to show something else. What we do is that we show a heat map that tells the user where in the world we have the highest APRS activity.
 
-I recommend generating new heatmaps once every hour in production (I suggest that you schedule it using cron).
+I recommend generating new heatmaps once every hour in production (I suggest that you schedule it using cron). The script should be executed by the user that you granted access to the database "trackdirect".
 ```
 ~/trackdirect/server/scripts/heatmapcreator.sh trackdirect.ini ~/trackdirect/htdocs/public/heatmaps
 ```
@@ -203,9 +204,9 @@ If you make no changes, at least add contact information to yourself, I do not w
 #### Set up webserver
 Webserver should already be up and running (if you installed all specified ubuntu packages).
 
-Add the following to /etc/apache2/sites-enabled/000-default.conf
+Add the following to /etc/apache2/sites-enabled/000-default.conf. You need to replace "my_username".
 ```
-<Directory "/home/USER/trackdirect/htdocs">
+<Directory "/home/my_username/trackdirect/htdocs">
     Options SymLinksIfOwnerMatch
     AllowOverride All
     Require all granted
@@ -242,7 +243,7 @@ We recommend that your schedule the heatmapcreator shell script to be executed o
 
 Note that the collector and wsserver shell scripts can be scheduled to start once every minute (nothing will happen if it is already running). I even recommend doing this as the collector and websocket server are built to shut down if something serious goes wrong (eg lost connection to database).
 
-Crontab example
+Crontab example (crontab for the user that owns the "trackdirect" database)
 ```
 10 * * * * ~/trackdirect/server/scripts/heatmapcreator.sh trackdirect.ini ~/trackdirect/htdocs/public/heatmaps 2>&1 &
 40 * * * * ~/trackdirect/server/scripts/remover.sh trackdirect.ini 2>&1 &
