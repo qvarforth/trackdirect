@@ -1,4 +1,14 @@
 <?php require "../includes/bootstrap.php"; ?>
+<?php
+$isSecure = false;
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
+    $isSecure = true;
+}
+elseif (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https' || !empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] == 'on') {
+    $isSecure = true;
+}
+$REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -132,7 +142,7 @@
 
                     var supportsWebSockets = 'WebSocket' in window || 'MozWebSocket' in window;
                     if (supportsWebSockets) {
-                        <?php if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') : ?>
+                        <?php if ($REQUEST_PROTOCOL == 'https') : ?>
                             var wsServerUrl = 'wss://<?php echo $_SERVER['HTTP_HOST']; ?>:9000/ws';
                         <?php else : ?>
                             var wsServerUrl = 'ws://<?php echo $_SERVER['HTTP_HOST']; ?>:9000/ws';
