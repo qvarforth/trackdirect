@@ -15,6 +15,8 @@ Information shared over the APRS network is for example coordinates, altitude, s
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes (but they are of course also valid for you who want to set up a public website).
 
+Please note that the instructions is not intended to be something that you can follow exactly without any adaptions. See the instructions as initial tips on how the tools can be used, and read the code to get a deeper understanding.
+
 Further down you will find some information how to install trackdirect with Docker and Docker-Compose.
 
 ### Prerequisites
