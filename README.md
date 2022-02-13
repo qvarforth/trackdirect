@@ -217,7 +217,7 @@ Add the following to /etc/apache2/sites-enabled/000-default.conf. You need to re
 
 Change the VirtualHost DocumentRoot: (in /etc/apache2/sites-enabled/000-default.conf):
 ```
-DocumentRoot /home/USER/trackdirect/htdocs
+DocumentRoot /home/my_username/trackdirect/htdocs
 ```
 
 Enable rewrite and restart apache
