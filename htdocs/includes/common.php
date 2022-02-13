@@ -1789,7 +1789,7 @@ function getView($request) {
         $view = array_pop($parts);
         $dir = array_pop($parts);
         if ($view && $dir == 'views') {
-            $path = "${_SERVER["DOCUMENT_ROOT"]}/public/views";
+            $path = ROOT . '/public/views';
             foreach (scandir($path) as $file) {
                 if ($file == $view) {
                     return "$path/$view";
