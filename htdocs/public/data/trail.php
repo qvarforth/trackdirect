@@ -1,6 +1,6 @@
 <?php
 
-require "../../includes/bootstrap.php";
+require dirname(__DIR__) . "../../includes/bootstrap.php";
 
 $response = [];
 $station = StationRepository::getInstance()->getObjectById($_GET['id'] ?? null);

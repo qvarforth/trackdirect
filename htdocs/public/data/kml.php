@@ -1,6 +1,6 @@
 <?php
 
-require "../../includes/bootstrap.php";
+require dirname(__DIR__) . "../../includes/bootstrap.php";
 
 if (isset($_GET['id']) && isInt($_GET['id'])) {
     $station = StationRepository::getInstance()->getObjectById($_GET['id']);
