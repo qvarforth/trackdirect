@@ -1,4 +1,4 @@
-<?php require "../../includes/bootstrap.php"; ?>
+<?php require dirname(__DIR__) . "../../includes/bootstrap.php"; ?>
 
 <title>About / FAQ</title>
 <div class="modal-inner-content modal-inner-content-about" style="padding-bottom: 30px;">
