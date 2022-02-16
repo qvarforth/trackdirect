@@ -389,6 +389,10 @@ class AprsPacketParser():
                     # UAV -> Drone
                     self.packet.symbol = '^'
                     self.packet.symbolTable = 'D'
+                elif (self.packet.ogn.ognAircraftTypeId == 7): #paraglider
+                    # map to own symbol 94-69.svg (do not show hangglider symbol 103-1.svg, 'g' = 103)
+                    self.packet.symbol = '^' #94
+                    self.packet.symbolTable = 'E' #69
 
         if ((self.packet.symbol == '\'' and self.packet.symbolTable == '/') or (self.packet.symbol == '^' and self.packet.symbolTable in ['/', '\\'])):
             # Current symbol is still "small aircraft" or "large aircraft"
