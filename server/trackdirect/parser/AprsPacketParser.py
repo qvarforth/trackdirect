@@ -339,7 +339,7 @@ class AprsPacketParser():
         Args:
             originalRaw (string):    Non modified raw
         """
-        if ((self.packet.symbol == '\'' and self.packet.symbolTable == '/') or (self.packet.symbol == '^' and self.packet.symbolTable in ['/', '\\'])):
+        if ((self.packet.symbol == '\'' and self.packet.symbolTable == '/') or (self.packet.symbol == '^' and self.packet.symbolTable in ['/', '\\']) or (self.packet.symbol == 'g' and self.packet.symbolTable in ['/'])):
             ognDevice = None
             if (self.packet.ogn is not None and self.packet.ogn.ognSenderAddress is not None):
                 ognDevice = self.ognDeviceRepository.getObjectByDeviceId(
@@ -390,9 +390,9 @@ class AprsPacketParser():
                     self.packet.symbol = '^'
                     self.packet.symbolTable = 'D'
                 elif (self.packet.ogn.ognAircraftTypeId == 7): #paraglider
-                    # map to own symbol 94-69.svg (do not show hangglider symbol 103-1.svg, 'g' = 103)
+                    # map to own symbol 94-76.svg (do not show hangglider symbol 103-1.svg, 'g' = 103)
                     self.packet.symbol = '^' #94
-                    self.packet.symbolTable = 'E' #69
+                    self.packet.symbolTable = 'L' #76
 
         if ((self.packet.symbol == '\'' and self.packet.symbolTable == '/') or (self.packet.symbol == '^' and self.packet.symbolTable in ['/', '\\'])):
             # Current symbol is still "small aircraft" or "large aircraft"

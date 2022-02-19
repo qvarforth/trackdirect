@@ -1255,6 +1255,8 @@ function getSymbolDescription($symbolTable, $symbol, $includeUndefinedOverlay)
                 return 'Aircraft (H = Hovercraft)';
             case 'J':
                 return 'Aircraft (J = JET)';
+	    case 'L':
+                return 'Paraglider'; // Not official definition
             case 'M':
                 return 'Aircraft (M = Missle)';
             case 'P':
