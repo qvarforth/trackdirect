@@ -198,7 +198,7 @@ If you do changes in the js library (jslib directory) you need to execute build.
 #### Adapt the website (htdocs)
 For setting up a copy on your local machine for development and testing purposes you do not need to do anything, but for any other pupose I really recommend you to adapt the UI.
 
-First thing to do is probably to add your map api keys, look for the string "&lt;insert map key here&gt;" in the file "index.php". Note that the map providers used in the demo website may not be suitable if you plan to have a public website (read their terms of use).
+First thing to do is probably to select which map provider to use, look for stuff related to map provider in "index.php". Note that the map providers used in the demo website may not be suitable if you plan to have a public website (read their terms of use).
 
 If you make no changes, at least add contact information to yourself, I do not want to receive questions regarding your website.
 

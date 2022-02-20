@@ -37,8 +37,12 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
         <!-- Map api javascripts and related dependencies -->
         <?php $mapapi = $_GET['mapapi'] ?? 'leaflet'; ?>
         <?php if ($mapapi == 'google') : ?>
-            <!-- <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?libraries=visualization,geometry"></script> -->
-            <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?key=<?php echo getWebsiteConfig('google_key'); ?>&libraries=visualization,geometry"></script>
+            <?php if (getWebsiteConfig('google_key') != null) : ?>
+                <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?key=<?php echo getWebsiteConfig('google_key'); ?>&libraries=visualization,geometry"></script>
+            <?php else : ?>
+                <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?libraries=visualization,geometry"></script>
+            <?php endif; ?>
+
             <script src="https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier/1.0.3/oms.min.js" integrity="sha512-/3oZy+rGpR6XGen3u37AEGv+inHpohYcJupz421+PcvNWHq2ujx0s1QcVYEiSHVt/SkHPHOlMFn5WDBb/YbE+g==" crossorigin="anonymous"></script>
 
         <?php elseif ($mapapi == 'leaflet' || $mapapi == 'leaflet-vector'): ?>
@@ -128,10 +132,8 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
                         // https://wiki.openstreetmap.org/wiki/Tile_servers
 
                         // Many providers require a map api key or similar, the following is an example for HERE
-                        /*
-                        L.TileLayer.Provider.providers['HERE'].options['app_id'] = '<insert app id here>';
-                        L.TileLayer.Provider.providers['HERE'].options['app_code'] = '<insert map key here>';
-                        */
+                        L.TileLayer.Provider.providers['HERE'].options['app_id'] = '<?php echo getWebsiteConfig('here_app_id'); ?>';
+                        L.TileLayer.Provider.providers['HERE'].options['app_code'] = '<?php echo getWebsiteConfig('here_app_code'); ?>';
 
                         options['supportedMapTypes'] = {};
 
@@ -142,13 +144,11 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
                         //options['supportedMapTypes']['roadmap'] = 'HERE.normalDay';
                         //options['supportedMapTypes']['roadmap'] = 'HERE.reducedDay';
 
-
                         options['supportedMapTypes']['terrain'] = 'OpenTopoMap';
                         //options['supportedMapTypes']['terrain'] = 'Stamen.Terrain';
                         //options['supportedMapTypes']['terrain'] = 'HERE.terrainDay';
 
-                        // Remove the google-maps-if-statement below if the satellite option should be used for Leaflet
-                        //options['supportedMapTypes']['satellite'] = 'HERE.satelliteDay';
+                        options['supportedMapTypes']['satellite'] = 'HERE.satelliteDay';
 
                     <?php endif; ?>
 
@@ -237,10 +237,9 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
                 <div class="dropdown-content" id="tdTopnavMapType">
                     <a href="javascript:void(0);" onclick="trackdirect.setMapType('roadmap'); $('#tdTopnavMapType>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox dropdown-content-checkbox-active">Roadmap</a>
                     <a href="javascript:void(0);" onclick="trackdirect.setMapType('terrain'); $('#tdTopnavMapType>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">Terrain/Outdoors</a>
-                    <?php if ($mapapi == 'google') : ?>
+                    <?php if ($mapapi == 'google' || getWebsiteConfig('here_app_code') != null) : ?>
                     <a href="javascript:void(0);" onclick="trackdirect.setMapType('satellite'); $('#tdTopnavMapType>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">Satellite</a>
                     <?php endif; ?>
-
                 </div>
             </div>
             <?php endif; ?>
