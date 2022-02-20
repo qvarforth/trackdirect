@@ -137,16 +137,23 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
 
                         options['supportedMapTypes'] = {};
 
-                        options['supportedMapTypes']['roadmap'] = 'OpenStreetMap';
+
+                        <?php if (getWebsiteConfig('here_app_code') != null) : ?>
+                            options['supportedMapTypes']['roadmap'] = 'HERE.reducedDay';
+                        <?php else : ?>
+                            options['supportedMapTypes']['roadmap'] = 'OpenStreetMap';
+                        <?php endif; ?>
                         //options['supportedMapTypes']['roadmap'] = 'OpenStreetMap.DE';
                         //options['supportedMapTypes']['roadmap'] = 'Stamen.TonerLite';
                         //options['supportedMapTypes']['roadmap'] = 'CartoDB.Voyager';
                         //options['supportedMapTypes']['roadmap'] = 'HERE.normalDay';
-                        //options['supportedMapTypes']['roadmap'] = 'HERE.reducedDay';
 
-                        options['supportedMapTypes']['terrain'] = 'OpenTopoMap';
+                        <?php if (getWebsiteConfig('here_app_code') != null) : ?>
+                            options['supportedMapTypes']['terrain'] = 'HERE.terrainDay';
+                        <?php else : ?>
+                            options['supportedMapTypes']['terrain'] = 'OpenTopoMap';
+                        <?php endif; ?>
                         //options['supportedMapTypes']['terrain'] = 'Stamen.Terrain';
-                        //options['supportedMapTypes']['terrain'] = 'HERE.terrainDay';
 
                         options['supportedMapTypes']['satellite'] = 'HERE.satelliteDay';
 
