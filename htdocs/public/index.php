@@ -37,8 +37,8 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
         <!-- Map api javascripts and related dependencies -->
         <?php $mapapi = $_GET['mapapi'] ?? 'leaflet'; ?>
         <?php if ($mapapi == 'google') : ?>
-            <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?libraries=visualization,geometry"></script>
-            <!-- <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?key=<insert map key here>&libraries=visualization,geometry"></script> -->
+            <!-- <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?libraries=visualization,geometry"></script> -->
+            <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?key=<?php echo getWebsiteConfig('google_key'); ?>&libraries=visualization,geometry"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier/1.0.3/oms.min.js" integrity="sha512-/3oZy+rGpR6XGen3u37AEGv+inHpohYcJupz421+PcvNWHq2ujx0s1QcVYEiSHVt/SkHPHOlMFn5WDBb/YbE+g==" crossorigin="anonymous"></script>
 
         <?php elseif ($mapapi == 'leaflet' || $mapapi == 'leaflet-vector'): ?>
@@ -116,8 +116,7 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
                     console.log('Failed to fetch location, using default location');
                 }).always(function() {
                     <?php if ($mapapi == 'leaflet-vector') : ?>
-                        var maptilerKey = '<insert map key here>';
-                        options['mapboxGLStyle'] = 'https://api.maptiler.com/maps/bright/style.json?optimize=true&key=' + maptilerKey;
+                        options['mapboxGLStyle'] = "https://api.maptiler.com/maps/bright/style.json?optimize=true&key=<?php echo getWebsiteConfig('maptiler_key'); ?>";
                         options['mapboxGLAttribution'] = 'Map &copy; <a href="https://www.maptiler.com">MapTiler</a>, OpenStreetMap contributors';
                     <?php endif; ?>
 
@@ -204,9 +203,13 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
                     <i class="fa fa-caret-down"></i>
                 </button>
                 <div class="dropdown-content">
-                    <a href="/?mapapi=google" title="Switch to Google Maps" <?= ($mapapi=="google"?"class='dropdown-content-checkbox dropdown-content-checkbox-active'":"class='dropdown-content-checkbox'") ?>>Google Maps API</a>
+                    <?php if (getWebsiteConfig('google_key') != null) : ?>
+                        <a href="/?mapapi=google" title="Switch to Google Maps" <?= ($mapapi=="google"?"class='dropdown-content-checkbox dropdown-content-checkbox-active'":"class='dropdown-content-checkbox'") ?>>Google Maps API</a>
+                    <?php endif; ?>
                     <a href="/?mapapi=leaflet" title="Switch to Leaflet with raster tiles" <?= ($mapapi=="leaflet"?"class='dropdown-content-checkbox  dropdown-content-checkbox-active'":"class='dropdown-content-checkbox'") ?>>Leaflet - Raster Tiles</a>
-                    <a href="/?mapapi=leaflet-vector" title="Switch to Leaflet with vector tiles" <?= ($mapapi=="leaflet-vector"?"class='dropdown-content-checkbox dropdown-content-checkbox-active'":"class='dropdown-content-checkbox'") ?>>Leaflet - Vector Tiles</a>
+                    <?php if (getWebsiteConfig('maptiler_key') != null) : ?>
+                        <a href="/?mapapi=leaflet-vector" title="Switch to Leaflet with vector tiles" <?= ($mapapi=="leaflet-vector"?"class='dropdown-content-checkbox dropdown-content-checkbox-active'":"class='dropdown-content-checkbox'") ?>>Leaflet - Vector Tiles</a>
+                    <?php endif; ?>
                 </div>
             </div>
 
