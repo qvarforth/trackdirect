@@ -78,6 +78,7 @@ class TrackDirectDataCollector():
         connection = AprsISConnection(
             self.callsign, self.passcode, self.sourceHostname, self.sourcePort)
         connection.setFrequencyLimit(self.hardFrequencyLimit)
+        connection.setSourceId(self.sourceId)
 
         def onPacketRead(line):
             if (not reactor.running):
@@ -246,7 +247,14 @@ class TrackDirectDataCollector():
             Boolean
         """
         if (packet.mapId in [1, 5, 7, 9] and packet.isMoving == 1):
-            if (packet.timestamp - int(self.frequencyLimit) < packet.markerPrevPacketTimestamp):
+            frequencyLimitToApply = int(self.frequencyLimit)
+
+            if (packet.ogn is not None and packet.ogn.ognTurnRate is not None):
+                turnRate = abs(float(packet.ogn.ognTurnRate))
+                if (turnRate > 0) :
+                    frequencyLimitToApply = int(frequencyLimitToApply / (1+turnRate))
+
+            if ((packet.timestamp - frequencyLimitToApply) < packet.markerPrevPacketTimestamp):
                 # This station is sending faster than config limit
                 return True
 

@@ -5,6 +5,7 @@ import collections
 import psycopg2
 import datetime
 import time
+import re
 
 
 class AprsISConnection(aprslib.IS):
@@ -25,6 +26,7 @@ class AprsISConnection(aprslib.IS):
         self.logger = logging.getLogger("aprslib.IS")
         self.frequencyLimit = None
         self.stationHashTimestamps = {}
+        self.sourceId = 1
 
     def setFrequencyLimit(self, frequencyLimit):
         """Set frequency limit
@@ -41,6 +43,14 @@ class AprsISConnection(aprslib.IS):
             int
         """
         return self.frequencyLimit
+
+    def setSourceId(self, sourceId):
+        """Set what source packet is from (APRS, CWOP ...)
+
+        Args:
+            sourceId (int):  Id that corresponds to id in source-table
+        """
+        self.sourceId = sourceId
 
     def filteredConsumer(self, callback, blocking=True, raw=False):
         """The filtered consume method
@@ -86,11 +96,22 @@ class AprsISConnection(aprslib.IS):
             except:
                 return False
 
+            # Try to find turn rate and reduce frequency limit if high turn rate
+            frequencyLimitToApply = int(self.frequencyLimit)
+            if (self.sourceId == 5) :
+                match = re.search("(\+|\-)(\d\.\d)rot ", line)
+                try:
+                    turnRate = abs(float(match.group(2)))
+                    if (turnRate > 0) :
+                        frequencyLimitToApply = int(frequencyLimitToApply / (1+turnRate))
+                except:
+                    pass
+
             latestTimestampOnMap = 0
             if (name in self.stationHashTimestamps):
                 latestTimestampOnMap = self.stationHashTimestamps[name]
 
-                if ((int(time.time()) - 1) - int(self.frequencyLimit) < latestTimestampOnMap):
+                if (((int(time.time()) - 1) - frequencyLimitToApply) < latestTimestampOnMap):
                     # This sender is sending faster than config limit
                     return True
             self.stationHashTimestamps[name] = int(time.time()) - 1
