@@ -130,10 +130,8 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
 
                         // Many providers require a map api key or similar, the following is an example for HERE
                         /*
-                        L.tileLayer.provider('HERE.terrainDay', {
-                            app_id: '<insert app id here>',
-                            app_code: '<insert map key here>'
-                        }).addTo(map);
+                        L.TileLayer.Provider.providers['HERE'].options['app_id'] = '<insert app id here>';
+                        L.TileLayer.Provider.providers['HERE'].options['app_code'] = '<insert map key here>';
                         */
 
                         options['supportedMapTypes'] = {};
@@ -143,11 +141,15 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
                         //options['supportedMapTypes']['roadmap'] = 'Stamen.TonerLite';
                         //options['supportedMapTypes']['roadmap'] = 'CartoDB.Voyager';
                         //options['supportedMapTypes']['roadmap'] = 'HERE.normalDay';
+                        //options['supportedMapTypes']['roadmap'] = 'HERE.reducedDay';
 
 
                         options['supportedMapTypes']['terrain'] = 'OpenTopoMap';
                         //options['supportedMapTypes']['terrain'] = 'Stamen.Terrain';
                         //options['supportedMapTypes']['terrain'] = 'HERE.terrainDay';
+
+                        // Remove the google-maps-if-statement below if the satellite option should be used for Leaflet
+                        //options['supportedMapTypes']['satellite'] = 'HERE.satelliteDay';
 
                     <?php endif; ?>
 
