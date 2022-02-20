@@ -141,12 +141,14 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
                         options['supportedMapTypes']['roadmap'] = 'OpenStreetMap';
                         //options['supportedMapTypes']['roadmap'] = 'OpenStreetMap.DE';
                         //options['supportedMapTypes']['roadmap'] = 'Stamen.TonerLite';
-                        //options['supportedMapTypes']['roadmap'] = 'HERE.normalDay';       // Requires API-key (but is free up to a limit)
+                        //options['supportedMapTypes']['roadmap'] = 'CartoDB.Voyager';
+                        //options['supportedMapTypes']['roadmap'] = 'HERE.normalDay';
 
 
                         options['supportedMapTypes']['terrain'] = 'OpenTopoMap';
                         //options['supportedMapTypes']['terrain'] = 'Stamen.Terrain';
-                        //options['supportedMapTypes']['terrain'] = 'HERE.terrainDay';      // Requires API-key (but is free up to a limit)
+                        //options['supportedMapTypes']['terrain'] = 'HERE.terrainDay';
+
                     <?php endif; ?>
 
                     // host is used to create url to /heatmaps and /images
