@@ -268,7 +268,7 @@ class TrackDirectHeatMapCreator():
             Array of points (a point is a latitude, longitude tuple)
         """
         result = []
-        timestampLimit = int(time.time()) - (60*60)
+        timestampLimit = int(time.time()) - (60*60*3)
         selectCursor = self.db.cursor()
 
         selectCursor.execute("""
