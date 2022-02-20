@@ -17,7 +17,4 @@ RUN wget http://jjguy.com/heatmap/heatmap-2.2.1.tar.gz && tar xzf heatmap-2.2.1.
 
 COPY . /root/trackdirect
 
-RUN rm /root/trackdirect/config/trackdirect.ini
-
-VOLUME /root/trackdirect/config/trackdirect.ini
 VOLUME /root/trackdirect/htdocs/public/heatmaps

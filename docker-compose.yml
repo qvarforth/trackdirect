@@ -4,7 +4,6 @@ services:
     build:
       context: .
       dockerfile: aprsc.dockerfile
-    restart: always
     ports:
       - "10152:10152"
       - "14580:14580"
@@ -17,7 +16,6 @@ services:
     build:
       context: .
       dockerfile: trackdirect-python2.dockerfile
-    restart: always
     volumes:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
     command: /root/trackdirect/server/scripts/collector.sh trackdirect.ini 0
@@ -29,7 +27,6 @@ services:
     build:
       context: .
       dockerfile: trackdirect-python2.dockerfile
-    restart: always
     volumes:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
     command: /root/trackdirect/server/scripts/wsserver.sh trackdirect.ini
@@ -43,7 +40,6 @@ services:
     build:
       context: .
       dockerfile: trackdirect-python2.dockerfile
-    restart: always
     volumes:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
       - $PWD/heatmaps:/root/trackdirect/htdocs/public/heatmaps
@@ -55,7 +51,6 @@ services:
     build:
       context: .
       dockerfile: trackdirect-apache.dockerfile
-    restart: always
     volumes:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
       - $PWD/heatmaps:/root/trackdirect/htdocs/public/heatmaps
@@ -68,7 +63,6 @@ services:
     build:
       context: .
       dockerfile: db.dockerfile
-    restart: always
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: foobar
