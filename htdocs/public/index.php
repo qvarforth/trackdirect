@@ -123,18 +123,30 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
 
                     <?php if ($mapapi == 'leaflet') : ?>
                         // We are using Leaflet -- read about leaflet-providers and select your favorite maps
-                        // Make sure to read the license requirements for each provider before launching a public website
+                        // https://leaflet-extras.github.io/leaflet-providers/preview/
 
-                        // Many providers require a map api key, the following is an example for MapBox
-                        //L.tileLayer.provider('MapBox', {
-                        //    id: '<insert map id here>',
-                        //    accessToken: '<insert map key here>'
-                        //}).addTo(map);
+                        // Make sure to read the license requirements for each provider before launching a public website
+                        // https://wiki.openstreetmap.org/wiki/Tile_servers
+
+                        // Many providers require a map api key or similar, the following is an example for HERE
+                        /*
+                        L.tileLayer.provider('HERE.terrainDay', {
+                            app_id: '<insert app id here>',
+                            app_code: '<insert map key here>'
+                        }).addTo(map);
+                        */
 
                         options['supportedMapTypes'] = {};
-                        options['supportedMapTypes']['roadmap'] = 'CartoDB.Voyager';
+
+                        options['supportedMapTypes']['roadmap'] = 'OpenStreetMap';
+                        //options['supportedMapTypes']['roadmap'] = 'OpenStreetMap.DE';
+                        //options['supportedMapTypes']['roadmap'] = 'Stamen.TonerLite';
+                        //options['supportedMapTypes']['roadmap'] = 'HERE.normalDay';       // Requires API-key (but is free up to a limit)
+
+
                         options['supportedMapTypes']['terrain'] = 'OpenTopoMap';
-                        options['supportedMapTypes']['satellite'] = 'Esri.WorldImagery';
+                        //options['supportedMapTypes']['terrain'] = 'Stamen.Terrain';
+                        //options['supportedMapTypes']['terrain'] = 'HERE.terrainDay';      // Requires API-key (but is free up to a limit)
                     <?php endif; ?>
 
                     // host is used to create url to /heatmaps and /images
@@ -218,7 +230,9 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
                 <div class="dropdown-content" id="tdTopnavMapType">
                     <a href="javascript:void(0);" onclick="trackdirect.setMapType('roadmap'); $('#tdTopnavMapType>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox dropdown-content-checkbox-active">Roadmap</a>
                     <a href="javascript:void(0);" onclick="trackdirect.setMapType('terrain'); $('#tdTopnavMapType>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">Terrain/Outdoors</a>
+                    <?php if ($mapapi == 'google') : ?>
                     <a href="javascript:void(0);" onclick="trackdirect.setMapType('satellite'); $('#tdTopnavMapType>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">Satellite</a>
+                    <?php endif; ?>
 
                 </div>
             </div>
