@@ -12,9 +12,6 @@ RUN apt-get update && apt-get install -y \
   aprsc \
   && rm -rf /var/lib/apt/lists/*
 
-RUN rm /opt/aprsc/etc/aprsc.conf
-VOLUME /opt/aprsc/etc/aprsc.conf
-
 EXPOSE 10152
 EXPOSE 14580
 EXPOSE 10155
