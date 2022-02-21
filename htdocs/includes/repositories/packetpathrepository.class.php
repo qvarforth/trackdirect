@@ -127,4 +127,39 @@ class PacketPathRepository extends ModelRepository
         $stmt = $pdo->prepareAndExec($sql, $arg);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /**
+     * Get latest data list by receiving station id (will try to exclude stationary sending stations)
+     *
+     * @param  int     $stationId
+     * @param  int     $hours
+     * @param  int     $limit
+     * @return array
+     */
+    public function getLatestMovingDataListByReceivingStationId($stationId, $hours, $limit)
+    {
+        if (!isInt($stationId) || !isInt($hours)) {
+            return [];
+        }
+        $minTimestamp = time() - (60*60*$hours);
+
+        $sql = 'select pp.*
+            from packet_path pp
+                join station s on s.id = pp.sending_station_id
+            where pp.station_id = ?
+                and pp.timestamp >= ?
+                and pp.number = 0
+                and pp.sending_latitude is not null
+                and pp.sending_longitude is not null
+                and pp.sending_latitude != s.latest_confirmed_latitude
+                and pp.sending_longitude != s.latest_confirmed_longitude
+            order by pp.timestamp
+            limit ?';
+
+        $arg = [$stationId, $minTimestamp, $limit];
+
+        $pdo = PDOConnection::getInstance();
+        $stmt = $pdo->prepareAndExec($sql, $arg);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

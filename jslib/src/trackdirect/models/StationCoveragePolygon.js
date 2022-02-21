@@ -32,9 +32,6 @@ trackdirect.models.StationCoveragePolygon = function (
   // Ignoring everything with a distance longer than 1000km is reasonable.
   this._upperMaxRangeInMeters = 1000 * 1000;
 
-  // Percentile affects how many packets we include in the coverage polygon.
-  this._percentile = 95;
-
   // To get a smooth ploygon we add som padding to the convex hull positions.
   this._paddingInPercentOfMaxRange = 10;
   this._paddingMinInMeters = 1000;
@@ -43,13 +40,14 @@ trackdirect.models.StationCoveragePolygon = function (
 /**
  * Set coverage data
  * @param {array} data
+ * @param {int} percentile
  */
-trackdirect.models.StationCoveragePolygon.prototype.setData = function (data) {
+trackdirect.models.StationCoveragePolygon.prototype.setData = function (data, percentile) {
   this._addParametersToData(data);
   this._heatmapCoordinates = this._getCoordinates(data);
 
   if (this._showPolygon) {
-    var maxRange = this._getCoveragePolygonMaxRange(data);
+    var maxRange = this._getCoveragePolygonMaxRange(data, percentile);
     if (maxRange <= 0) {
       this._showPolygon = false;
     } else {
@@ -340,13 +338,14 @@ trackdirect.models.StationCoveragePolygon.prototype._getFilteredPositions =
 /**
  * Calculate coverage polygon max range
  * @param {array} data
+ * @param {int} percentile
  * @return {int}
  */
 trackdirect.models.StationCoveragePolygon.prototype._getCoveragePolygonMaxRange =
-  function (data) {
+  function (data, percentile) {
     var maxRange = this._getDistancePercentile(
       data,
-      this._percentile,
+      percentile,
       this._upperMaxRangeInMeters
     );
     if (isNaN(maxRange)) {

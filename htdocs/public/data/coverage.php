@@ -10,7 +10,14 @@ if ($station->isExistingObject()) {
 
     $numberOfHours = 10*24; // latest 10 days should be enough
     $limit = 5000; // Limit number of packets to reduce load on server (and browser)
-    $packetPaths = PacketPathRepository::getInstance()->getLatestDataListByReceivingStationId($_GET['id'] ?? null, $numberOfHours, $limit);
+
+    if (getWebsiteConfig('coverage_only_moving_senders')) {
+        $packetPaths = PacketPathRepository::getInstance()->getLatestMovingDataListByReceivingStationId($_GET['id'] ?? null, $numberOfHours, $limit);
+    } else {
+        $packetPaths = PacketPathRepository::getInstance()->getLatestDataListByReceivingStationId($_GET['id'] ?? null, $numberOfHours, $limit);
+    }
+
+
     foreach ($packetPaths as $path) {
         $row = [];
         $row['latitude'] = $path['sending_latitude'];

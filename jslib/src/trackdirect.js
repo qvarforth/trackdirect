@@ -38,6 +38,7 @@ var trackdirect = {
 
   isMobile: false,
   coverageDataUrl: null,
+  coveragePercentile: 95,
   settings: {},
 
   /**
@@ -498,7 +499,7 @@ var trackdirect = {
         var me = this;
         $.getJSON(this.coverageDataUrl + "?id=" + stationId, function (data) {
           if ("station_id" in data && "coverage" in data) {
-            coveragePolygon.setData(data["coverage"]);
+            coveragePolygon.setData(data["coverage"], me.coveragePercentile);
             var marker =
               me._map.markerCollection.getStationLatestMarker(stationId);
             if (marker.isVisible()) {
@@ -1037,6 +1038,9 @@ var trackdirect = {
     }
     if (typeof options["coverageDataUrl"] !== undefined) {
       this.coverageDataUrl = options["coverageDataUrl"];
+    }
+    if (typeof options["coveragePercentile"] !== undefined) {
+      this.coveragePercentile = options["coveragePercentile"];
     }
     if (typeof options["time"] !== undefined) {
       this._time = options["time"];
