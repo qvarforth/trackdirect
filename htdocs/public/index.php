@@ -76,6 +76,7 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
                 options['isMobile'] = false;
                 options['useImperialUnit'] = <?php echo (isImperialUnitUser() ? 'true': 'false'); ?>;
                 options['coverageDataUrl'] = '/data/coverage.php';
+                options['coveragePercentile'] = <?php echo (getWebsiteConfig('coverage_percentile') ?? "95"); ?>;
                 options['defaultTimeLength'] = 60; // In minutes
 
                 var md = new MobileDetect(window.navigator.userAgent);
@@ -136,27 +137,9 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
                         L.TileLayer.Provider.providers['HERE'].options['app_code'] = '<?php echo getWebsiteConfig('here_app_code'); ?>';
 
                         options['supportedMapTypes'] = {};
-
-
-                        <?php if (getWebsiteConfig('here_app_code') != null) : ?>
-                            options['supportedMapTypes']['roadmap'] = 'HERE.reducedDay';
-                        <?php else : ?>
-                            options['supportedMapTypes']['roadmap'] = 'OpenStreetMap';
-                        <?php endif; ?>
-                        //options['supportedMapTypes']['roadmap'] = 'OpenStreetMap.DE';
-                        //options['supportedMapTypes']['roadmap'] = 'Stamen.TonerLite';
-                        //options['supportedMapTypes']['roadmap'] = 'CartoDB.Voyager';
-                        //options['supportedMapTypes']['roadmap'] = 'HERE.normalDay';
-
-                        <?php if (getWebsiteConfig('here_app_code') != null) : ?>
-                            options['supportedMapTypes']['terrain'] = 'HERE.terrainDay';
-                        <?php else : ?>
-                            options['supportedMapTypes']['terrain'] = 'OpenTopoMap';
-                        <?php endif; ?>
-                        //options['supportedMapTypes']['terrain'] = 'Stamen.Terrain';
-
-                        options['supportedMapTypes']['satellite'] = 'HERE.satelliteDay';
-
+                        options['supportedMapTypes']['roadmap'] = "<?php echo getWebsiteConfig('leaflet_raster_tile_roadmap'); ?>";
+                        options['supportedMapTypes']['terrain'] = "<?php echo getWebsiteConfig('leaflet_raster_tile_terrain'); ?>";
+                        options['supportedMapTypes']['satellite'] = "<?php echo getWebsiteConfig('leaflet_raster_tile_satellite'); ?>";
                     <?php endif; ?>
 
                     // host is used to create url to /heatmaps and /images
@@ -244,7 +227,7 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
                 <div class="dropdown-content" id="tdTopnavMapType">
                     <a href="javascript:void(0);" onclick="trackdirect.setMapType('roadmap'); $('#tdTopnavMapType>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox dropdown-content-checkbox-active">Roadmap</a>
                     <a href="javascript:void(0);" onclick="trackdirect.setMapType('terrain'); $('#tdTopnavMapType>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">Terrain/Outdoors</a>
-                    <?php if ($mapapi == 'google' || getWebsiteConfig('here_app_code') != null) : ?>
+                    <?php if ($mapapi == 'google' || getWebsiteConfig('leaflet_raster_tile_satellite') != null) : ?>
                     <a href="javascript:void(0);" onclick="trackdirect.setMapType('satellite'); $('#tdTopnavMapType>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">Satellite</a>
                     <?php endif; ?>
                 </div>
