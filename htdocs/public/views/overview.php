@@ -321,7 +321,7 @@
             <?php endif;?>
 
             <!-- Latest PHG and RNG -->
-            <?php if ($latestConfirmedPacket->isExistingObject()) : ?>
+            <?php if ($latestConfirmedPacket && $latestConfirmedPacket->isExistingObject()) : ?>
                 <?php if ($latestConfirmedPacket->phg != null || $latestConfirmedPacket->latestPhgTimestamp != null) : ?>
                     <div class="overview-content-divider"></div>
                     <div>
