@@ -197,20 +197,24 @@ class StationRepository extends ModelRepository
         }
 
         $pdo = PDOConnection::getInstance();
-        $stmt = $pdo->prepare(
-            'select * from station
-            where latest_confirmed_packet_timestamp is not null
-                and latest_confirmed_packet_timestamp > ?
-                and (source_id != 5 or latest_confirmed_packet_timestamp > ?)
-                and name ilike ?
+        $stmt = $pdo->prepare('
+	    select s.*
+            from station s
+	        left outer join ogn_device d on d.device_id = s.latest_ogn_sender_address
+            where s.latest_confirmed_packet_timestamp is not null
+                and s.latest_confirmed_packet_timestamp > ?
+                and (s.source_id != 5 or s.latest_confirmed_packet_timestamp > ?)
+                and (s.name ilike ? or d.registration ilike ? or d.cn ilike ?)
             order by name
             limit ? offset ?'
         );
         $stmt->bindValue(1, (time() - $activeDuringLatestNumberOfSeconds));
         $stmt->bindValue(2, (time() - (60*60*24))); // OGN data should be deleted after 24h, but just to be safe we avoid including older data when searching
-        $stmt->bindValue(3, "$q%");
-        $stmt->bindValue(4, $limit);
-        $stmt->bindValue(5, $offset);
+	$stmt->bindValue(3, "$q%");
+	$stmt->bindValue(4, "$q%");
+	$stmt->bindValue(5, "$q%");
+        $stmt->bindValue(6, $limit);
+        $stmt->bindValue(7, $offset);
 
         $stmt->execute();
         $records = $stmt->fetchAll(PDO::FETCH_ASSOC);

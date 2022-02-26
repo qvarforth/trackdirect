@@ -56,7 +56,7 @@
                         </td>
                         <td>
                             <?php if ($foundStation->sourceId == 5 && $foundStation->getOgnDevice() !== null) : ?>
-                                <div style="width: 100px; display: inline-block;">Registration:</div><?php echo htmlspecialchars($foundStation->getOgnDevice()->registration); ?><br/>
+                                <div style="width: 100px; display: inline-block;">Registration:</div><?php echo htmlspecialchars($foundStation->getOgnDevice()->registration); ?> <?php echo $foundStation->getOgnDevice()->cn ? '[' .htmlspecialchars($foundStation->getOgnDevice()->cn) . ']' : ''; ?><br/>
                                 <div style="width: 100px; display: inline-block;">Aircraft Model:</div><?php echo htmlspecialchars($foundStation->getOgnDevice()->aircraftModel); ?>
                             <?php else : ?>
                                 <?php $latestPacket = PacketRepository::getInstance()->getObjectById($foundStation->latestPacketId, $foundStation->latestPacketTimestamp); ?>
