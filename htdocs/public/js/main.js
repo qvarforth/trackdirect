@@ -41,7 +41,7 @@ function loadView(url) {
   var view = url.split('/').pop().split("?")[0];
   if (view != '') {
     var requestUrl = '/views/' + url.split('/').pop();
-    $("#td-modal-content").text('');
+    $("#td-modal-content").html('<img src="/images/spinner.gif" style="max-width: 100%; max-height: 100px; margin-top: 40px; margin-left: auto; margin-right: auto; display: block;"/>');
     $("#td-modal-title").text('');
     $("#td-modal").show();
     $("#td-modal-content").load(requestUrl, {'modal': true},
