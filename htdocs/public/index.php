@@ -146,9 +146,9 @@ $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
                     options['host'] = "<?php echo $_SERVER['HTTP_HOST']; ?>";
 
                     var supportsWebSockets = 'WebSocket' in window || 'MozWebSocket' in window;
-                    if (supportsWebSockets) {
-                        <?php if ($REQUEST_PROTOCOL == 'https') : ?>
-                            var wsServerUrl = 'wss://<?php echo $_SERVER['HTTP_HOST']; ?>:9000/ws';
+		    if (supportsWebSockets) {
+                       <?php if (getWebsiteConfig('websocket_url') != null) : ?>
+                           var wsServerUrl = "<?php echo getWebsiteConfig('websocket_url'); ?>";
                         <?php else : ?>
                             var wsServerUrl = 'ws://<?php echo $_SERVER['HTTP_HOST']; ?>:9000/ws';
                         <?php endif; ?>
