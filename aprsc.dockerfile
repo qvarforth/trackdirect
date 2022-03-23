@@ -17,4 +17,7 @@ EXPOSE 14580
 EXPOSE 10155
 EXPOSE 14501
 
-CMD /opt/aprsc/sbin/aprsc -u aprsc -t /opt/aprsc -c /etc/aprsc.conf
+WORKDIR /opt/aprsc
+USER aprsc
+
+CMD /opt/aprsc/sbin/aprsc -c /opt/aprsc/etc/aprsc.conf
