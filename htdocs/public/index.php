@@ -248,13 +248,15 @@
                 <div class="dropdown-content">
 
                     <a href="/views/search.php"
-                        class="tdlink"
+			class="tdlink"
+                        onclick="$(this).attr('href', '/views/search.php?imperialUnits=' + (trackdirect.isImperialUnits()?'1':'0'))"
                         title="Search for a station/vehicle here!">
                         Station search
                     </a>
 
                     <a href="/views/latest.php"
-                        class="tdlink"
+			class="tdlink"
+                        onclick="$(this).attr('href', '/views/latest.php?imperialUnits=' + (trackdirect.isImperialUnits()?'1':'0'))"
                         title="List latest heard stations!">
                         Latest heard
                     </a>
