@@ -143,13 +143,27 @@ class TrackDirectConfig(Singleton):
 
                 self.collector[collectorNumber]['numbers_in_batch'] = configParser.get(
                     'collector' + str(collectorNumber), 'numbers_in_batch').strip('"')
-                self.collector[collectorNumber]['frequency_limit'] = configParser.get(
-                    'collector' + str(collectorNumber), 'frequency_limit').strip('"')
+                try:
+                    self.collector[collectorNumber]['frequency_limit'] = configParser.get(
+                        'collector' + str(collectorNumber), 'frequency_limit').strip('"')
+                except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                    self.collector[collectorNumber]['frequency_limit'] = "0"
 
-                saveFastPackets = configParser.get(
-                    'collector' + str(collectorNumber), 'save_fast_packets').strip('"')
-                self.collector[collectorNumber]['save_fast_packets'] = bool(
-                    int(saveFastPackets))
+                try:
+                    saveFastPackets = configParser.get(
+                        'collector' + str(collectorNumber), 'save_fast_packets').strip('"')
+                    self.collector[collectorNumber]['save_fast_packets'] = bool(
+                        int(saveFastPackets))
+                except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                    self.collector[collectorNumber]['save_fast_packets'] = False
+
+                try:
+                    detectDuplicates = configParser.get(
+                        'collector' + str(collectorNumber), 'detect_duplicates').strip('"')
+                    self.collector[collectorNumber]['detect_duplicates'] = bool(
+                        int(detectDuplicates))
+                except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                    self.collector[collectorNumber]['detect_duplicates'] = False
 
                 self.collector[collectorNumber]['error_log'] = configParser.get(
                     'collector' + str(collectorNumber), 'error_log').strip('"')
@@ -173,5 +187,6 @@ class TrackDirectConfig(Singleton):
                 self.collector[collectorNumber]['numbers_in_batch'] = "20"
                 self.collector[collectorNumber]['frequency_limit'] = "0"
                 self.collector[collectorNumber]['save_fast_packets'] = True
+                self.collector[collectorNumber]['detect_duplicates'] = False
 
                 self.collector[collectorNumber]['error_log'] = None

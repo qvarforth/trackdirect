@@ -25,7 +25,7 @@ class AprsISConnection(aprslib.IS):
 
         self.logger = logging.getLogger("aprslib.IS")
         self.frequencyLimit = None
-        self.stationHashTimestamps = {}
+        self.stationHashTimestamps = collections.OrderedDict()
         self.sourceId = 1
 
     def setFrequencyLimit(self, frequencyLimit):
@@ -115,4 +115,16 @@ class AprsISConnection(aprslib.IS):
                     # This sender is sending faster than config limit
                     return True
             self.stationHashTimestamps[name] = int(time.time()) - 1
+            self._cacheMaintenance()
         return False
+
+    def _cacheMaintenance(self):
+        """Make sure cache does not contain to many packets
+        """
+        frequencyLimitToApply = int(self.frequencyLimit)
+        maxNumberOfPackets =  frequencyLimitToApply * 1000 # We assume that we never have more than 1000 packets per second
+        if (len(self.stationHashTimestamps) > maxNumberOfPackets):
+            try:
+                self.stationHashTimestamps.popitem(last=False)
+            except (KeyError, StopIteration) as e:
+                pass

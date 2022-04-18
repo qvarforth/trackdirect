@@ -1,3 +1,6 @@
+import logging
+from twisted.python import log
+
 import collections
 from trackdirect.exceptions.TrackDirectParseError import TrackDirectParseError
 
@@ -12,8 +15,10 @@ class PacketDuplicatePolicy():
     def __init__(self, stationRepository):
         """The __init__ method.
         """
-        self.minutesBackToLookForDuplicates = 50
+        self.minutesBackToLookForDuplicates = 30
         self.stationRepository = stationRepository
+
+        self.logger = logging.getLogger('trackdirect')
 
     def isDuplicate(self, packet):
         """Method used to check if this packet is a duplicate
@@ -124,12 +129,8 @@ class PacketDuplicatePolicy():
 
     def _cacheMaintenance(self):
         """Make sure cache does not contain to many packets
-
-        Note:
-            We want to keep messages for about 50min and calulate with 70packet/second
-            (I have seen duplicates that is 45 minutes old, some repeaters seems to store packet for a long time before they resend them)
         """
-        maxNumberOfPackets = self.minutesBackToLookForDuplicates * 60 * 70
+        maxNumberOfPackets = self.minutesBackToLookForDuplicates * 60 * 100 # We assume that we have an average of 100 packets per second
         if (len(PacketDuplicatePolicy.latestPacketsHashOrderedDict) > maxNumberOfPackets):
             try:
                 PacketDuplicatePolicy.latestPacketsHashOrderedDict.popitem(
