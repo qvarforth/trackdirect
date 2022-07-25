@@ -11,7 +11,7 @@ Options +FollowSymLinks
 RewriteEngine on
 
 # Avoid rewriting existing dirs
-RewriteRule ^/?(js|css|images|symbols|data|heatmaps|crossdomain.*|favicon.*|\.well-known|browserconfig\.xml|robots\.txt)($|/) - [L]
+RewriteRule ^/?(js|css|images|symbols|data|heatmaps|crossdomain.*|favicon.*|\.well-known|browserconfig\.xml|robots\.txt|ads\.txt)($|/) - [L]
 
 # Rewrite url
 RewriteCond %{REQUEST_METHOD} !=POST
