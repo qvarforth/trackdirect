@@ -19,6 +19,8 @@ from trackdirect.database.DatabaseConnection import DatabaseConnection
 from trackdirect.repositories.StationRepository import StationRepository
 from trackdirect.objects.Packet import Packet
 
+#from pympler.tracker import SummaryTracker
+
 class TrackDirectDataCollector():
     """An TrackDirectDataCollector instance connects to the data source and saves all received packets to the database
 
@@ -40,10 +42,11 @@ class TrackDirectDataCollector():
         self.numbersInBatch = collectorOptions['numbers_in_batch']
         self.saveFastPackets = collectorOptions['save_fast_packets']
         self.frequencyLimit = collectorOptions['frequency_limit']
+        self.detectDuplicates = collectorOptions['detect_duplicates']
         self.hardFrequencyLimit = None
-        if (not self.saveFastPackets):
+        if (not self.saveFastPackets and self.frequencyLimit is not None and int(self.frequencyLimit) > 0):
             # Only respect hard frequency limit if we are not saving "fast packets"
-            self.hardFrequencyLimit = collectorOptions['frequency_limit']
+            self.hardFrequencyLimit = self.frequencyLimit
         self.sourceId = collectorOptions['source_id']
         self.callsign = collectorOptions['callsign']
         self.passcode = collectorOptions['passcode']
@@ -75,6 +78,9 @@ class TrackDirectDataCollector():
     def consume(self):
         """Start consuming packets
         """
+
+        #tracker = SummaryTracker()
+
         connection = AprsISConnection(
             self.callsign, self.passcode, self.sourceHostname, self.sourcePort)
         connection.setFrequencyLimit(self.hardFrequencyLimit)
@@ -83,12 +89,6 @@ class TrackDirectDataCollector():
         def onPacketRead(line):
             if (not reactor.running):
                 raise StopIteration('Stopped')
-
-            if (self.hardFrequencyLimit is not None):
-                if (self.delay > 3):
-                    connection.setFrequencyLimit(self.hardFrequencyLimit * 2)
-                elif (self.delay <= 1 and connection.getFrequencyLimit() != self.hardFrequencyLimit):
-                    connection.setFrequencyLimit(self.hardFrequencyLimit)
 
             timestamp = int(time.time())
             deferred = threads.deferToThread(self._parse, line, timestamp)
@@ -109,6 +109,8 @@ class TrackDirectDataCollector():
         try:
             connection.connect()
             connection.filteredConsumer(onPacketRead, True, True)
+
+            #tracker.print_diff()
 
         except (aprslib.ConnectionDrop) as exp:
             # Just reconnect...
@@ -151,7 +153,9 @@ class TrackDirectDataCollector():
             if (packet.mapId == 15 or packet.mapId == 16):
                 return None
 
-            self._checkIfDuplicate(packet)
+            if (self.detectDuplicates):
+                self._checkIfDuplicate(packet)
+
             return self._cleanPacket(packet)
 
         except (aprslib.ParseError, aprslib.UnknownFormat, TrackDirectParseError) as exp:
@@ -246,8 +250,11 @@ class TrackDirectDataCollector():
         Returns:
             Boolean
         """
-        if (packet.mapId in [1, 5, 7, 9] and packet.isMoving == 1):
+        if (packet.mapId in [1, 5, 7, 9] and packet.isMoving == 1 and self.frequencyLimit is not None):
             frequencyLimitToApply = int(self.frequencyLimit)
+
+            if (frequencyLimitToApply == 0):
+                return False
 
             if (packet.ogn is not None and packet.ogn.ognTurnRate is not None):
                 turnRate = abs(float(packet.ogn.ognTurnRate))
