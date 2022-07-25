@@ -85,7 +85,7 @@ class TrackDirectHeatMapCreator():
             # zoom 7: 256 parts (images)
             # all images will alter be splitted into tile of size 256x256
             for part in parts:
-                # We are not in any hurry so we sleep to lower the effect on other processes (we are on a shared server)
+                # We are not in any hurry so we sleep to lower the effect on other processes
                 time.sleep(1)
 
                 totalMinLat = float(-85.05115)
