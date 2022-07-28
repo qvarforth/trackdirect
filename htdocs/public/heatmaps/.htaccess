@@ -1,10 +1,23 @@
 <IfModule mod_expires.c>
     ExpiresActive On
-    ExpiresByType image/jpg "access 1 month"
-    ExpiresByType image/jpeg "access 1 month"
-    ExpiresByType image/gif "access 1 month"
-    ExpiresByType image/png "access 1 month"
+    ExpiresByType image/jpg "access 1 hour"
+    ExpiresByType image/jpeg "access 1 hour"
+    ExpiresByType image/gif "access 1 hour"
+    ExpiresByType image/png "access 1 hour"
     ExpiresDefault "access 1 week"
 </IfModule>
 
 Options +FollowSymLinks
+RewriteEngine On
+
+# Do not do anything for already existing files and folders
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule .+ - [L]
+
+RewriteCond %{SCRIPT_FILENAME} !-d
+RewriteCond %{SCRIPT_FILENAME} !-f
+RewriteCond %{REQUEST_URI} \.png$
+
+# Images that needs to be handled by heatmap.php
+RewriteRule ^/?latest-heatmap\.(\d+)\.(\d+)\.(\d+)\.png$ ./heatmap.php?zoom=$1&x=$2&y=$3

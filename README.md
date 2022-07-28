@@ -2,7 +2,7 @@
 
 APRS Track Direct is a collection of tools that can be used to run an APRS website. You can use data from APRS-IS, CWOP-IS, OGN or any other source that uses the APRS specification.
 
-Tools included are an APRS data collector, a websocket server, a javascript library (websocket client and more), a heatmap generator and a website example (which can of course be used as is).
+Tools included are an APRS data collector, a websocket server, a javascript library (websocket client and more) and a website example (which can of course be used as is).
 
 Please note that it is almost 10 years since I wrote the majority of the code, and when the code was written, it was never intended to be published ...
 
@@ -25,8 +25,9 @@ What things you need to install and how to install them. These instructions are 
 
 Install some ubuntu packages
 ```
-sudo apt-get install libpq-dev postgresql-12 postgresql-client-common postgresql-client libevent-dev apache2 php libapache2-mod-php php-dom php-pgsql libmagickwand-dev imagemagick php-imagick inkscape
+sudo apt-get install libpq-dev postgresql-12 postgresql-client-common postgresql-client libevent-dev apache2 php libapache2-mod-php php-dom php-pgsql libmagickwand-dev imagemagick php-imagick inkscape php-gd
 ```
+**Note that php-gd was added to these instructions during the summer of 2022, it is needed for the new heatmap generator.**
 
 #### Install python
 Unfortunately, the majority of this code was written when python 2 was still common and used, this means that the installation process needs to be adapted a bit. You might see some deprication warnings when starting the collector and websocket server.
@@ -54,14 +55,6 @@ Install the python aprs lib (aprs-python)
 git clone https://github.com/rossengeorgiev/aprs-python
 cd aprs-python/
 pip2 install .
-```
-
-Install python library used for generating heatmap
-```
-wget http://jjguy.com/heatmap/heatmap-2.2.1.tar.gz
-tar xzf heatmap-2.2.1.tar.gz
-cd heatmap-2.2.1
-sudo python2 setup.py install
 ```
 
 ### Set up aprsc
@@ -173,19 +166,6 @@ If you have enabled a firewall, make sure the selected port is open (we are usin
 sudo ufw allow 9000
 ```
 
-#### Start generating heatmaps
-When you zoom out the map, it is usually too demanding to render all the objects on the map, instead we have to show something else. What we do is that we show a heat map that tells the user where in the world we have the highest APRS activity.
-
-I recommend generating new heatmaps once every hour in production (I suggest that you schedule it using cron). The script should be executed by the user that you granted access to the database "trackdirect".
-```
-~/trackdirect/server/scripts/heatmapcreator.sh trackdirect.ini ~/trackdirect/htdocs/public/heatmaps
-```
-
-Generating heatmaps might take a while, look in log file to see the current status:
-```
-tail -f ~/trackdirect/server/log/heatmap.log
-```
-
 #### Trackdirect js library
 All the map view magic is handled by the trackdirect js library, it contains functionality for rendering the map (using Google Maps API or Leaflet), functionality used to communicate with backend websocket server and much more.
 
@@ -241,13 +221,12 @@ sudo ufw allow 80
 If you want to set up a public website you should install a firewall and setup SSL certificates. For an easy solution I would use ufw to handle iptables, Nginx as a reverse proxy and use let’s encrypt for SSL certificates.
 
 ### Schedule things using cron
-We recommend that your schedule the heatmapcreator shell script to be executed once every hour. If you do not have infinite storage we recommend that you delete old packets, schedule the remover.sh script to be executed about once every hour. And again, if you are using OGN as data source you need to run the ogn_devices_install.sh script at least once every hour.
+If you do not have infinite storage we recommend that you delete old packets, schedule the remover.sh script to be executed about once every hour. And again, if you are using OGN as data source you need to run the ogn_devices_install.sh script at least once every hour.
 
 Note that the collector and wsserver shell scripts can be scheduled to start once every minute (nothing will happen if it is already running). I even recommend doing this as the collector and websocket server are built to shut down if something serious goes wrong (eg lost connection to database).
 
 Crontab example (crontab for the user that owns the "trackdirect" database)
 ```
-10 * * * * ~/trackdirect/server/scripts/heatmapcreator.sh trackdirect.ini ~/trackdirect/htdocs/public/heatmaps 2>&1 &
 40 * * * * ~/trackdirect/server/scripts/remover.sh trackdirect.ini 2>&1 &
 0 * * * * ~/trackdirect/server/scripts/ogn_devices_install.sh trackdirect 5432 2>&1 &
 * * * * * ~/trackdirect/server/scripts/wsserver.sh trackdirect.ini 2>&1 &

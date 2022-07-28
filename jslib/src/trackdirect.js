@@ -989,6 +989,7 @@ var trackdirect = {
       defaultMinZoomForMarkerLabel: 11,
       defaultMinZoomForMarkerPrevPosition: 11,
       defaultMinZoomForMarkerTail: 9,
+      defaultMinZoomForMarkers: 8,
 
       minZoomForMarkerLabel: 11,
       minZoomForMarkerPrevPosition: 11,
@@ -1096,6 +1097,13 @@ var trackdirect = {
     ) {
       this.settings.defaultMinZoomForMarkerTail =
         options["defaultMinZoomForMarkerTail"];
+    }
+    if (
+      typeof options["defaultMinZoomForMarkers"] !== undefined &&
+      options["defaultMinZoomForMarkers"] != null
+    ) {
+      this.settings.defaultMinZoomForMarkers =
+        options["defaultMinZoomForMarkers"];
     }
 
     if (typeof options["animate"] !== undefined && options["animate"] != null) {
@@ -1589,6 +1597,8 @@ var trackdirect = {
         trackdirect.settings.defaultMinZoomForMarkerTail + 1;
       trackdirect.settings.minZoomForMarkerLabel =
         trackdirect.settings.defaultMinZoomForMarkerLabel + 1;
+      trackdirect.settings.minZoomForMarkers =
+        trackdirect.settings.defaultMinZoomForMarkers;
     } else {
       trackdirect.settings.minZoomForMarkerPrevPosition =
         trackdirect.settings.defaultMinZoomForMarkerPrevPosition;
@@ -1596,6 +1606,8 @@ var trackdirect = {
         trackdirect.settings.defaultMinZoomForMarkerTail;
       trackdirect.settings.minZoomForMarkerLabel =
         trackdirect.settings.defaultMinZoomForMarkerLabel;
+      trackdirect.settings.minZoomForMarkers =
+        trackdirect.settings.defaultMinZoomForMarkers;
     }
   },
 

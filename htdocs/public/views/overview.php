@@ -318,41 +318,40 @@
                         <?php endif;?>
                     <?php endif;?>
                 <?php endif;?>
-            <?php endif;?>
 
-            <!-- Latest PHG and RNG -->
-            <?php if ($latestConfirmedPacket && $latestConfirmedPacket->isExistingObject()) : ?>
-                <?php if ($latestConfirmedPacket->phg != null || $latestConfirmedPacket->latestPhgTimestamp != null) : ?>
-                    <div class="overview-content-divider"></div>
-                    <div>
-                        <div class="overview-content-summary-hr">Latest PHG:</div>
-                        <div class="overview-content-summary-cell-phg" title="Power-Height-Gain (and directivity)">
-                            <?php echo $latestConfirmedPacket->getPHGDescription(true); ?><br/>
-                            (Calculated range:
+                <!-- Latest PHG and RNG -->
+                <?php if ($latestConfirmedPacket && $latestConfirmedPacket->isExistingObject()) : ?>
+                    <?php if ($latestConfirmedPacket->phg != null || $latestConfirmedPacket->latestPhgTimestamp != null) : ?>
+                        <div class="overview-content-divider"></div>
+                        <div>
+                            <div class="overview-content-summary-hr">Latest PHG:</div>
+                            <div class="overview-content-summary-cell-phg" title="Power-Height-Gain (and directivity)">
+                                <?php echo $latestConfirmedPacket->getPHGDescription(true); ?><br/>
+                                (Calculated range:
+                                    <?php if (isImperialUnitUser()) : ?>
+                                        <?php echo round(convertKilometerToMile($latestConfirmedPacket->getPHGRange(true)/1000),2); ?> miles)
+                                    <?php else : ?>
+                                        <?php echo round($latestConfirmedPacket->getPHGRange(true)/1000,2); ?> km)
+                                    <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif;?>
+
+                    <?php if ($latestConfirmedPacket->rng != null || $latestConfirmedPacket->latestRngTimestamp != null) : ?>
+                        <div class="overview-content-divider"></div>
+                        <div>
+                            <div class="overview-content-summary-hr">Latest RNG:</div>
+                            <div class="overview-content-summary-cell-phg" title="The pre-calculated radio range">
                                 <?php if (isImperialUnitUser()) : ?>
-                                    <?php echo round(convertKilometerToMile($latestConfirmedPacket->getPHGRange(true)/1000),2); ?> miles)
+                                    <?php echo round(convertKilometerToMile($latestConfirmedPacket->getRng(true)), 2); ?> miles
                                 <?php else : ?>
-                                    <?php echo round($latestConfirmedPacket->getPHGRange(true)/1000,2); ?> km)
+                                    <?php echo round($latestConfirmedPacket->getRng(true), 2); ?> km
                                 <?php endif; ?>
+                            </div>
                         </div>
-                    </div>
-                <?php endif;?>
-
-                <?php if ($latestConfirmedPacket->rng != null || $latestConfirmedPacket->latestRngTimestamp != null) : ?>
-                    <div class="overview-content-divider"></div>
-                    <div>
-                        <div class="overview-content-summary-hr">Latest RNG:</div>
-                        <div class="overview-content-summary-cell-phg" title="The pre-calculated radio range">
-                            <?php if (isImperialUnitUser()) : ?>
-                                <?php echo round(convertKilometerToMile($latestConfirmedPacket->getRng(true)), 2); ?> miles
-                            <?php else : ?>
-                                <?php echo round($latestConfirmedPacket->getRng(true), 2); ?> km
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                    <?php endif;?>
                 <?php endif;?>
             <?php endif;?>
-
 
             <!-- Latest Symbols -->
             <?php $stationLatestSymbols = $station->getLatestIconFilePaths(22, 22); ?>

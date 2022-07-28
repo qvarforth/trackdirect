@@ -13,7 +13,7 @@ if ps -eo pid,pgid,cmd | grep -v grep | grep "bin/wsserver.py --config $CONFIGFI
 else
     CURRENTDIR=$(dirname $0)
 
-    export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect:$CURRENTDIR/../../heatmap-2.2.1/
+    export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect
     cd $CURRENTDIR/..
     python2 $CURRENTDIR/../bin/wsserver.py --config $CONFIGFILE
     exit 0

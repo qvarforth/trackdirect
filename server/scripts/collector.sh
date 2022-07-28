@@ -15,7 +15,7 @@ if ps -ef | grep -v grep | grep "bin/collector.py $CONFIGFILE $COLLECTORNUMBER" 
 else
     CURRENTDIR=$(dirname $0)
 
-    export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect:$CURRENTDIR/../../heatmap-2.2.1/
+    export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect
     cd $CURRENTDIR/..
     python2 ./bin/collector.py $CONFIGFILE $COLLECTORNUMBER
     exit 0

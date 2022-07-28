@@ -1816,3 +1816,78 @@ function getWebsiteConfig($key) {
 
     return null;
 }
+
+/**
+ * Convert coordinate to pixel position in heatmap image
+ *
+ * @param {float} $lat
+ * @param {int} $zoom
+ * @param {int} $imageTileSize
+ * @return int
+ */
+function getLatPixelCoordinate($lat, $zoom, $imageTileSize) {
+    $pixelGlobeSize = $imageTileSize * pow(2, $zoom);
+    $yPixelsToRadiansRatio = $pixelGlobeSize / (2 * M_PI);
+    $halfPixelGlobeSize = $pixelGlobeSize / 2;
+    $pixelGlobeCenterY = $halfPixelGlobeSize;
+    $degreesToRadiansRatio = 180 / M_PI;
+    $siny = sin($lat * M_PI / 180);
+
+    # Truncating to 0.9999 effectively limits latitude to 89.189. This is
+    # about a third of a tile past the edge of the world tile.
+    if ($siny < -0.9999) {
+        $siny = -0.9999;
+    }
+    if ($siny > 0.9999) {
+        $siny = 0.9999;
+    }
+    $latY = round($pixelGlobeCenterY + 0.5 * log((1 + $siny) / (1 - $siny)) * -$yPixelsToRadiansRatio);
+    return $latY;
+}
+
+/**
+ * Convert coordinate to pixel position in heatmap image
+ *
+ * @param {float} $lng
+ * @param {int} $zoom
+ * @param {int} $imageTileSize
+ * @return int
+ */
+function getLngPixelCoordinate($lng, $zoom, $imageTileSize) {
+    $scale = 1 << $zoom;
+    $lngX = floor($imageTileSize * (0.5 + $lng / 360) * $scale);
+    return $lngX;
+}
+
+/**
+ * Convert pixel position in heatmap image to coordinate
+ *
+ * @param {float} $latPixelCoord
+ * @param {int} $zoom
+ * @param {int} $imageTileSize
+ * @return float
+ */
+function getLatFromLatPixelCoordinate($latPixelCoord, $zoom, $imageTileSize) {
+    $pixelGlobeSize = $imageTileSize * pow(2, $zoom);
+    $yPixelsToRadiansRatio = $pixelGlobeSize / (2 * M_PI);
+    $halfPixelGlobeSize = $pixelGlobeSize / 2;
+    $pixelGlobeCenterY = $halfPixelGlobeSize;
+    $degreesToRadiansRatio = 180 / M_PI;
+    $lat = (2 * atan(exp(($latPixelCoord - $pixelGlobeCenterY) / -$yPixelsToRadiansRatio)) - M_PI / 2) * $degreesToRadiansRatio;
+    return $lat;
+}
+
+/**
+ * Convert pixel position in heatmap image to coordinate
+ *
+ * @param {float} $lngPixelCoord
+ * @param {int} $zoom
+ * @param {int} $imageTileSize
+ * @return float
+ */
+function getLngFromLngPixelCoordinate($lngPixelCoord, $zoom, $imageTileSize) {
+    $scale = 1 << $zoom;
+    $lng = ((($lngPixelCoord / $scale) / $imageTileSize) - 0.5) * 360;
+    return $lng;
+}
+

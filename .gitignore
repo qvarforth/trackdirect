@@ -5,14 +5,12 @@
 htdocs/public/symbols/symbol-*.png
 
 # Generated heatmaps
-htdocs/public/heatmaps/latest-heatmap.*.png
+htdocs/public/heatmaps/heatmap.*.png
 
 # Custom config files
 config/*
 !config/trackdirect.ini
 
 ogndevices
-
-heatmaps
 
 db

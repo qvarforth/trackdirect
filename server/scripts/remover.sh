@@ -14,7 +14,7 @@ if ps -ef | grep -v grep | grep "bin/remover.py $CONFIGFILE" ; then
 else
     CURRENTDIR=$(dirname $0)
 
-    export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect:$CURRENTDIR/../../heatmap-2.2.1/
+    export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect
     cd $CURRENTDIR/..
     python2 $CURRENTDIR/../bin/remover.py $CONFIGFILE
     exit 0

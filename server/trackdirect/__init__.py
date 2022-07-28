@@ -3,5 +3,4 @@ __author__ = "Per Qvarforth"
 
 from TrackDirectDataCollector import *
 from TrackDirectWebsocketServer import *
-from TrackDirectHeatMapCreator import *
 from TrackDirectConfig import *

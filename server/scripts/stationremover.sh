@@ -15,7 +15,7 @@ if ps -ef | grep -v grep | grep "bin/stationremover.py $CONFIGFILE $STATIONID" ;
 else
     CURRENTDIR=$(dirname $0)
 
-    export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect:$CURRENTDIR/../../heatmap-2.2.1/
+    export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect
     cd $CURRENTDIR/..
     python2 $CURRENTDIR/../bin/stationremover.py $CONFIGFILE $STATIONID
     exit 0
