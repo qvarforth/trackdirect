@@ -206,9 +206,10 @@ sudo a2enmod rewrite
 sudo systemctl restart apache2
 ```
 
-For the symbols cache to work we need to make sure the webserver has write access to our htdocs/public/symbols directory (the following permission may be a little bit too generous...)
+For the symbols and heatmap caches to work we need to make sure the webserver has write access (the following permission may be a little bit too generous...)
 ```
 chmod 777 ~/trackdirect/htdocs/public/symbols
+chmod 777 ~/trackdirect/htdocs/public/heatmaps
 ```
 
 If you have enabled a firewall, make sure port 80 is open.

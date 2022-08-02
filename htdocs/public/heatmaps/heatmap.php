@@ -77,7 +77,10 @@ $config = array(
 );
 
 $heatmap = new gd_heatmap($data, $config);
-//$heatmap->output();
 
-$heatmap->output($filename);
-readfile($filename);
+if (is_writable(dirname($filename))) {
+    $heatmap->output($filename);
+    readfile($filename);
+} else {
+    $heatmap->output();
+}
