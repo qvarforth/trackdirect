@@ -315,7 +315,9 @@
                         <?php if ($view) : ?>
                             <?php include($view); ?>
 			<?php else: ?>
-                            <?php include(ROOT . '/public/views/about.php'); ?>
+                            <div id="td-modal-content-nojs">
+                                <?php include(ROOT . '/public/views/about.php'); ?>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
