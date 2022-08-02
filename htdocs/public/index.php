@@ -314,19 +314,8 @@
                         <?php $view = getView($_GET['view']); ?>
                         <?php if ($view) : ?>
                             <?php include($view); ?>
-                        <?php else: ?>
-                            <div id="td-modal-content-nojs">
-                                <div class="modal-inner-content">
-                                    <div class="modal-inner-content-menu">
-                                        <a href="/views/about.php" class="tdlink" title="More about this website!">About</a>
-                                        <a href="/views/latest.php" class="tdlink" title="List latest heard stations!">Latest heard</a>
-                                        <a href="/views/search.php" class="tdlink"title="Search for a station/vehicle here!">Station search</a>
-                                    </div>
-                                    <div class="horizontal-line">&nbsp;</div>
-                                    <p>Welcome to this APRS tracking website!</p>
-                                    <p>This website is based on the APRS Track Direct tools. Read more on <a href="https://github.com/qvarforth/trackdirect" target="_blank">GitHub</a>.</p>
-                                </div>
-                            </div>
+			<?php else: ?>
+                            <?php include(ROOT . '/public/views/about.php'); ?>
                         <?php endif; ?>
                     </div>
                 </div>
