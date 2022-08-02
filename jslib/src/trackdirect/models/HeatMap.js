@@ -30,7 +30,7 @@ trackdirect.models.HeatMap.prototype._getLeafletOptions = function () {
   var options = {
     errorTileUrl: trackdirect.settings.baseUrl + "/heatmaps/transparent.png",
     tileSize: 256,
-    maxZoom: 16,
+    maxZoom: 9,
     minZoom: 0,
   };
   return options;
@@ -65,7 +65,7 @@ trackdirect.models.HeatMap.prototype._getGoogleMapOptions = function () {
         .replace("{x}", xString);
     },
     tileSize: new google.maps.Size(256, 256),
-    maxZoom: 16,
+    maxZoom: 9,
     minZoom: 0,
     radius: 1738000,
     name: "APRSHEAT",
