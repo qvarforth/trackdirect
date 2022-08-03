@@ -645,8 +645,7 @@ trackdirect.models.Map.prototype._updateLeafletTileLayer = function () {
     if (typeof L.mapboxGL === "function") {
       var attribution = "";
       var accessToken = "no-token";
-      var style =
-        "https://api.maptiler.com/maps/basic/style.json?optimize=true&key=MYwA9fnolsOrAYyiBx6J";
+      var style = "";
 
       if ("mapboxGLStyle" in this._tdMapOptions) {
         style = this._tdMapOptions["mapboxGLStyle"];
