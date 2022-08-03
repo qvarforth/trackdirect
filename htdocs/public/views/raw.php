@@ -496,10 +496,12 @@
                 loadView("/views/raw.php?id=<?php echo $station->id ?>&type=" + $('#raw-type').val() + "&category=" + $('#raw-category').val() + "&rows=" + $('#raw-rows').val() + "&page=1");
             });
 
-            if (window.parent && window.parent.trackdirect) {
+            if (window.trackdirect) {
                 <?php if ($station->latestConfirmedLatitude != null && $station->latestConfirmedLongitude != null) : ?>
-                    window.parent.trackdirect.addListener("map-created", function() {
-                        window.parent.trackdirect.focusOnStation(<?php echo $station->id ?>, true);
+                    window.trackdirect.addListener("map-created", function() {
+                        if (!window.trackdirect.focusOnStation(<?php echo $station->id ?>, true)) {
+                            window.trackdirect.setCenter(<?php echo $station->latestConfirmedLatitude ?>, <?php echo $station->latestConfirmedLongitude ?>);
+                        }
                     });
                 <?php endif; ?>
             }

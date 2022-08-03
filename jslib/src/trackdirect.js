@@ -191,7 +191,7 @@ var trackdirect = {
     longitude =
       typeof longitude !== "undefined" ? longitude : this._defaultLongitude;
     zoom =
-      typeof zoom !== "undefined" ? zoom : this.settings.defaultCurrentZoom;
+      typeof zoom !== "undefined" ? zoom : this._map.getZoom();
 
     if (this._map !== null) {
       this._map.setCenter({ lat: latitude, lng: longitude }, zoom);
@@ -370,7 +370,7 @@ var trackdirect = {
    * Move focus to specified station
    * @param {int} stationId
    * @param {boolean} openInfoWindow
-   * @return None
+   * @return Boolean
    */
   focusOnStation: function (stationId, openInfoWindow) {
     var map = this._map;
@@ -390,6 +390,9 @@ var trackdirect = {
 
       // This method will hide marker when infowindow is closed, if nessecery
       marker.hide(5000, true);
+      return true;
+    } else {
+      return false;
     }
   },
 

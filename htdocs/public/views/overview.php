@@ -535,10 +535,12 @@
                 $('#latest-timestamp-age').html(moment(new Date(1000 * $('#latest-timestamp-age').html())).locale('en').fromNow());
             }
 
-            if (window.parent && window.parent.trackdirect) {
+            if (window.trackdirect) {
                 <?php if ($station->latestConfirmedLatitude != null && $station->latestConfirmedLongitude != null) : ?>
-                    window.parent.trackdirect.addListener("map-created", function() {
-                        window.parent.trackdirect.focusOnStation(<?php echo $station->id ?>, true);
+                    window.trackdirect.addListener("map-created", function() {
+                        if (!window.trackdirect.focusOnStation(<?php echo $station->id ?>, true)) {
+                            window.trackdirect.setCenter(<?php echo $station->latestConfirmedLatitude ?>, <?php echo $station->latestConfirmedLongitude ?>);
+                        }
                     });
                 <?php endif; ?>
             }
