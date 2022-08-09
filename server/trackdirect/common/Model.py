@@ -20,7 +20,7 @@ class Model():
         Returns:
             true if the object exists in database otherwise false
         """
-        if ((type(self.id) == int or type(self.id) == long) and self.id is not None and self.id > 0):
+        if ((type(self.id) == int) and self.id is not None and self.id > 0):
             return True
         else:
             return False
