@@ -59,10 +59,9 @@ class AprsISConnection(aprslib.IS):
         """
         def filterCallback(line):
             try:
-                # py3: this seems to somehow break the packets ?
-                # line = line.replace('\x00', '')
-                # just do a decode to do str->bytes
+                # decode first then replace
                 line = line.decode()
+                line = line.replace('\x00', '')
             except UnicodeError as e:
                 # string is not UTF-8
                 return
