@@ -1,9 +1,6 @@
 import logging
-from twisted.python import log
 import aprslib
 import collections
-import psycopg2
-import datetime
 import time
 import re
 
@@ -62,9 +59,11 @@ class AprsISConnection(aprslib.IS):
         """
         def filterCallback(line):
             try:
-                line = line.replace('\x00', '')
-                line.decode('utf-8', 'replace')
-            except UnicodeError:
+                # py3: this seems to somehow break the packets ?
+                # line = line.replace('\x00', '')
+                # just do a decode to do str->bytes
+                line = line.decode()
+            except UnicodeError as e:
                 # string is not UTF-8
                 return
 
