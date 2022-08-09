@@ -125,8 +125,8 @@ class PacketRelatedMapSectorsPolicy():
             # lat interval: 0 - 18000000
             # lng interval: 0 - 00003600
             # Maybe we can do this smarter? Currently we are adding many map-sectors that is not relevant
-            for lat in xrange(minLat, maxLat, 20000):
-                for lng in xrange(minLng, maxLng, 5):
+            for lat in range(minLat, maxLat, 20000):
+                for lng in range(minLng, maxLng, 5):
                     mapSectorAreaCode = lat+lng
                     if (mapSectorAreaCode != prevPacketAreaCode and mapSectorAreaCode != newPacketAreaCode):
                         relatedMapSectors.append(mapSectorAreaCode)
