@@ -16,6 +16,6 @@ else
 
     export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect
     cd $CURRENTDIR/..
-    python2 $CURRENTDIR/../bin/remover.py $CONFIGFILE
+    python $CURRENTDIR/../bin/remover.py $CONFIGFILE
     exit 0
 fi

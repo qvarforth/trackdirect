@@ -15,6 +15,6 @@ else
 
     export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect
     cd $CURRENTDIR/..
-    python2 $CURRENTDIR/../bin/wsserver.py --config $CONFIGFILE
+    python $CURRENTDIR/../bin/wsserver.py --config $CONFIGFILE
     exit 0
 fi

@@ -17,6 +17,6 @@ else
 
     export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect
     cd $CURRENTDIR/..
-    python2 ./bin/collector.py $CONFIGFILE $COLLECTORNUMBER
+    python $CURRENTDIR/../bin/collector.py $CONFIGFILE $COLLECTORNUMBER
     exit 0
 fi

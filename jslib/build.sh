@@ -13,7 +13,7 @@ do
         newFile="${file##*/}"
         newFile="tmp/${newFile//.js/}.min.js"
         echo "Processing $file -> $newFile"
-        python2 -m jsmin $file > $newFile
+        python -m jsmin $file > $newFile
         #cp $file $newFile
     else
         newFile="tmp/${file##*/}"
