@@ -25,36 +25,16 @@ What things you need to install and how to install them. These instructions are 
 
 Install some ubuntu packages
 ```
-sudo apt-get install libpq-dev postgresql-12 postgresql-client-common postgresql-client libevent-dev apache2 php libapache2-mod-php php-dom php-pgsql libmagickwand-dev imagemagick php-imagick inkscape php-gd
+sudo apt-get install libpq-dev postgresql-12 postgresql-client-common postgresql-client libevent-dev apache2 php libapache2-mod-php php-dom php-pgsql libmagickwand-dev imagemagick php-imagick inkscape php-gd libjpeg-dev
 ```
 **Note that php-gd was added to these instructions during the summer of 2022, it is needed for the new heatmap generator.**
 
-#### Install python
-Unfortunately, the majority of this code was written when python 2 was still common and used, this means that the installation process needs to be adapted a bit. You might see some deprication warnings when starting the collector and websocket server.
+#### Install python 3
 
-Install python 2
+Install python 3
 ```
-sudo add-apt-repository universe
 sudo apt update
-sudo apt install python2 python2-dev
-```
-
-Install pip2 (pip for python 2)
-```
-curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
-sudo python2 get-pip.py
-```
-
-Install needed python libs
-```
-pip2 install psycopg2-binary wheel setuptools autobahn[twisted] twisted pympler image_slicer jsmin psutil
-```
-
-Install the python aprs lib (aprs-python)
-```
-git clone https://github.com/rossengeorgiev/aprs-python
-cd aprs-python/
-pip2 install .
+sudo apt install python3 python3-dev python3-pip
 ```
 
 ### Set up aprsc
@@ -95,9 +75,18 @@ sudo /opt/aprsc/sbin/aprsc -u aprsc -t /opt/aprsc2 -c /etc/aprsc2.conf -r /logs2
 
 ### Installing Track Direct
 
+Note: TrackDirect have to be installed in the user home directory, it can't be in any subdirectory.
+
+
 Start by cloning the repository
 ```
 git clone https://github.com/qvarforth/trackdirect
+cd trackdirect
+```
+
+Install needed python libs
+```
+pip install -r requirements.txt
 ```
 
 #### Set up database
@@ -267,7 +256,6 @@ docker-compose -f docker-compose-rel.yml up
 
 
 ## TODO
-- Rewrite backend to use Python 3 instead of Python 2.
 - Create a REST-API and replace the current website example with a new frontend written in Angular.
 
 ## Contribution
