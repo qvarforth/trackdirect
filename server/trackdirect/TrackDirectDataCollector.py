@@ -1,9 +1,6 @@
 import logging
-from twisted.python import log
 import psycopg2
 import psycopg2.extras
-from collections import deque
-import json
 import re
 import aprslib
 import datetime
@@ -17,7 +14,6 @@ from trackdirect.collector.PacketBatchInserter import PacketBatchInserter
 from trackdirect.exceptions.TrackDirectParseError import TrackDirectParseError
 from trackdirect.database.DatabaseConnection import DatabaseConnection
 from trackdirect.repositories.StationRepository import StationRepository
-from trackdirect.objects.Packet import Packet
 
 #from pympler.tracker import SummaryTracker
 
@@ -261,9 +257,10 @@ class TrackDirectDataCollector():
                 if (turnRate > 0) :
                     frequencyLimitToApply = int(frequencyLimitToApply / (1+turnRate))
 
-            if ((packet.timestamp - frequencyLimitToApply) < packet.markerPrevPacketTimestamp):
-                # This station is sending faster than config limit
-                return True
+            if packet.markerPrevPacketTimestamp:
+                if ((packet.timestamp - frequencyLimitToApply) < packet.markerPrevPacketTimestamp):
+                    # This station is sending faster than config limit
+                    return True
 
             if (packet.stationId in self.movingStationIdsWithVisiblePacket):
                 # This station is sending way to fast (we havn't even added the previous packet to database yet)

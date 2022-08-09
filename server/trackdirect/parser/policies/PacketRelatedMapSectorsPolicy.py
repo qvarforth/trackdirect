@@ -1,5 +1,3 @@
-import json
-import datetime
 import time
 
 from trackdirect.parser.policies.MapSectorPolicy import MapSectorPolicy
@@ -65,7 +63,7 @@ class PacketRelatedMapSectorsPolicy():
             # We only add related map-sectors to moving stations (that has a marker)
             if (packet.mapId == 1):
                 # If new packet is not confirmed (mapId 7) we connect it with related map-sectors later
-                if (previousPacket.markerCounter > 1
+                if (previousPacket.markerCounter is not None and previousPacket.markerCounter > 1
                         or packet.markerId == previousPacket.markerId):
                     # We only add related map-sectors if previous packet has a marker with several connected packet
                     # A packet with a marker that is not shared with anyone will be converted to a ghost-marker in client
