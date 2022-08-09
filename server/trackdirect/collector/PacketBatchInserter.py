@@ -1,9 +1,6 @@
 import logging
-from twisted.python import log
 import psycopg2
 import psycopg2.extras
-import datetime
-import time
 
 from trackdirect.collector.StationLatestPacketModifier import StationLatestPacketModifier
 from trackdirect.collector.PacketMapIdModifier import PacketMapIdModifier
@@ -178,6 +175,8 @@ class PacketBatchInserter():
                                      packet.comment,
                                      packet.rawPath,
                                      packet.raw))
+
+        sql = ""
         try:
             # insert into packetYYYYMMDD
             argString = ','.join(cur.mogrify(
