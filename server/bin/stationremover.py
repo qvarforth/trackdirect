@@ -4,10 +4,10 @@ import logging
 import logging.handlers
 import datetime
 import time
+import trackdirect
 
 from trackdirect.database.DatabaseConnection import DatabaseConnection
 from trackdirect.database.DatabaseObjectFinder import DatabaseObjectFinder
-from trackdirect.TrackDirectConfig import TrackDirectConfig
 
 if __name__ == '__main__':
 
@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     stationId = sys.argv[2]
 
-    config = TrackDirectConfig()
+    config = trackdirect.TrackDirectConfig()
     config.populate(sys.argv[1])
 
     try:

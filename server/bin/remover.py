@@ -2,13 +2,12 @@ import sys
 import os.path
 import logging
 import logging.handlers
-import psycopg2.extras
 import datetime
 import time
+import trackdirect
 
 from trackdirect.database.DatabaseConnection import DatabaseConnection
 from trackdirect.database.DatabaseObjectFinder import DatabaseObjectFinder
-from trackdirect.TrackDirectConfig import TrackDirectConfig
 from trackdirect.repositories.PacketRepository import PacketRepository
 
 if __name__ == '__main__':
@@ -26,7 +25,7 @@ if __name__ == '__main__':
         print("\n" + sys.argv[0] + ' [config.ini]')
         sys.exit()
 
-    config = TrackDirectConfig()
+    config = trackdirect.TrackDirectConfig()
     config.populate(sys.argv[1])
 
     maxDaysToSavePositionData = int(config.daysToSavePositionData)

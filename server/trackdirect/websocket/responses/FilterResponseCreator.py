@@ -1,10 +1,9 @@
 import logging
-from twisted.python import log
 
-from math import floor, ceil
-import datetime, time
+import time
 
-import psycopg2, psycopg2.extras
+
+import trackdirect
 
 from trackdirect.repositories.PacketRepository import PacketRepository
 from trackdirect.repositories.StationRepository import StationRepository
@@ -12,7 +11,6 @@ from trackdirect.repositories.StationRepository import StationRepository
 from trackdirect.websocket.queries.MostRecentPacketsQuery import MostRecentPacketsQuery
 from trackdirect.websocket.responses.ResponseDataConverter import ResponseDataConverter
 
-from trackdirect.TrackDirectConfig import TrackDirectConfig
 
 class FilterResponseCreator():
     """The FilterResponseCreator is used to create filter responses, a response sent to client when client wants to filter on a station
@@ -32,7 +30,7 @@ class FilterResponseCreator():
         self.responseDataConverter = ResponseDataConverter(state, db)
         self.packetRepository = PacketRepository(db)
         self.stationRepository = StationRepository(db)
-        self.config = TrackDirectConfig()
+        self.config = trackdirect.TrackDirectConfig()
 
 
     def getResponses(self, request) :

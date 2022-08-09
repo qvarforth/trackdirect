@@ -1,14 +1,8 @@
 import logging
-from twisted.python import log
+import trackdirect
 
-import re
-import datetime, time
-
-import aprslib
-from trackdirect.TrackDirectConfig import TrackDirectConfig
 from trackdirect.parser.AprsISConnection import AprsISConnection
 from trackdirect.repositories.SenderRepository import SenderRepository
-from trackdirect.exceptions.TrackDirectParseError import TrackDirectParseError
 
 class AprsISReader():
     """The AprsISReader class will connect to a APRS-IS server and listen for APRS-packets
@@ -31,7 +25,7 @@ class AprsISReader():
         self.aprsISConnection2 = None
 
         self.logger = logging.getLogger('trackdirect')
-        self.config = TrackDirectConfig()
+        self.config = trackdirect.TrackDirectConfig()
 
 
     def start(self):
