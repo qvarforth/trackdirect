@@ -15,7 +15,7 @@ services:
   collector:
     build:
       context: .
-      dockerfile: trackdirect-python2.dockerfile
+      dockerfile: trackdirect-python.dockerfile
     volumes:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
     command: /root/trackdirect/server/scripts/collector.sh trackdirect.ini 0
@@ -26,7 +26,7 @@ services:
   websocket:
     build:
       context: .
-      dockerfile: trackdirect-python2.dockerfile
+      dockerfile: trackdirect-python.dockerfile
     volumes:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
     command: /root/trackdirect/server/scripts/wsserver.sh trackdirect.ini
