@@ -1,10 +1,7 @@
-import trackdirect
 import sys
 import os.path
 import logging
 import logging.handlers
-import psycopg2
-import psycopg2.extras
 import datetime
 import time
 
@@ -15,14 +12,16 @@ from trackdirect.TrackDirectConfig import TrackDirectConfig
 if __name__ == '__main__':
 
     if (len(sys.argv) < 3):
-        print "\n" + sys.argv[0] + ' [config.ini] [staion id]'
+        print("\n" + sys.argv[0] + ' [config.ini] [staion id]')
         sys.exit()
     elif (sys.argv[1].startswith("/")):
         if (not os.path.isfile(sys.argv[1])):
-            print "\n" + sys.argv[0] + ' [config.ini] [staion id]'
+            print(f"\n File {sys.argv[1]} does not exists")
+            print("\n" + sys.argv[0] + ' [config.ini] [staion id]')
             sys.exit()
     elif (not os.path.isfile(os.path.expanduser('~/trackdirect/config/' + sys.argv[1]))):
-        print "\n" + sys.argv[0] + ' [config.ini] [staion id]'
+        print(f"\n File ~/trackdirect/config/{sys.argv[1]} does not exists")
+        print("\n" + sys.argv[0] + ' [config.ini] [staion id]')
         sys.exit()
 
     stationId = sys.argv[2]
