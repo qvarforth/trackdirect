@@ -1,8 +1,6 @@
-import sys
 import os
 import os.path
-import ConfigParser
-from ConfigParser import SafeConfigParser
+import configparser
 
 from trackdirect.common.Singleton import Singleton
 
@@ -22,7 +20,7 @@ class TrackDirectConfig(Singleton):
         Args:
             configFile (string):  Config file name
         """
-        configParser = SafeConfigParser()
+        configParser = configparser.SafeConfigParser()
         if (configFile.startswith('/')):
             configParser.read(os.path.expanduser(configFile))
         else:
@@ -35,7 +33,7 @@ class TrackDirectConfig(Singleton):
         try:
             self.dbUsername = configParser.get(
                 'database', 'username').strip('"')
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        except (configparser.NoSectionError, configparser.NoOptionError):
             self.dbUsername = os.getlogin()
         self.dbPassword = configParser.get('database', 'password').strip('"')
         self.dbPort = int(configParser.get('database', 'port').strip('"'))
@@ -54,7 +52,7 @@ class TrackDirectConfig(Singleton):
                 'database', 'save_ogn_stations_with_missing_identity').strip('"')
             if (saveOgnStationsWithMissingIdentity == "1"):
                 self.saveOgnStationsWithMissingIdentity = True
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        except (configparser.NoSectionError, configparser.NoOptionError):
             pass
 
         # Websocket server
@@ -67,7 +65,7 @@ class TrackDirectConfig(Singleton):
         try :
             self.websocketExternalPort = int(configParser.get(
                 'websocket_server', 'external_port').strip('"'))
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        except (configparser.NoSectionError, configparser.NoOptionError):
             pass
 
         self.errorLog = configParser.get(
@@ -98,7 +96,7 @@ class TrackDirectConfig(Singleton):
                 'websocket_server', 'aprs_port1').strip('"')
             self.websocketAprsSourceId1 = int(configParser.get(
                 'websocket_server', 'aprs_source_id1').strip('"'))
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        except (configparser.NoSectionError, configparser.NoOptionError):
             self.websocketAprsSourceId1 = None
             self.websocketAprsHost1 = None
             self.websocketAprsPort1 = None
@@ -110,7 +108,7 @@ class TrackDirectConfig(Singleton):
                 'websocket_server', 'aprs_port2').strip('"')
             self.websocketAprsSourceId2 = int(configParser.get(
                 'websocket_server', 'aprs_source_id2').strip('"'))
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        except (configparser.NoSectionError, configparser.NoOptionError):
             self.websocketAprsSourceId2 = None
             self.websocketAprsHost2 = None
             self.websocketAprsPort2 = None
@@ -146,7 +144,7 @@ class TrackDirectConfig(Singleton):
                 try:
                     self.collector[collectorNumber]['frequency_limit'] = configParser.get(
                         'collector' + str(collectorNumber), 'frequency_limit').strip('"')
-                except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                except (configparser.NoSectionError, configparser.NoOptionError):
                     self.collector[collectorNumber]['frequency_limit'] = "0"
 
                 try:
@@ -154,7 +152,7 @@ class TrackDirectConfig(Singleton):
                         'collector' + str(collectorNumber), 'save_fast_packets').strip('"')
                     self.collector[collectorNumber]['save_fast_packets'] = bool(
                         int(saveFastPackets))
-                except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                except (configparser.NoSectionError, configparser.NoOptionError):
                     self.collector[collectorNumber]['save_fast_packets'] = False
 
                 try:
@@ -162,7 +160,7 @@ class TrackDirectConfig(Singleton):
                         'collector' + str(collectorNumber), 'detect_duplicates').strip('"')
                     self.collector[collectorNumber]['detect_duplicates'] = bool(
                         int(detectDuplicates))
-                except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+                except (configparser.NoSectionError, configparser.NoOptionError):
                     self.collector[collectorNumber]['detect_duplicates'] = False
 
                 self.collector[collectorNumber]['error_log'] = configParser.get(
@@ -175,7 +173,7 @@ class TrackDirectConfig(Singleton):
                     self.collector[collectorNumber]['save_fast_packets'] = False
 
 
-            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+            except (configparser.NoSectionError, configparser.NoOptionError):
                 self.collector[collectorNumber]['source_id'] = None
                 self.collector[collectorNumber]['host'] = None
                 self.collector[collectorNumber]['port_full'] = None
