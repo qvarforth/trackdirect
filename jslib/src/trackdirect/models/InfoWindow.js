@@ -819,7 +819,7 @@ trackdirect.models.InfoWindow.prototype._getPacketSpeedAltitudeCourseDiv =
         speedDiv.append(Math.round(this._marker.packet.course) + "&deg; ");
       }
 
-      if (this._marker.packet.course !== null) {
+      if (this._marker.packet.altitude !== null) {
         if (this._defaultMap.state.useImperialUnit) {
           speedDiv.append(
             " alt " +
