@@ -33,16 +33,6 @@ services:
       - "db"
       - "aprsc"
 
-  heatmaps:
-    image: peterus/trackdirect-python:latest
-    restart: always
-    volumes:
-      - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
-      - $PWD/heatmaps:/root/trackdirect/htdocs/public/heatmaps
-    command: /root/trackdirect/server/scripts/heatmapcreator.sh trackdirect.ini /root/trackdirect/htdocs/public/heatmaps
-    depends_on:
-      - "db"
-
   web:
     image: peterus/trackdirect-apache:latest
     restart: always
