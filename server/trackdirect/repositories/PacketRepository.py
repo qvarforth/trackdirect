@@ -1,7 +1,3 @@
-import datetime
-import time
-import calendar
-import collections
 
 from trackdirect.common.Repository import Repository
 from trackdirect.objects.Packet import Packet
@@ -407,7 +403,7 @@ class PacketRepository(Repository):
         record = selectCursor.fetchone()
         selectCursor.close()
 
-        if (record is not None and record["latest_confirmed_packet_timestamp"] >= minTimestamp):
+        if (record is not None and record["latest_confirmed_packet_timestamp"] is not None and record["latest_confirmed_packet_timestamp"] >= minTimestamp):
             return self.getObjectByIdAndTimestamp(record["latest_confirmed_packet_id"], record["latest_confirmed_packet_timestamp"])
         else:
             return self.create()
@@ -431,7 +427,7 @@ class PacketRepository(Repository):
         record = selectCursor.fetchone()
         selectCursor.close()
 
-        if (record is not None and record["latest_location_packet_timestamp"] >= minTimestamp):
+        if (record is not None and record["latest_location_packet_timestamp"] is not None and record["latest_location_packet_timestamp"] >= minTimestamp):
             return self.getObjectByIdAndTimestamp(record["latest_location_packet_id"], record["latest_location_packet_timestamp"])
         else:
             return self.create()

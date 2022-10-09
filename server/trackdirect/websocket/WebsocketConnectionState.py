@@ -1,7 +1,7 @@
-import datetime, time
-from math import floor, ceil
+import time
+import trackdirect
+from math import ceil
 from trackdirect.parser.policies.MapSectorPolicy import MapSectorPolicy
-from trackdirect.TrackDirectConfig import TrackDirectConfig
 
 class WebsocketConnectionState():
     """An WebsocketConnectionState instance contains information about the current state of a websocket connection
@@ -15,7 +15,7 @@ class WebsocketConnectionState():
         self.latestRequestTimestamp = 0
         self.latestRequestId = 0
         self.latestHandledRequestId = 0
-        self.config = TrackDirectConfig()
+        self.config = trackdirect.TrackDirectConfig()
         self.noRealTime = False
         self.disconnected = False
 

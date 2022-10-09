@@ -1,4 +1,3 @@
-import datetime
 import time
 
 from trackdirect.common.Repository import Repository
@@ -110,7 +109,7 @@ class PacketTelemetryRepository(Repository):
                 newObject.bits = data["telemetry"]["bits"]
 
             if ("seq" in data["telemetry"]):
-                if isinstance(data["telemetry"]["seq"], str) or isinstance(data["telemetry"]["seq"], unicode):
+                if isinstance(data["telemetry"]["seq"], str):
                     try:
                         newObject.seq = int(data["telemetry"]["seq"], 10)
                     except ValueError:

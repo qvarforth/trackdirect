@@ -11,9 +11,11 @@ if __name__ == '__main__':
         sys.exit()
     elif (sys.argv[1].startswith("/")):
         if (not os.path.isfile(sys.argv[1])):
+            print(f"\n File {sys.argv[1]} does not exists")
             print("\n" + sys.argv[0] + ' [config.ini] [collector number]')
             sys.exit()
     elif (not os.path.isfile(os.path.expanduser('~/trackdirect/config/' + sys.argv[1]))):
+        print(f"\n File ~/trackdirect/config/{sys.argv[1]} does not exists")
         print("\n" + sys.argv[0] + ' [config.ini] [collector number]')
         sys.exit()
 

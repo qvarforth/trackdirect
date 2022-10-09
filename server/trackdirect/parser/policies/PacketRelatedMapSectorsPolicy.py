@@ -1,5 +1,3 @@
-import json
-import datetime
 import time
 
 from trackdirect.parser.policies.MapSectorPolicy import MapSectorPolicy
@@ -65,7 +63,7 @@ class PacketRelatedMapSectorsPolicy():
             # We only add related map-sectors to moving stations (that has a marker)
             if (packet.mapId == 1):
                 # If new packet is not confirmed (mapId 7) we connect it with related map-sectors later
-                if (previousPacket.markerCounter > 1
+                if (previousPacket.markerCounter is not None and previousPacket.markerCounter > 1
                         or packet.markerId == previousPacket.markerId):
                     # We only add related map-sectors if previous packet has a marker with several connected packet
                     # A packet with a marker that is not shared with anyone will be converted to a ghost-marker in client
@@ -127,8 +125,8 @@ class PacketRelatedMapSectorsPolicy():
             # lat interval: 0 - 18000000
             # lng interval: 0 - 00003600
             # Maybe we can do this smarter? Currently we are adding many map-sectors that is not relevant
-            for lat in xrange(minLat, maxLat, 20000):
-                for lng in xrange(minLng, maxLng, 5):
+            for lat in range(minLat, maxLat, 20000):
+                for lng in range(minLng, maxLng, 5):
                     mapSectorAreaCode = lat+lng
                     if (mapSectorAreaCode != prevPacketAreaCode and mapSectorAreaCode != newPacketAreaCode):
                         relatedMapSectors.append(mapSectorAreaCode)

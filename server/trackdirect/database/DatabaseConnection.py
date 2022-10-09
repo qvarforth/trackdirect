@@ -1,9 +1,7 @@
-import logging
-from twisted.python import log
 import psycopg2
 import psycopg2.extras
 
-from trackdirect.TrackDirectConfig import TrackDirectConfig
+import trackdirect
 
 
 class DatabaseConnection():
@@ -16,7 +14,7 @@ class DatabaseConnection():
     def __init__(self):
         """The __init__ method.
         """
-        config = TrackDirectConfig()
+        config = trackdirect.TrackDirectConfig()
         self.host = config.dbHostname
         self.database = config.dbName
         self.username = config.dbUsername

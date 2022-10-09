@@ -1,9 +1,6 @@
 import logging
-from twisted.python import log
 import psycopg2
 import psycopg2.extras
-import datetime
-import time
 
 from trackdirect.collector.StationLatestPacketModifier import StationLatestPacketModifier
 from trackdirect.collector.PacketMapIdModifier import PacketMapIdModifier
@@ -178,11 +175,12 @@ class PacketBatchInserter():
                                      packet.comment,
                                      packet.rawPath,
                                      packet.raw))
+
         try:
             # insert into packetYYYYMMDD
-            argString = ','.join(cur.mogrify(
+            argString = b','.join(cur.mogrify(
                 "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in datePacketTuples)
-            sql = "insert into " + packetTable + "(station_id, sender_id, map_id, source_id, packet_type_id, latitude, longitude, posambiguity, symbol, symbol_table, map_sector, related_map_sectors, marker_id, marker_counter, speed, course, altitude, rng, phg, latest_phg_timestamp, latest_rng_timestamp, timestamp, packet_tail_timestamp, is_moving, reported_timestamp, position_timestamp, comment, raw_path, raw) values " + argString + " RETURNING id"
+            sql = "insert into " + packetTable + "(station_id, sender_id, map_id, source_id, packet_type_id, latitude, longitude, posambiguity, symbol, symbol_table, map_sector, related_map_sectors, marker_id, marker_counter, speed, course, altitude, rng, phg, latest_phg_timestamp, latest_rng_timestamp, timestamp, packet_tail_timestamp, is_moving, reported_timestamp, position_timestamp, comment, raw_path, raw) values " + argString.decode() + " RETURNING id"
             cur.execute(sql)
         except psycopg2.InterfaceError as e:
             # Connection to database is lost, better just exit
@@ -239,10 +237,10 @@ class PacketBatchInserter():
         # insert into packetYYYYMMDD_path
         if pathTuples:
             try:
-                argString = ','.join(cur.mogrify(
+                argString = b','.join(cur.mogrify(
                     "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in pathTuples)
                 cur.execute("insert into " + packetPathTable +
-                            "(packet_id, station_id, latitude, longitude, timestamp, distance, number, sending_station_id, sending_latitude, sending_longitude) values " + argString)
+                            "(packet_id, station_id, latitude, longitude, timestamp, distance, number, sending_station_id, sending_latitude, sending_longitude) values " + argString.decode())
             except psycopg2.InterfaceError as e:
                 # Connection to database is lost, better just exit
                 raise e
@@ -288,10 +286,10 @@ class PacketBatchInserter():
         # insert into packetYYYYMMDD_weather
         if weatherTuples:
             try:
-                argString = ','.join(cur.mogrify(
+                argString = b','.join(cur.mogrify(
                     "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in weatherTuples)
                 cur.execute("insert into " + packetWeatherTable +
-                            "(packet_id, station_id, timestamp, humidity, pressure, rain_1h, rain_24h, rain_since_midnight, temperature, wind_direction, wind_gust, wind_speed, luminosity, snow, wx_raw_timestamp) values " + argString)
+                            "(packet_id, station_id, timestamp, humidity, pressure, rain_1h, rain_24h, rain_since_midnight, temperature, wind_direction, wind_gust, wind_speed, luminosity, snow, wx_raw_timestamp) values " + argString.decode())
             except psycopg2.InterfaceError as e:
                 # Connection to database is lost, better just exit
                 raise e
@@ -332,9 +330,9 @@ class PacketBatchInserter():
         # insert into packetYYYYMMDD_ogn
         if ognTuples:
             try:
-                argString = ','.join(cur.mogrify(
+                argString = b','.join(cur.mogrify(
                     "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in ognTuples)
-                cur.execute("insert into " + packetOgnTable + "(packet_id, station_id, timestamp, ogn_sender_address, ogn_address_type_id, ogn_aircraft_type_id, ogn_climb_rate, ogn_turn_rate, ogn_signal_to_noise_ratio, ogn_bit_errors_corrected, ogn_frequency_offset) values " + argString)
+                cur.execute("insert into " + packetOgnTable + "(packet_id, station_id, timestamp, ogn_sender_address, ogn_address_type_id, ogn_aircraft_type_id, ogn_climb_rate, ogn_turn_rate, ogn_signal_to_noise_ratio, ogn_bit_errors_corrected, ogn_frequency_offset) values " + argString.decode())
             except psycopg2.InterfaceError as e:
                 # Connection to database is lost, better just exit
                 raise e
@@ -376,10 +374,10 @@ class PacketBatchInserter():
         # insert into packetYYYYMMDD_telemetry
         if telemetryTuples:
             try:
-                argString = ','.join(cur.mogrify(
+                argString = b','.join(cur.mogrify(
                     "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in telemetryTuples)
                 cur.execute("insert into " + packetTelemetryTable +
-                            "(packet_id, station_id, timestamp, val1, val2, val3, val4, val5, bits, seq) values " + argString + " returning id")
+                            "(packet_id, station_id, timestamp, val1, val2, val3, val4, val5, bits, seq) values " + argString.decode() + " returning id")
             except psycopg2.InterfaceError as e:
                 # Connection to database is lost, better just exit
                 raise e

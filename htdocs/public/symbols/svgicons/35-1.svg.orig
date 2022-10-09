@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   version="1.1"
+   width="24"
+   height="24"
+   viewBox="0 0 24 24"
+   id="svg2"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs13" />
+  <metadata
+     id="metadata4228">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     id="layer1">
+    <path
+       id="path4232"
+       d="M 23.196655,18.425219 15.684703,18.34292 12,24.88961 8.3152966,18.34292 0.80334509,18.425219 4.6305938,11.960827 0.80334515,5.4964351 8.3152972,5.5787337 12,-0.96795654 15.684703,5.5787341 23.196655,5.4964352 19.369406,11.960827 Z"
+       transform="matrix(1.071125,0,0,0.92715745,-0.8535,0.91043026)"
+       fill="#008000"
+       stroke-linejoin="round"
+       stroke-width="1.124" />
+  </g>
+  <g
+     id="layer2">
+    <path
+       id="path4253"
+       d="m 6.8030467,12 a 5.1969533,5.1969533 0 0 1 5.1957063,-5.1969531 5.1969533,5.1969533 0 0 1 5.1982,5.1944591 5.1969533,5.1969533 0 0 1 -5.193211,5.199446 5.1969533,5.1969533 0 0 1 -5.2006929,-5.191963"
+       fill="#f9f9f9"
+       stroke-linejoin="round"
+       stroke-width="1.124" />
+  </g>
+  <g
+     id="text"
+     transform="translate(0.05168457,0.23376465)">
+    <text
+       x="12"
+       y="14.5"
+       id="text3339"
+       text-align="center"
+       word-spacing="0"
+       line-height="0%"
+       font-weight="bold"
+       letter-spacing="0"
+       font-size="7.5px"
+       style="font-weight:bold;font-size:7.5px;line-height:0%;font-family:sans-serif;text-align:center;letter-spacing:0;word-spacing:0;text-anchor:middle;fill:#000000"><tspan
+         id="tspan2930"
+         x="12"
+         y="14.5">D</tspan></text>
+  </g>
+</svg>

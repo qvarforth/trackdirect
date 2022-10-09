@@ -1,21 +1,13 @@
 import logging
-from twisted.python import log
-import psycopg2, psycopg2.extras
 
-import json
-from math import floor, ceil
-import datetime, time
+import time
 
 import aprslib
 
 from trackdirect.parser.AprsPacketParser import AprsPacketParser
-from trackdirect.parser.policies.StationNameFormatPolicy import StationNameFormatPolicy
 
-from trackdirect.objects.Packet import Packet
-from trackdirect.objects.Station import Station
-from trackdirect.objects.Sender import Sender
 
-from trackdirect.TrackDirectConfig import TrackDirectConfig
+import trackdirect
 
 from trackdirect.exceptions.TrackDirectParseError import TrackDirectParseError
 
@@ -39,7 +31,7 @@ class AprsISPayloadCreator():
         self.db = db
         self.responseDataConverter = ResponseDataConverter(state, db)
         self.historyResponseCreator = HistoryResponseCreator(state, db)
-        self.config = TrackDirectConfig()
+        self.config = trackdirect.TrackDirectConfig()
         self.stationHashTimestamps = {}
 
         self.saveOgnStationsWithMissingIdentity = False

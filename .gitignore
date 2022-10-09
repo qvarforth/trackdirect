@@ -14,3 +14,7 @@ config/*
 ogndevices
 
 db
+
+# virtualenvs
+/venv
+/virtualenv

@@ -1,9 +1,6 @@
 import logging
-from twisted.python import log
 import aprslib
 import collections
-import psycopg2
-import datetime
 import time
 import re
 
@@ -62,9 +59,10 @@ class AprsISConnection(aprslib.IS):
         """
         def filterCallback(line):
             try:
+                # decode first then replace
+                line = line.decode()
                 line = line.replace('\x00', '')
-                line.decode('utf-8', 'replace')
-            except UnicodeError:
+            except UnicodeError as e:
                 # string is not UTF-8
                 return
 

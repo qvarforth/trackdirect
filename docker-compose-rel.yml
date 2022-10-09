@@ -12,7 +12,7 @@ services:
       - $PWD/config/aprsc.conf:/opt/aprsc/etc/aprsc.conf
 
   collector:
-    image: peterus/trackdirect-python2:latest
+    image: peterus/trackdirect-python:latest
     restart: always
     volumes:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
@@ -22,7 +22,7 @@ services:
       - "aprsc"
 
   websocket:
-    image: peterus/trackdirect-python2:latest
+    image: peterus/trackdirect-python:latest
     restart: always
     volumes:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
@@ -34,7 +34,7 @@ services:
       - "aprsc"
 
   heatmaps:
-    image: peterus/trackdirect-python2:latest
+    image: peterus/trackdirect-python:latest
     restart: always
     volumes:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini

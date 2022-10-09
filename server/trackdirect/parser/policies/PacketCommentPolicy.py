@@ -29,7 +29,7 @@ class PacketCommentPolicy():
         elif ("comment" in data):
             comment = data["comment"]
 
-        if isinstance(comment, unicode):
+        if isinstance(comment, bytes):
             comment = comment.encode('ascii', 'ignore')
             comment = comment.replace('\x00', '')
 

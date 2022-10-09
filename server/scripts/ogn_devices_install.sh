@@ -50,7 +50,7 @@ begin transaction;
 
 drop index if exists ogn_device_device_id_idx;
 truncate ogn_device;
-copy ogn_device from '$SCRIPTPATH/ogndevices/$DATABASE/ogndevices2.csv' DELIMITERS ',' CSV QUOTE '''';
+\copy ogn_device from '$SCRIPTPATH/ogndevices/$DATABASE/ogndevices2.csv' DELIMITERS ',' CSV QUOTE '''';
 create index ogn_device_device_id_idx on ogn_device(device_id);
 
 insert into ogn_device(device_type, device_id, aircraft_model, registration, cn, tracked, identified, ddb_aircraft_type) values ('F', '3FEF6F', '', '', '', 'N', 'N', 1);

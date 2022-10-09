@@ -1,21 +1,16 @@
 import logging
 
-from twisted.python import log
 from twisted.internet import threads, reactor, task
 from twisted.internet.error import AlreadyCancelled, AlreadyCalled
 
 from autobahn.twisted.websocket import WebSocketServerProtocol
 
 import json
-import datetime
 import time
 import psycopg2
 import psycopg2.extras
 import os
-import re
-
-from trackdirect.TrackDirectConfig import TrackDirectConfig
-
+import trackdirect
 from trackdirect.database.DatabaseConnection import DatabaseConnection
 
 from trackdirect.websocket.WebsocketResponseCreator import WebsocketResponseCreator
@@ -35,7 +30,7 @@ class TrackDirectWebsocketServer(WebSocketServerProtocol):
         WebSocketServerProtocol.__init__(self)
         self.logger = logging.getLogger('trackdirect')
 
-        self.config = TrackDirectConfig()
+        self.config = trackdirect.TrackDirectConfig()
         self.maxClientIdleTime = int(self.config.maxClientIdleTime) * 60
         self.maxQueuedRealtimePackets = int(
             self.config.maxQueuedRealtimePackets)
