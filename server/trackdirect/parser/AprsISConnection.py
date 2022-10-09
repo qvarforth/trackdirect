@@ -94,6 +94,18 @@ class AprsISConnection(aprslib.IS):
             except:
                 return False
 
+            # Divide into body and head
+            try:
+                (head, body) = other.split(':', 1)
+            except:
+                return False
+
+            if len(body) == 0:
+                return False
+
+            packetType = body[0]
+            body = body[1:]
+
             # Try to find turn rate and reduce frequency limit if high turn rate
             frequencyLimitToApply = int(self.frequencyLimit)
             if (self.sourceId == 5) :
@@ -106,13 +118,13 @@ class AprsISConnection(aprslib.IS):
                     pass
 
             latestTimestampOnMap = 0
-            if (name in self.stationHashTimestamps):
-                latestTimestampOnMap = self.stationHashTimestamps[name]
+            if (name + packetType in self.stationHashTimestamps):
+                latestTimestampOnMap = self.stationHashTimestamps[name + packetType]
 
                 if (((int(time.time()) - 1) - frequencyLimitToApply) < latestTimestampOnMap):
                     # This sender is sending faster than config limit
                     return True
-            self.stationHashTimestamps[name] = int(time.time()) - 1
+            self.stationHashTimestamps[name + packetType] = int(time.time()) - 1
             self._cacheMaintenance()
         return False
 
