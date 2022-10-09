@@ -102,9 +102,9 @@ git clone https://github.com/qvarforth/trackdirect
 
 #### Set up database
 
-Set up the database (connect to database using: "sudo -u postgres psql"). You need to replace "my_username".
+Set up the database (connect to database using: "sudo -u postgres psql"). You need to replace "my_username".  Note that APRS using UTF-8 encoding so it may be necessary to specify as shown.
 ```
-CREATE DATABASE trackdirect;
+CREATE DATABASE trackdirect ENCODING 'UTF8';
 
 CREATE USER my_username WITH PASSWORD 'foobar';
 ALTER ROLE my_username WITH SUPERUSER;
