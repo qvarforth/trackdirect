@@ -73,14 +73,14 @@ class TrackDirectConfig(Singleton):
         self.websocketFrequencyLimit = configParser.get(
             'websocket_server', 'frequency_limit').strip('"')
 
-        self.maxDefaultTime = configParser.get(
-            'websocket_server', 'max_default_time').strip('"')
-        self.maxFilterTime = configParser.get(
-            'websocket_server', 'max_filter_time').strip('"')
-        self.maxClientIdleTime = configParser.get(
-            'websocket_server', 'max_client_idle_time').strip('"')
-        self.maxQueuedRealtimePackets = configParser.get(
-            'websocket_server', 'max_queued_realtime_packets').strip('"')
+        self.maxDefaultTime = int(configParser.get(
+            'websocket_server', 'max_default_time').strip('"'))
+        self.maxFilterTime = int(configParser.get(
+            'websocket_server', 'max_filter_time').strip('"'))
+        self.maxClientIdleTime = int(configParser.get(
+            'websocket_server', 'max_client_idle_time').strip('"'))
+        self.maxQueuedRealtimePackets = int(configParser.get(
+            'websocket_server', 'max_queued_realtime_packets').strip('"'))
 
         allowTimeTravel = configParser.get(
             'websocket_server', 'allow_time_travel').strip('"')
@@ -142,10 +142,10 @@ class TrackDirectConfig(Singleton):
                 self.collector[collectorNumber]['numbers_in_batch'] = configParser.get(
                     'collector' + str(collectorNumber), 'numbers_in_batch').strip('"')
                 try:
-                    self.collector[collectorNumber]['frequency_limit'] = configParser.get(
-                        'collector' + str(collectorNumber), 'frequency_limit').strip('"')
+                    self.collector[collectorNumber]['frequency_limit'] = int(configParser.get(
+                        'collector' + str(collectorNumber), 'frequency_limit').strip('"'))
                 except (configparser.NoSectionError, configparser.NoOptionError):
-                    self.collector[collectorNumber]['frequency_limit'] = "0"
+                    self.collector[collectorNumber]['frequency_limit'] = 0
 
                 try:
                     saveFastPackets = configParser.get(

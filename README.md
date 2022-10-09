@@ -31,10 +31,9 @@ sudo apt-get install libpq-dev postgresql-12 postgresql-client-common postgresql
 
 #### Install python 3
 
-Install python 3
 ```
 sudo apt update
-sudo apt install python3 python3-dev python3-pip
+sudo apt install python3 python3-dev python3-pip python-is-python3
 ```
 
 ### Set up aprsc
