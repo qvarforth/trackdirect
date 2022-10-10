@@ -52,35 +52,8 @@ a {
   top: 39px;
   left: 0px;
   width: 100%;
-  height: calc( 100% - 60px ); /* 39px + 21px */
+  height: calc( 100% - 39px ); 
   z-index:10;
-}
-
-#footer {
-  position: absolute;
-  bottom: 0px;
-  height: 21px;
-  width: 100%;
-
-  color:  white;
-  text-align: center; 
-  font-size: 10px;
-  line-height: 21px;
-
-  background-color: #333;
-  overflow: hidden;
-
-  background: #464b4c;
-  background-image: -webkit-linear-gradient(top, #464b4c, #3f4344);
-  background-image: -moz-linear-gradient(top, #464b4c, #3f4344);
-  background-image: -o-linear-gradient(top, #464b4c, #3f4344);
-  background-image: linear-gradient(to bottom, #464b4c, #3f4344);
-  -webkit-box-shadow: inset 0 1px rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.06);
-}
-
-#footer a {
-  color: #bdbdbd;
 }
 
 /* Add a black background color to the top navigation */
@@ -680,6 +653,10 @@ input[type=submit]:hover {
 .leaflet-popup-close-button {
   height: auto !important;
   padding: 4px !important;
+}
+
+.leaflet-bottom {
+  bottom: 5px !important;
 }
 
 .datagrid table {
