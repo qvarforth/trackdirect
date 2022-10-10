@@ -284,8 +284,6 @@
 
         <div id="map-container"></div>
 
-        <div id="footer">Based on <a target="_blank" href="https://www.aprsdirect.com">APRS Track Direct</a></div>
-
         <div id="right-container">
             <div id="right-container-info">
                 <div id="status-container"></div>
