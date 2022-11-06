@@ -4,8 +4,6 @@ APRS Track Direct is a collection of tools that can be used to run an APRS websi
 
 Tools included are an APRS data collector, a websocket server, a javascript library (websocket client and more) and a website example (which can of course be used as is).
 
-Please note that it is almost 10 years since I wrote the majority of the code, and when the code was written, it was never intended to be published ...
-
 ## What is APRS?
 APRS (Automatic Packet Reporting System) is a digital communications system that uses packet radio to send real time tactical information. The APRS network is used by ham radio operators all over the world.
 
@@ -25,15 +23,8 @@ What things you need to install and how to install them. These instructions are 
 
 Install some ubuntu packages
 ```
-sudo apt-get install libpq-dev postgresql-12 postgresql-client-common postgresql-client libevent-dev apache2 php libapache2-mod-php php-dom php-pgsql libmagickwand-dev imagemagick php-imagick inkscape php-gd libjpeg-dev
-```
-**Note that php-gd was added to these instructions during the summer of 2022, it is needed for the new heatmap generator.**
-
-#### Install python 3
-
-```
 sudo apt update
-sudo apt install python3 python3-dev python3-pip python-is-python3
+sudo apt-get install libpq-dev postgresql-12 postgresql-client-common postgresql-client libevent-dev apache2 php libapache2-mod-php php-dom php-pgsql libmagickwand-dev imagemagick php-imagick inkscape php-gd libjpeg-dev python3 python3-dev python3-pip python-is-python3
 ```
 
 ### Set up aprsc
@@ -83,6 +74,11 @@ git clone https://github.com/qvarforth/trackdirect
 cd trackdirect
 ```
 
+Before installing all python requirements it is likly that you need to upgrade pyOpenSSL.
+```
+sudo python -m easy_install --upgrade pyOpenSSL
+``
+
 Install needed python libs
 ```
 pip install -r requirements.txt
@@ -104,14 +100,14 @@ Might be good to add password to password-file:
 vi ~/.pgpass
 ```
 
-##### Increase performance
+##### Increase database performance
 It might be a good idea to play around with some Postgresql settings to improve performance (for this application, speed is more important than minimizing the risk of data loss).
 
 Some settings in /etc/postgresql/12/main/postgresql.conf that might improve performance:
 ```
 shared_buffers = 2048MB              # I recommend 25% of total RAM
 synchronous_commit=off               # Avoid writing to disk for every commit
-commit_delay=100000                  # Will result in a 0.1s delay
+commit_delay=100000                  # Will result in a 0.1s commit delay
 ```
 
 Restart postgresql
@@ -131,6 +127,12 @@ If you are using data from OGN (Open Glider Network) it is IMPORTANT to keep the
 ~/trackdirect/server/scripts/ogn_devices_install.sh trackdirect 5432
 ```
 
+#### Configure trackdirect
+Before starting the websocket server you need to update the trackdirect configuration file (trackdirect/config/trackdirect.ini). Read through the configuration file and make any necessary changes.
+```
+vi ~/trackdirect/config/trackdirect.ini
+```
+
 #### Start the collectors
 Before starting the collector you need to update the trackdirect configuration file (trackdirect/config/trackdirect.ini).
 
@@ -140,11 +142,9 @@ Start the collector by using the provided shell-script. Note that if you have co
 ```
 
 #### Start the websocket server
-Before starting the websocket server you need to update the trackdirect configuration file (trackdirect/config/trackdirect.ini).
-
 When the user interacts with the map we want it to be populated with objects from the backend. To achive good performance we avoid using background HTTP requests (also called AJAX requests), instead we use websocket communication. The included trackdirect js library (trackdirect.min.js) will connect to our websocket server and request objects for the current map view.
 
-Start the websocket server by using the provided shell scripti, the script should be executed by the user that you granted access to the database "trackdirect".
+Start the websocket server by using the provided shell script, the script should be executed by the user that you granted access to the database "trackdirect".
 ```
 ~/trackdirect/server/scripts/wsserver.sh trackdirect.ini
 ```
@@ -252,10 +252,6 @@ If you want to run the container in daemon mode add `-d` to the command.
 ```
 docker-compose -f docker-compose-rel.yml up
 ```
-
-
-## TODO
-- Create a REST-API and replace the current website example with a new frontend written in Angular.
 
 ## Contribution
 Contributions are welcome. Create a fork and make a pull request. Thank you!
