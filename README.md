@@ -77,7 +77,7 @@ cd trackdirect
 Before installing all python requirements it is likly that you need to upgrade pyOpenSSL.
 ```
 sudo python -m easy_install --upgrade pyOpenSSL
-``
+```
 
 Install needed python libs
 ```
