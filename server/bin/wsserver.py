@@ -27,9 +27,7 @@ def master(options, trackDirectLogger):
     trackDirectLogger.warning("Starting master with PID " + str(workerPid) + " (on CPU id(s): " + ','.join(map(str, p.cpu_affinity())) + ")")
 
     try:
-        factory = WebSocketServerFactory(
-            "ws://" + config.websocketHostname + ":" + str(config.websocketPort),
-            externalPort = config.websocketExternalPort)
+        factory = WebSocketServerFactory()
         factory.protocol = trackdirect.TrackDirectWebsocketServer
 
         resource = WebSocketResource(factory)
