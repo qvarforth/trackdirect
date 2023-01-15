@@ -372,7 +372,7 @@ class PacketRepository(Repository):
 
             sql = sql + \
                 selectCursor.mogrify(
-                    """order by marker_id desc, id desc limit 1""")
+                    """ order by marker_id desc, id desc limit 1""")
             # Sort by marker_id first and packet as second, otherwise client might render it wrong
 
             selectCursor.execute(sql)
@@ -431,7 +431,6 @@ class PacketRepository(Repository):
             return self.getObjectByIdAndTimestamp(record["latest_location_packet_id"], record["latest_location_packet_timestamp"])
         else:
             return self.create()
-
 
     def getMostRecentConfirmedObjectListByStationIdList(self, stationIdList, minTimestamp):
         """Returns an array of the most recent confirmed Packet's specified by station id's
