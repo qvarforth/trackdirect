@@ -1494,6 +1494,7 @@ trackdirect.models.Map.prototype._renderCordinatesContainer = function (
     content += this._getGpsDegreeFromGpsDecimal(lat.toFixed(5), "lat");
     content += " " + this._getGpsDegreeFromGpsDecimal(lng.toFixed(5), "lon");
     content += "<br>" + lat.toFixed(5) + ", " + lng.toFixed(5);
+    content += "<br>" + this._getMaidenheadLocatorFromGpsDecimal(lat, lng);
 
     $("#" + options.cordinatesContainer).html(content);
   }
@@ -1539,4 +1540,29 @@ trackdirect.models.Map.prototype._getGpsDegreeFromGpsDecimal = function (
   if (type == "lon") direction = days < 0 ? "W" : "E";
   //else return value
   return days * sign + "º " + minutes + "' " + secounds + "'' " + direction;
+};
+
+/**
+ * Convert decimal gps position to maidenhead locator
+ * @param {float} lat
+ * @param {float} lng
+ * @return {string}
+ */
+trackdirect.models.Map.prototype._getMaidenheadLocatorFromGpsDecimal = function (
+  lat,
+  lng,
+) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVX';
+  var result = '';
+  lng = lng + 180;
+  lat = lat + 90;
+  result  = chars.charAt(parseInt(lng / 20));
+  result += chars.charAt(parseInt(lat / 10));
+  result += parseInt(lng / 2 % 10);
+  result += parseInt(lat % 10);
+  lng_r = (lng - parseInt(lng/2)*2) * 60;
+  lat_r = (lat - parseInt(lat)) * 60;
+  result += chars.charAt(parseInt(lng_r/5));
+  result += chars.charAt(parseInt(lat_r/2.5));
+  return result;
 };
