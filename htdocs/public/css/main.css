@@ -307,17 +307,20 @@ input[type=submit]:hover {
 
 #cordinates-container {
   clear: both;
-  padding-top:5px;
+  padding:5px;
   color: #4d4d4d;
+  background-color: rgba(255, 255, 255, 0.7);
   font-size: 11px;
   display: none;
+  min-width: 130px;
 }
 
 #status-container {
-  padding-top:5px;
+  padding:5px;
   white-space:nowrap;
   line-height: 20px;
   font-size: 11px;
+  background-color: rgba(255, 255, 255, 0.7);
 }
 
 @media screen and (min-width: 800px) {
