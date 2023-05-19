@@ -15,7 +15,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 Please note that the instructions is not intended to be something that you can follow exactly without any adaptions. See the instructions as initial tips on how the tools can be used, and read the code to get a deeper understanding.
 
-Further down you will find some information how to install trackdirect with Docker and Docker-Compose.
+Further down you will find some information how to install trackdirect with Docker and Docker Compose.
 
 ### Prerequisites
 
@@ -227,31 +227,32 @@ How powerful server you need depends on what type of data source you are going t
 
 
 ## Getting Started - Docker
-There is everything prepared to run trackdirect inside of some docker containers. As there is a Docker-Compose file the setup is very simple and fast.
+Everything is prepared to run trackdirect inside of docker containers. As there is a Docker Compose file the setup is very simple and fast.
 
-### Install Docker and Docker-Compose
-Install [docker](https://docs.docker.com/get-docker/) and [docker-compose](https://docs.docker.com/compose/install/) from the published websites.
+### Install Docker and the Docker Compose plugin
+Install [Docker and docker-compose-plugin](https://docs.docker.com/engine/install/) as per instructions on their website.
 
 ### Config file
-Adopt your config in `config/aprsc.conf` and `config/trackdirect.ini`. In `trackdirect.ini` search for 'docker' and change the lines as described in the comments.
+Adopt the config in `config/aprsc.conf` and `config/trackdirect.ini`. In `trackdirect.ini` additionally search for 'docker' and change the lines as described in the comments.
 
 
-### Run Docker-Compose for development containers
-To startup trackdirect in an development container run this docker-compose command:
-
-```
-docker-compose up
-```
-
-If you want to run the container in daemon mode add `-d` to the command.
-
-### Run Docker-Compose for the last published docker images
-
-@peterus is creating regular docker images from this repository. With the release Docker-Compose file you do not need to install and compile everything by your own.
+### Run Docker Compose for development containers
+To startup trackdirect in a development container run this Docker Compose command:
 
 ```
-docker-compose -f docker-compose-rel.yml up
+docker compose up
 ```
+
+If you want to run the container in daemon mode (background) add `-d` to the command and use `docker compose logs -f` to watch the output on demand. To stop the containers use `docker compose down`.
+
+### Run Docker Compose for the latest published docker images
+
+@peterus is creating regular docker images from this repository. With the release Docker Compose file you don't need to install and compile everything on your own.
+
+```
+docker compose -f docker-compose-rel.yml up
+```
+This command also accepts `-d` to run as a daemon.
 
 ## Contribution
 Contributions are welcome. Create a fork and make a pull request. Thank you!
