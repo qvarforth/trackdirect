@@ -68,7 +68,7 @@ class FilterHistoryResponseCreator():
         """
         minTimestamp = None
         if (len(stationIds) > 0) :
-            minTimestamp = self.state.getStationLatestTimestampOnMap(stationIds[0])
+            minTimestamp = self.state.getStationLatestTimestampOnMap(list(stationIds)[0])
         if (minTimestamp is None) :
             minTimestamp = self.state.getMapSectorTimestamp(None) # None as argument is useful even when not dealing with map-sectors
         if (len(stationIds) > 1) :
