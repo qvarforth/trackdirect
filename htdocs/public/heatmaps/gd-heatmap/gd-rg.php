@@ -11,9 +11,17 @@
  *
  */
 class gd_gradient_alpha {
+    public $image;
+    public $width;
+    public $height;
+    public $direction;
+    public $alphastart;
+    public $alphaend;
+    public $step;
+    public $color;
 
     // Constructor. Creates, fills and returns an image
-    function gd_gradient_alpha($w,$h,$d,$rgb,$as,$ae,$step=0) {
+    function __construct($w,$h,$d,$rgb,$as,$ae,$step=0) {
         $this->width = $w;
         $this->height = $h;
         $this->direction = $d;
@@ -43,9 +51,9 @@ class gd_gradient_alpha {
         // Return it
         //return $this->image;
     }
-    
+ 
     function get_image() {
-        return $this->image;    
+        return $this->image;
     }
 
 
