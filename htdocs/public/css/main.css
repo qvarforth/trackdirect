@@ -307,20 +307,16 @@ input[type=submit]:hover {
 
 #cordinates-container {
   clear: both;
-  padding:5px;
   color: #4d4d4d;
-  background-color: rgba(255, 255, 255, 0.7);
   font-size: 11px;
   display: none;
   min-width: 130px;
 }
 
 #status-container {
-  padding:5px;
   white-space:nowrap;
   line-height: 20px;
   font-size: 11px;
-  background-color: rgba(255, 255, 255, 0.7);
 }
 
 @media screen and (min-width: 800px) {
@@ -344,7 +340,17 @@ input[type=submit]:hover {
   font-size:11px;
   font-family: "Sans-serif", "Helvetica";
 
-  margin-bottom: 15px;
+  margin-bottom: 10px;
+    
+  background-color: rgba(255, 255, 255, 0.7);
+  min-width: 130px;
+  border-radius: 10px;
+
+  padding: 5px 10px 5px 10px;
+}
+
+#right-container-info {
+  margin-top: 10px;
 }
 
 #right-container-filtered, #right-container-timetravel {
