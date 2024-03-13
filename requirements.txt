@@ -4,7 +4,6 @@ setuptools
 autobahn[twisted]
 twisted
 pympler
-image_slicer
 jsmin
 psutil
 git+https://github.com/rossengeorgiev/aprs-python
