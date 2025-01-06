@@ -1,764 +1,431 @@
-
-from trackdirect.common.Repository import Repository
-from trackdirect.objects.Packet import Packet
-from trackdirect.database.PacketTableCreator import PacketTableCreator
-from trackdirect.exceptions.TrackDirectMissingTableError import TrackDirectMissingTableError
-from trackdirect.database.DatabaseObjectFinder import DatabaseObjectFinder
+from server.trackdirect.common.Repository import Repository
+from server.trackdirect.objects.Packet import Packet
+from server.trackdirect.database.PacketTableCreator import PacketTableCreator
+from server.trackdirect.exceptions.TrackDirectMissingTableError import TrackDirectMissingTableError
+from server.trackdirect.database.DatabaseObjectFinder import DatabaseObjectFinder
 
 
 class PacketRepository(Repository):
-    """The PacketRepository class contains different method that creates Packet instances
-    """
+    """The PacketRepository class contains different methods that create Packet instances."""
 
     def __init__(self, db):
-        """The __init__ method.
+        """Initialize PacketRepository with a database connection."""
+        super().__init__(db)
+        self.packet_table_creator = PacketTableCreator(self.db)
+        self.packet_table_creator.disable_create_if_missing()
+        self.db_object_finder = DatabaseObjectFinder(db)
 
-        Args:
-            db (psycopg2.Connection):  Database connection (with autocommit)
-        """
-        self.db = db
+    def get_object_by_id(self, id):
+        """Return a Packet object based on the specified id in the database."""
+        with self.db.cursor() as cursor:
+            cursor.execute("SELECT * FROM packet WHERE id = %s", (id,))
+            record = cursor.fetchone()
+        return self.get_object_from_record(record)
 
-        # After testing I have realized that several queries are faster if you query one packet child at the time
-        # That is why we are using packetTableCreator to fetch childtables instead of using the parent packet table
-        self.packetTableCreator = PacketTableCreator(self.db)
-        self.packetTableCreator.disableCreateIfMissing()
-        self.dbObjectFinder = DatabaseObjectFinder(db)
-
-    def getObjectById(self, id):
-        """The getObjectById method is supposed to return an object based on the specified id in database
-
-        Args:
-            id (int):  Database row id
-
-        Returns:
-            Packet
-        """
-        selectCursor = self.db.cursor()
-        selectCursor.execute("""select * from packet where id = %s""", (id,))
-        record = selectCursor.fetchone()
-        selectCursor.close()
-        return self.getObjectFromRecord(record)
-
-    def getObjectByIdAndTimestamp(self, id, timestamp):
-        """Returns an object based on the specified id in database
-
-        Args:
-            id (int):         Database row id
-            timestamp (int):  Unix timestamp for requested packet
-
-        Returns:
-            Packet
-        """
+    def get_object_by_id_and_timestamp(self, id, timestamp):
+        """Return a Packet object based on the specified id and timestamp."""
         try:
-            packetTable = self.packetTableCreator.getPacketTable(timestamp)
-        except TrackDirectMissingTableError as e:
-            return Packet(self.db)
-
-        selectCursor = self.db.cursor()
-        selectCursor.execute("""select * from """ +
-                             packetTable + """ where id = %s""", (id,))
-        record = selectCursor.fetchone()
-        selectCursor.close()
-        return self.getObjectFromRecord(record)
-
-    def getObjectByStationIdAndTimestamp(self, stationId, timestamp):
-        """Returns an object based on the specified stationId in database
-
-        Args:
-            stationId (int):  Station id
-            timestamp (int):  Unix timestamp for requested packet
-
-        Returns:
-            Packet
-        """
-        try:
-            packetTable = self.packetTableCreator.getPacketTable(timestamp)
-            selectCursor = self.db.cursor()
-            selectCursor.execute("""select * from """ + packetTable +
-                                 """ where station_id = %s and timestamp = %s order by id limit 1""", (stationId, timestamp, ))
-            record = selectCursor.fetchone()
-
-            selectCursor.close()
-            return self.getObjectFromRecord(record)
-        except TrackDirectMissingTableError as e:
+            packet_table = self.packet_table_creator.get_table(timestamp)
+            with self.db.cursor() as cursor:
+                cursor.execute(f"SELECT * FROM {packet_table} WHERE id = %s", (id,))
+                record = cursor.fetchone()
+            return self.get_object_from_record(record)
+        except TrackDirectMissingTableError:
             return self.create()
 
-    def getLatestObjectListByStationIdListAndTimeInterval(self, stationIdList, minPacketTimestamp, maxPacketTimestamp, onlyConfirmed=True):
-        """Returns an array of Packet's specified by station id's
-        Args:
-            stationIdList (array):     Station id's to look for
-            minPacketTimestamp (int):  Min requested unix timestamp
-            maxPacketTimestamp (int):  Max requested unix timestamp
+    def get_object_by_station_id_and_timestamp(self, station_id, timestamp):
+        """Return a Packet object based on the specified station_id and timestamp."""
+        try:
+            packet_table = self.packet_table_creator.get_table(timestamp)
+            with self.db.cursor() as cursor:
+                cursor.execute(f"""
+                    SELECT * FROM {packet_table}
+                    WHERE station_id = %s AND timestamp = %s
+                    ORDER BY id LIMIT 1
+                """, (station_id, timestamp))
+                record = cursor.fetchone()
+            return self.get_object_from_record(record)
+        except TrackDirectMissingTableError:
+            return self.create()
 
-        Returns:
-            Array
-        """
-        if (len(stationIdList) == 0):
+    def get_latest_object_list_by_station_id_list_and_time_interval(self, station_id_list, min_packet_timestamp, max_packet_timestamp, only_confirmed=True):
+        """Return an array of the latest Packet objects specified by station ids."""
+        if not station_id_list:
             return []
 
-        selectCursor = self.db.cursor()
         result = []
-        foundStationIdList = []
-        packetTables = self.packetTableCreator.getPacketTables(
-            minPacketTimestamp, maxPacketTimestamp)
-        mapIdList = [1, 2, 12]
-        if (not onlyConfirmed):
-            mapIdList = [1, 2, 5, 7, 9, 12]
+        found_station_id_list = []
+        packet_tables = self.packet_table_creator.get_tables(min_packet_timestamp, max_packet_timestamp)
+        map_id_list = [1, 2, 12] if only_confirmed else [1, 2, 5, 7, 9, 12]
 
-        for packetTable in reversed(packetTables):
-            stationIdListToFind = tuple(
-                list(set(stationIdList) - set(foundStationIdList)))
+        with self.db.cursor() as cursor:
+            for packet_table in reversed(packet_tables):
+                station_id_list_to_find = tuple(set(station_id_list) - set(found_station_id_list))
+                if station_id_list_to_find:
+                    cursor.execute(f"""
+                        SELECT * FROM {packet_table} packet
+                        WHERE id IN (
+                            SELECT MAX(id)
+                            FROM {packet_table} packet
+                            WHERE map_id IN %s
+                                AND station_id IN %s
+                                AND timestamp > %s
+                                AND timestamp <= %s
+                            GROUP BY station_id
+                        )
+                        ORDER BY packet.marker_id DESC, packet.id DESC
+                    """, (tuple(map_id_list), station_id_list_to_find, min_packet_timestamp, max_packet_timestamp))
 
-            if (len(stationIdListToFind) > 0):
-                sql1 = selectCursor.mogrify("""select *
-                    from """ + packetTable + """ packet
-                    where id in (
-                        select max(id)
-                        from """ + packetTable + """ packet
-                        where map_id in %s
-                            and station_id in %s
-                            and timestamp > %s
-                            and timestamp <= %s
-                        group by station_id
+                    for record in cursor:
+                        if record and record['station_id'] not in found_station_id_list:
+                            result.append(self.get_object_from_record(record))
+                            found_station_id_list.append(record['station_id'])
+
+                if len(found_station_id_list) >= len(station_id_list):
+                    break
+
+        return result
+
+    def get_object_list_by_station_id_list_and_time_interval(self, station_id_list, min_packet_timestamp, max_packet_timestamp):
+        """Return an array of Packet objects specified by station ids."""
+        if not station_id_list:
+            return []
+
+        result = []
+        packet_tables = self.packet_table_creator.get_tables(min_packet_timestamp, max_packet_timestamp)
+
+        with self.db.cursor() as cursor:
+            for packet_table in packet_tables:
+                cursor.execute(f"""
+                    SELECT * FROM {packet_table} packet
+                    WHERE map_id IN (1, 2, 5, 7, 9, 12)
+                        AND station_id IN %s
+                        AND timestamp > %s
+                        AND timestamp <= %s
+                    ORDER BY packet.marker_id, packet.id
+                """, (tuple(station_id_list), min_packet_timestamp, max_packet_timestamp))
+
+                for record in cursor:
+                    if record:
+                        result.append(self.get_object_from_record(record))
+
+                cursor.execute(f"""
+                    SELECT * FROM {packet_table} packet
+                    WHERE map_id = 12
+                        AND station_id IN %s
+                        AND position_timestamp <= %s
+                        AND timestamp > %s
+                    ORDER BY packet.marker_id, packet.id
+                """, (tuple(station_id_list), max_packet_timestamp, min_packet_timestamp))
+
+                for record in cursor:
+                    if record:
+                        result.append(self.get_object_from_record(record))
+
+        return result
+
+    def get_object_list_by_station_id_list(self, station_id_list, min_packet_timestamp):
+        """Return an array of Packet objects specified by station ids."""
+        if not station_id_list:
+            return []
+
+        result = []
+        packet_tables = self.packet_table_creator.get_tables(min_packet_timestamp)
+
+        with self.db.cursor() as cursor:
+            for packet_table in packet_tables:
+                cursor.execute(f"""
+                    SELECT * FROM {packet_table} packet
+                    WHERE map_id IN (1, 5, 7, 9)
+                        AND station_id IN %s
+                        AND timestamp > %s
+                    ORDER BY packet.marker_id, packet.id
+                """, (tuple(station_id_list), min_packet_timestamp))
+
+                for record in cursor:
+                    if record:
+                        result.append(self.get_object_from_record(record))
+
+        return result
+
+    def get_latest_object_by_station_id_and_position(self, station_id, latitude, longitude, map_id_list, symbol=None, symbol_table=None, min_timestamp=0):
+        """Return a Packet object specified by station id and position."""
+        packet_tables = self.packet_table_creator.get_tables(min_timestamp)
+
+        with self.db.cursor() as cursor:
+            for packet_table in reversed(packet_tables):
+                cursor.execute(f"""
+                    SELECT * FROM {packet_table}
+                    WHERE station_id = %s
+                        AND latitude = %s
+                        AND longitude = %s
+                        AND map_id IN %s
+                        AND timestamp > %s
+                        {f"AND symbol = %s" if symbol else ""}
+                        {f"AND symbol_table = %s" if symbol_table else ""}
+                    ORDER BY marker_id DESC, id DESC LIMIT 1
+                """, (station_id, latitude, longitude, tuple(map_id_list), min_timestamp, symbol, symbol_table))
+
+                record = cursor.fetchone()
+                if record:
+                    return self.get_object_from_record(record)
+
+        return self.create()
+
+    def get_latest_confirmed_moving_object_by_station_id(self, station_id, min_timestamp=0):
+        """Return the latest confirmed moving Packet specified by station id."""
+        packet_tables = self.packet_table_creator.get_tables(min_timestamp)
+
+        with self.db.cursor() as cursor:
+            for packet_table in reversed(packet_tables):
+                cursor.execute(f"""
+                    SELECT * FROM {packet_table}
+                    WHERE station_id = %s
+                        AND is_moving = 1
+                        AND map_id = 1
+                        AND timestamp > %s
+                    ORDER BY marker_id DESC, id DESC LIMIT 1
+                """, (station_id, min_timestamp))
+
+                record = cursor.fetchone()
+                if record:
+                    return self.get_object_from_record(record)
+
+        return self.create()
+
+    def get_latest_moving_object_by_station_id(self, station_id, min_timestamp=0):
+        """Return the latest moving Packet specified by station id."""
+        packet_tables = self.packet_table_creator.get_tables(min_timestamp)
+
+        with self.db.cursor() as cursor:
+            for packet_table in reversed(packet_tables):
+                cursor.execute(f"""
+                    SELECT * FROM {packet_table} packet
+                    WHERE station_id = %s
+                        AND is_moving = 1
+                        AND map_id IN (1, 7)
+                        AND timestamp > %s
+                    ORDER BY marker_id DESC, id DESC LIMIT 1
+                """, (station_id, min_timestamp))
+
+                record = cursor.fetchone()
+                if record:
+                    return self.get_object_from_record(record)
+
+        return self.create()
+
+    def get_latest_confirmed_object_by_station_id(self, station_id, min_timestamp=0):
+        """Return the latest confirmed Packet object specified by station id."""
+        with self.db.cursor() as cursor:
+            cursor.execute("""
+                SELECT * FROM station
+                WHERE id = %s
+            """, (station_id,))
+            record = cursor.fetchone()
+
+        if record and record["latest_confirmed_packet_timestamp"] is not None and record["latest_confirmed_packet_timestamp"] >= min_timestamp:
+            return self.get_object_by_id_and_timestamp(record["latest_confirmed_packet_id"], record["latest_confirmed_packet_timestamp"])
+        return self.create()
+
+    def get_latest_object_by_station_id(self, station_id, min_timestamp=0):
+        """Return the latest Packet specified by station id."""
+        with self.db.cursor() as cursor:
+            cursor.execute("""
+                SELECT * FROM station
+                WHERE id = %s
+            """, (station_id,))
+            record = cursor.fetchone()
+
+        if record and record["latest_location_packet_timestamp"] is not None and record["latest_location_packet_timestamp"] >= min_timestamp:
+            return self.get_object_by_id_and_timestamp(record["latest_location_packet_id"], record["latest_location_packet_timestamp"])
+        return self.create()
+
+    def get_most_recent_confirmed_object_list_by_station_id_list(self, station_id_list, min_timestamp):
+        """Return an array of the most recent confirmed Packet objects specified by station ids."""
+        if not station_id_list:
+            return []
+
+        result = []
+        packet_tables = self.packet_table_creator.get_tables(min_timestamp)
+
+        with self.db.cursor() as cursor:
+            for packet_table in packet_tables:
+                cursor.execute(f"""
+                    SELECT * FROM {packet_table}
+                    WHERE station_id IN %s
+                        AND timestamp > %s
+                        AND is_moving = 0
+                        AND map_id = 1
+                """, (tuple(station_id_list), min_timestamp))
+
+                for record in cursor:
+                    if record:
+                        result.append(self.get_object_from_record(record))
+
+            for station_id in station_id_list:
+                packet = self.get_latest_confirmed_moving_object_by_station_id(station_id, min_timestamp)
+                if packet.is_existing_object():
+                    result.append(packet)
+
+        return result
+
+    def get_most_recent_confirmed_object_list_by_station_id_list_and_time_interval(self, station_id_list, min_timestamp, max_timestamp):
+        """Return an array of the most recent confirmed Packet objects specified by station ids."""
+        if not station_id_list:
+            return []
+
+        result = []
+        found_stationary_marker_hash_list = []
+        found_moving_marker_station_id_list = []
+        packet_tables = self.packet_table_creator.get_tables(min_timestamp, max_timestamp)
+
+        with self.db.cursor() as cursor:
+            for packet_table in reversed(packet_tables):
+                cursor.execute(f"""
+                    SELECT * FROM {packet_table} packet
+                    WHERE id IN (
+                        SELECT MAX(id)
+                        FROM {packet_table} packet
+                        WHERE station_id IN %s
+                            AND timestamp > %s
+                            AND timestamp <= %s
+                            AND is_moving = 0
+                            AND map_id IN (1, 2, 12)
+                        GROUP BY station_id, latitude, longitude, symbol, symbol_table
                     )
-                    order by packet.marker_id desc, packet.id desc""", (tuple(mapIdList), tuple(stationIdListToFind), int(minPacketTimestamp), int(maxPacketTimestamp)))
-                # Sort by marker_id first and packet as second, otherwise client might render it wrong
+                """, (tuple(station_id_list), min_timestamp, max_timestamp))
 
-                selectCursor.execute(sql1)
-                for record in selectCursor:
-                    if (record is not None):
-                        if (record['station_id'] not in foundStationIdList):
-                            dbObject = self.getObjectFromRecord(record)
-                            result.append(dbObject)
-                            foundStationIdList.append(record['station_id'])
-            if (len(foundStationIdList) >= len(stationIdList)):
-                break
+                for record in cursor:
+                    if record:
+                        marker_hash = hash(f"{record['station_id']};{record['latitude']};{record['longitude']};{record['symbol']};{record['symbol_table']}")
+                        if marker_hash not in found_stationary_marker_hash_list:
+                            found_stationary_marker_hash_list.append(marker_hash)
+                            result.append(self.get_object_from_record(record))
 
-        if (len(foundStationIdList) < len(stationIdList)):
-            for packetTable in reversed(packetTables):
-                stationIdListToFind = tuple(
-                    list(set(stationIdList) - set(foundStationIdList)))
+                cursor.execute(f"""
+                    SELECT packet.* FROM {packet_table} packet
+                    WHERE id IN (
+                        SELECT MAX(id)
+                        FROM {packet_table} packet
+                        WHERE station_id IN %s
+                            AND map_id IN (1, 2, 12)
+                            AND timestamp > %s
+                            AND timestamp <= %s
+                            AND is_moving = 1
+                        GROUP BY station_id
+                    )
+                """, (tuple(station_id_list), min_timestamp, max_timestamp))
 
-                if (len(stationIdListToFind) > 0):
-                    sql2 = selectCursor.mogrify("""select *
-                        from """ + packetTable + """ packet
-                        where map_id = 12
-                            and station_id in %s
-                            and position_timestamp <= %s
-                            and timestamp > %s
-                        order by packet.marker_id desc, packet.id desc""", (tuple(stationIdListToFind), int(maxPacketTimestamp), int(minPacketTimestamp)))
-                    # Sort by marker_id first and packet as second, otherwise client might render it wrong
+                for record in cursor:
+                    if record and record['station_id'] not in found_moving_marker_station_id_list:
+                        found_moving_marker_station_id_list.append(record['station_id'])
+                        result.append(self.get_object_from_record(record))
 
-                    selectCursor.execute(sql2)
-                    for record in selectCursor:
-                        if (record is not None):
-                            if (record['station_id'] not in foundStationIdList):
-                                dbObject = self.getObjectFromRecord(record)
-                                result.append(dbObject)
-                                foundStationIdList.append(record['station_id'])
-
-                if (len(foundStationIdList) >= len(stationIdList)):
-                    break
-
-        selectCursor.close()
         return result
 
-    def getObjectListByStationIdListAndTimeInterval(self, stationIdList, minPacketTimestamp, maxPacketTimestamp):
-        """Returns an array of Packet's specified by station id's
-        Args:
-            stationIdList (array):     Station id's to look for
-            minPacketTimestamp (int):  Min requested unix timestamp
-            maxPacketTimestamp (int):  Max requested unix timestamp
-
-        Returns:
-            Array
-        """
-        if (len(stationIdList) == 0):
-            return []
-
-        selectCursor = self.db.cursor()
-
-        result = []
-        packetTables = self.packetTableCreator.getPacketTables(
-            minPacketTimestamp, maxPacketTimestamp)
-
-        for packetTable in packetTables:
-            sql1 = selectCursor.mogrify("""select *
-                from """ + packetTable + """ packet
-                where map_id in (1,2,5,7,9,12)
-                    and station_id in %s
-                    and timestamp > %s
-                    and timestamp <= %s
-                order by packet.marker_id, packet.id""", (tuple(stationIdList), int(minPacketTimestamp), int(maxPacketTimestamp)))
-            # Sort by marker_id first and packet as second, otherwise client might render it wrong
-
-            selectCursor.execute(sql1)
-            for record in selectCursor:
-                if (record is not None):
-                    dbObject = self.getObjectFromRecord(record)
-                    result.append(dbObject)
-
-            # Also add packets that has been replace but where position_timestamp was in or before period
-            sql2 = selectCursor.mogrify("""select *
-                from """ + packetTable + """ packet
-                where map_id = 12
-                    and station_id in %s
-                    and position_timestamp <= %s
-                    and timestamp > %s
-                order by packet.marker_id, packet.id""", (tuple(stationIdList), int(maxPacketTimestamp), int(maxPacketTimestamp)))
-            # Sort by marker_id first and packet as second, otherwise client might render it wrong
-
-            selectCursor.execute(sql2)
-            for record in selectCursor:
-                if (record is not None):
-                    dbObject = self.getObjectFromRecord(record)
-                    result.append(dbObject)
-
-        selectCursor.close()
-        return result
-
-    def getObjectListByStationIdList(self, stationIdList, minPacketTimestamp):
-        """Returns an array of Packet's specified by station id's
-        Args:
-            stationIdList (array):     Station id's to look for
-            minPacketTimestamp (int):  Min requested unix timestamp
-
-        Returns:
-            Array
-        """
-        if (len(stationIdList) == 0):
-            return []
-        selectCursor = self.db.cursor()
-        result = []
-
-        packetTables = self.packetTableCreator.getPacketTables(
-            minPacketTimestamp)
-        for packetTable in packetTables:
-            sql = selectCursor.mogrify("""select *
-                from """ + packetTable + """ packet
-                where map_id in (1,5,7,9)
-                    and station_id in %s""", (tuple(stationIdList),))
-
-            if (minPacketTimestamp != 0):
-                sql = sql + \
-                    selectCursor.mogrify(
-                        """ and timestamp > %s""", (int(minPacketTimestamp),))
-
-            sql = sql + \
-                selectCursor.mogrify(
-                    """ order by packet.marker_id, packet.id""")
-            # Sort by marker_id first and packet as second, otherwise client might render it wrong
-            selectCursor.execute(sql)
-
-            for record in selectCursor:
-                if (record is not None):
-                    dbObject = self.getObjectFromRecord(record)
-                    result.append(dbObject)
-        selectCursor.close()
-        return result
-
-    def getLatestObjectByStationIdAndPosition(self, stationId, latitude, longitude, mapIdList, symbol=None, symbolTable=None, minTimestamp=0):
-        """Returns a packet object specified by station id and position (and map id, symbol and symbol table)
-        Args:
-            stationId (int):     Station id to look for
-            latitude (double):   Latitude
-            longitude (double):  Longitude
-            mapIdList (int):     Array of map id's to look for
-            symbol (str):        Symbol char
-            symbolTable (str):   Symbol table char
-            minTimestamp (int):  Min requested unix timestamp
-
-        Returns:
-            Packet
-        """
-        selectCursor = self.db.cursor()
-        packetTables = self.packetTableCreator.getPacketTables(minTimestamp)
-        for packetTable in reversed(packetTables):
-            sql = selectCursor.mogrify("""select *
-                from """ + packetTable + """
-                where station_id = %s
-                    and latitude = %s
-                    and longitude = %s
-                    and map_id in %s""", (stationId, latitude, longitude, tuple(mapIdList),))
-
-            if (minTimestamp != 0):
-                sql = sql + \
-                    selectCursor.mogrify(
-                        """ and timestamp > %s""", (int(minTimestamp),))
-
-            if (symbol is not None):
-                sql = sql + \
-                    selectCursor.mogrify(""" and symbol = %s""", (symbol,))
-
-            if (symbolTable is not None):
-                sql = sql + \
-                    selectCursor.mogrify(
-                        """ and symbol_table = %s""", (symbolTable,))
-
-            sql = sql + \
-                selectCursor.mogrify(
-                    """ order by marker_id desc, id desc limit 1""")
-            # Sort by marker_id first and packet as second, otherwise client might render it wrong
-
-            selectCursor.execute(sql)
-            record = selectCursor.fetchone()
-
-            if (record is not None):
-                selectCursor.close()
-                return self.getObjectFromRecord(record)
-        selectCursor.close()
-        return self.create()
-
-    def getLatestConfirmedMovingObjectByStationId(self, stationId, minTimestamp=0):
-        """Returns the latest confirmed moving Packet specified by station id
-        Args:
-            stationId (int):     Station id to look for
-            minTimestamp (int):  Min requested unix timestamp
-
-        Returns:
-            Packet
-        """
-        selectCursor = self.db.cursor()
-        packetTables = self.packetTableCreator.getPacketTables(minTimestamp)
-        for packetTable in reversed(packetTables):
-            sql = selectCursor.mogrify("""select *
-                from """ + packetTable + """
-                where station_id = %s
-                    and is_moving = 1
-                    and map_id = 1""", (stationId,))
-
-            if (minTimestamp != 0):
-                sql = sql + \
-                    selectCursor.mogrify(
-                        """ and timestamp > %s""", (int(minTimestamp),))
-
-            sql = sql + \
-                selectCursor.mogrify(
-                    """ order by marker_id desc, id desc limit 1""")
-            # Sort by marker_id first and packet as second, otherwise client might render it wrong
-
-            selectCursor.execute(sql)
-            record = selectCursor.fetchone()
-
-            if (record is not None):
-                selectCursor.close()
-                return self.getObjectFromRecord(record)
-        selectCursor.close()
-        return self.create()
-
-    def getLatestMovingObjectByStationId(self, stationId, minTimestamp=0):
-        """Returns the latest moving Packet specified by station id
-        Args:
-            stationId (int):     Station id to look for
-            minTimestamp (int):  Min requested unix timestamp
-
-        Returns:
-            Packet
-        """
-        selectCursor = self.db.cursor()
-        packetTables = self.packetTableCreator.getPacketTables(minTimestamp)
-        for packetTable in reversed(packetTables):
-            # We only look for map id 1 and 7 since we use this method to extend a moving marker
-            sql = selectCursor.mogrify("""select *
-                from """ + packetTable + """ packet
-                where station_id = %s
-                    and is_moving = 1
-                    and map_id in (1,7)""", (stationId,))
-
-            if (minTimestamp != 0):
-                sql = sql + \
-                    selectCursor.mogrify(
-                        """ and timestamp > %s""", (int(minTimestamp),))
-
-            sql = sql + \
-                selectCursor.mogrify(
-                    """ order by marker_id desc, id desc limit 1""")
-            # Sort by marker_id first and packet as second, otherwise client might render it wrong
-
-            selectCursor.execute(sql)
-
-            record = selectCursor.fetchone()
-            if (record is not None):
-                selectCursor.close()
-                return self.getObjectFromRecord(record)
-        selectCursor.close()
-        return self.create()
-
-    def getLatestConfirmedObjectByStationId(self, stationId, minTimestamp=0):
-        """Returns the latest confirmed packet object specified by station id
-        Args:
-            stationId (int):     Station id to look for
-            minTimestamp (int):  Min requested unix timestamp
-
-        Returns:
-            Packet
-        """
-        selectCursor = self.db.cursor()
-
-        sql = selectCursor.mogrify("""select *
-            from station
-            where station.id = %s""", (stationId,))
-
-        selectCursor.execute(sql)
-        record = selectCursor.fetchone()
-        selectCursor.close()
-
-        if (record is not None and record["latest_confirmed_packet_timestamp"] is not None and record["latest_confirmed_packet_timestamp"] >= minTimestamp):
-            return self.getObjectByIdAndTimestamp(record["latest_confirmed_packet_id"], record["latest_confirmed_packet_timestamp"])
-        else:
-            return self.create()
-
-    def getLatestObjectByStationId(self, stationId, minTimestamp=0):
-        """Returns the latest Packet specified by station id (that has a location)
-        Args:
-            stationId (int):     Station id to look for
-            minTimestamp (int):  Min requested unix timestamp
-
-        Returns:
-            Packet
-        """
-        selectCursor = self.db.cursor()
-
-        sql = selectCursor.mogrify("""select *
-            from station
-            where station.id = %s""", (stationId,))
-
-        selectCursor.execute(sql)
-        record = selectCursor.fetchone()
-        selectCursor.close()
-
-        if (record is not None and record["latest_location_packet_timestamp"] is not None and record["latest_location_packet_timestamp"] >= minTimestamp):
-            return self.getObjectByIdAndTimestamp(record["latest_location_packet_id"], record["latest_location_packet_timestamp"])
-        else:
-            return self.create()
-
-    def getMostRecentConfirmedObjectListByStationIdList(self, stationIdList, minTimestamp):
-        """Returns an array of the most recent confirmed Packet's specified by station id's
-
-        Note:
-            This method returnes the latest packet for moving stations and the latest packet for every uniqe position for stationary stations.
-
-        Args:
-            stationIdList (array): Station id's to look for
-            minTimestamp (int):    Min requested unix timestamp
-
-        Returns:
-            Array
-        """
-        if (len(stationIdList) == 0):
-            return []
-        selectCursor = self.db.cursor()
-        result = []
-
-        # Stationary objects
-        packetTables = self.packetTableCreator.getPacketTables(minTimestamp)
-        for packetTable in packetTables:
-            sql = selectCursor.mogrify("""select *
-                from """ + packetTable + """
-                where station_id in %s
-                    and timestamp > %s
-                    and is_moving = 0
-                    and map_id = 1""", (tuple(stationIdList), int(minTimestamp),))
-            # Since we only should get one moving and all other should be stationary an "order by" should not be nessecery
-            selectCursor.execute(sql)
-
-            for record in selectCursor:
-                if (record is not None):
-                    packet = self.getObjectFromRecord(record)
-                    result.append(packet)
-
-        # Moving objects
-        for stationId in stationIdList:
-            packet = self.getLatestConfirmedMovingObjectByStationId(
-                stationId, minTimestamp)
-            if (packet.isExistingObject()):
-                result.append(packet)
-
-        selectCursor.close()
-        return result
-
-    def getMostRecentConfirmedObjectListByStationIdListAndTimeInterval(self, stationIdList, minTimestamp, maxTimestamp):
-        """Returns an array of the most recent confirmed Packet's specified by station id's
-
-        Note:
-            This method returnes the latest packet for moving stations and the latest packet for every uniqe position for stationary stations.
-
-        Args:
-            stationIdList (array): Station id's to look for
-            minTimestamp (int):    Min requested unix timestamp
-            maxTimestamp (int):    Max requested unix timestamp
-
-        Returns:
-            Array
-        """
-        if (len(stationIdList) == 0):
-            return []
-
-        minTimestampRoundedQuarter = int(
-            minTimestamp) - (int(minTimestamp) % 900)
-        minTimestampRoundedDay = int(
-            minTimestamp) - (int(minTimestamp) % 86400)
-
-        selectCursor = self.db.cursor()
-        result = []
-        foundStationaryMarkerHashList = []
-        foundMovingMarkerStationIdList = []
-
-        packetTables = self.packetTableCreator.getPacketTables(
-            minTimestamp, maxTimestamp)
-        for packetTable in reversed(packetTables):
-            # Stationary objects
-            sql = selectCursor.mogrify("""select *
-                from """ + packetTable + """ packet
-                where id in (
-                    select max(id)
-                    from """ + packetTable + """ packet
-                    where station_id in %s
-                        and timestamp > %s
-                        and timestamp <= %s
-                        and is_moving = 0
-                        and map_id in (1,2,12)
-                    group by station_id, latitude, longitude, symbol, symbol_table
-                )""", (tuple(stationIdList), int(minTimestamp), int(maxTimestamp)))
-            # Since we only should get one moving and all other should be stationary an "order by" should not be nessecery
-            selectCursor.execute(sql)
-            for record in selectCursor:
-                if (record is not None):
-                    markerHash = hash(str(record['station_id']) + ';' + str(record['station_id']) + ';' + str(
-                        record['latitude']) + ';' + str(record['longitude']) + ';' + record['symbol'] + ';' + record['symbol_table'])
-                    if (markerHash not in foundStationaryMarkerHashList):
-                        foundStationaryMarkerHashList.append(markerHash)
-                        packet = self.getObjectFromRecord(record)
-                        result.append(packet)
-
-            # Moving objects
-            sql = selectCursor.mogrify("""select packet.*
-                from """ + packetTable + """ packet
-                where id in (
-                    select max(id)
-                    from """ + packetTable + """ packet
-                    where station_id in %s
-                        and map_id in (1,2,12)
-                        and packet.timestamp > %s
-                        and packet.timestamp <= %s
-                        and packet.is_moving = 1
-                    group by station_id
-                )""", (tuple(stationIdList), int(minTimestamp), int(maxTimestamp)))
-            # Since we only should get one moving and all other should be stationary an "order by" should not be nessecery
-
-            selectCursor.execute(sql)
-            for record in selectCursor:
-                if (record is not None):
-                    if (record['station_id'] not in foundMovingMarkerStationIdList):
-                        foundMovingMarkerStationIdList.append(
-                            record['station_id'])
-
-                        packet = self.getObjectFromRecord(record)
-                        result.append(packet)
-        selectCursor.close()
-        return result
-
-    def getLatestConfirmedObjectListByStationIdList(self, stationIdList, minTimestamp=0):
-        """Returns an array of the latest confirmed packet objects with specified station id's
-
-        Args:
-            stationIdList (array): station id's to look for
-            minTimestamp (int):    Min requested unix timestamp
-
-        Returns:
-            Array
-        """
-        if (len(stationIdList) == 0):
+    def get_latest_confirmed_object_list_by_station_id_list(self, station_id_list, min_timestamp=0):
+        """Return an array of the latest confirmed Packet objects specified by station ids."""
+        if not station_id_list:
             return []
 
         result = []
-        if (minTimestamp == 0):
-            # Apperantly we are looking for the latest no matter the age
-            for stationId in stationIdList:
-                packet = self.getLatestConfirmedObjectByStationId(stationId)
-                if (packet.isExistingObject()):
+        if min_timestamp == 0:
+            for station_id in station_id_list:
+                packet = self.get_latest_confirmed_object_by_station_id(station_id)
+                if packet.is_existing_object():
                     result.append(packet)
         else:
-            selectCursor = self.db.cursor()
-            packetTables = self.packetTableCreator.getPacketTables(
-                minTimestamp)
+            packet_tables = self.packet_table_creator.get_tables(min_timestamp)
 
-            for packetTable in reversed(packetTables):
-                sql = selectCursor.mogrify("""select packet.*
-                    from """ + packetTable + """ packet, station
-                    where station.id in %s
-                        and station.latest_confirmed_packet_id = packet.id
-                        and station.latest_confirmed_packet_timestamp = packet.timestamp """, (tuple(stationIdList),))
+            with self.db.cursor() as cursor:
+                for packet_table in reversed(packet_tables):
+                    cursor.execute(f"""
+                        SELECT packet.* FROM {packet_table} packet, station
+                        WHERE station.id IN %s
+                            AND station.latest_confirmed_packet_id = packet.id
+                            AND station.latest_confirmed_packet_timestamp = packet.timestamp
+                            AND station.latest_confirmed_packet_timestamp > %s
+                        ORDER BY packet.marker_id, packet.id
+                    """, (tuple(station_id_list), min_timestamp))
 
-                if (minTimestamp != 0):
-                    sql = sql + selectCursor.mogrify(
-                        """ and station.latest_confirmed_packet_timestamp > %s""" % (int(minTimestamp),))
+                    for record in cursor:
+                        if record:
+                            result.append(self.get_object_from_record(record))
 
-                sql = sql + \
-                    selectCursor.mogrify(
-                        """ order by packet.marker_id, packet.id""")
-                # Sort by marker_id first and packet as second, otherwise client might render it wrong
+                    if len(result) >= len(station_id_list):
+                        break
 
-                selectCursor.execute(sql)
-
-                for record in selectCursor:
-                    if (record is not None):
-                        result.append(self.getObjectFromRecord(record))
-
-                if (len(result) >= len(stationIdList)):
-                    break
-
-            selectCursor.close()
         return result
 
-    def getLatestObjectListByStationIdList(self, stationIdList, minTimestamp=0):
-        """Returns an array of the latest Packet's (that has a location) with specified station id's
-
-        Args:
-            stationIdList (array): station id's to look for
-            minTimestamp (int):    Min requested unix timestamp
-
-        Returns:
-            Array
-        """
-        if (len(stationIdList) == 0):
+    def get_latest_object_list_by_station_id_list(self, station_id_list, min_timestamp=0):
+        """Return an array of the latest Packet objects specified by station ids."""
+        if not station_id_list:
             return []
 
         result = []
-        if (minTimestamp == 0):
-            # Apperantly we are looking for the latest no matter the age
-            for stationId in stationIdList:
-                packet = self.getLatestObjectByStationId(stationId)
-                if (packet.isExistingObject()):
+        if min_timestamp == 0:
+            for station_id in station_id_list:
+                packet = self.get_latest_object_by_station_id(station_id)
+                if packet.is_existing_object():
                     result.append(packet)
-
         else:
-            selectCursor = self.db.cursor()
-            packetTables = self.packetTableCreator.getPacketTables(
-                minTimestamp)
-            for packetTable in reversed(packetTables):
-                sql = selectCursor.mogrify("""select packet.*
-                    from """ + packetTable + """ packet, station
-                    where station.id in %s
-                        and station.latest_location_packet_id = packet.id
-                        and station.latest_confirmed_packet_timestamp = packet.timestamp """, (tuple(stationIdList),))
+            packet_tables = self.packet_table_creator.get_tables(min_timestamp)
 
-                if (minTimestamp != 0):
-                    sql = sql + selectCursor.mogrify(
-                        """ and station.latest_location_packet_timestamp > %s""" % (int(minTimestamp),))
+            with self.db.cursor() as cursor:
+                for packet_table in reversed(packet_tables):
+                    cursor.execute(f"""
+                        SELECT packet.* FROM {packet_table} packet, station
+                        WHERE station.id IN %s
+                            AND station.latest_location_packet_id = packet.id
+                            AND station.latest_confirmed_packet_timestamp = packet.timestamp
+                            AND station.latest_location_packet_timestamp > %s
+                    """, (tuple(station_id_list), min_timestamp))
 
-                selectCursor.execute(sql)
+                    for record in cursor:
+                        if record:
+                            result.append(self.get_object_from_record(record))
 
-                for record in selectCursor:
-                    if (record is not None):
-                        result.append(self.getObjectFromRecord(record))
+                    if len(result) >= len(station_id_list):
+                        break
 
-                if (len(result) >= len(stationIdList)):
-                    break
-
-            selectCursor.close()
         return result
 
-    def getObjectFromRecord(self, record):
-        """Returns a packet object from a record
-
-        Args:
-            record (dict):  Database record dict to convert to a packet object
-
-        Returns:
-            Packet
-        """
-        dbObject = self.create()
-        if (record is not None):
-            dbObject.id = record["id"]
-            dbObject.stationId = int(record["station_id"])
-            dbObject.senderId = int(record["sender_id"])
-            dbObject.packetTypeId = record["packet_type_id"]
-            dbObject.timestamp = int(record["timestamp"])
-
-            if (record["latitude"] is not None):
-                dbObject.latitude = float(record["latitude"])
-            else:
-                dbObject.latitude = None
-
-            if (record["longitude"] is not None):
-                dbObject.longitude = float(record["longitude"])
-            else:
-                dbObject.longitude = None
-
-            dbObject.posambiguity = record['posambiguity']
-            dbObject.symbol = record["symbol"]
-            dbObject.symbolTable = record["symbol_table"]
-            dbObject.mapSector = record["map_sector"]
-            dbObject.relatedMapSectors = record["related_map_sectors"]
-            dbObject.mapId = record["map_id"]
-            dbObject.sourceId = record["source_id"]
-            dbObject.markerId = record["marker_id"]
-            dbObject.speed = record["speed"]
-            dbObject.course = record["course"]
-            dbObject.altitude = record["altitude"]
-            dbObject.isMoving = record['is_moving']
-
-            if (record["reported_timestamp"] is not None):
-                dbObject.reportedTimestamp = int(record["reported_timestamp"])
-            else:
-                dbObject.reportedTimestamp = record["reported_timestamp"]
-
-            if (record["position_timestamp"] is not None):
-                dbObject.positionTimestamp = int(record["position_timestamp"])
-            else:
-                dbObject.positionTimestamp = record["position_timestamp"]
-
-            if ("packet_tail_timestamp" in record):
-                dbObject.packetTailTimestamp = record['packet_tail_timestamp']
-            else:
-                dbObject.packetTailTimestamp = dbObject.timestamp
-
-            if ("marker_counter" in record):
-                dbObject.markerCounter = record['marker_counter']
-            else:
-                dbObject.markerCounter = 1
-
-            if ("comment" in record):
-                dbObject.comment = record['comment']
-            else:
-                dbObject.comment = None
-
-            if ("raw_path" in record):
-                dbObject.rawPath = record['raw_path']
-            else:
-                dbObject.rawPath = None
-
-            if ("raw" in record):
-                dbObject.raw = record['raw']
-            else:
-                dbObject.raw = None
-
-            if ("phg" in record):
-                dbObject.phg = record['phg']
-            else:
-                dbObject.phg = None
-
-            if ("rng" in record):
-                dbObject.rng = record['rng']
-            else:
-                dbObject.rng = None
-
-            if ("latest_phg_timestamp" in record):
-                dbObject.latestPhgTimestamp = record['latest_phg_timestamp']
-            else:
-                dbObject.latestPhgTimestamp = None
-
-            if ("latest_rng_timestamp" in record):
-                dbObject.latestRngTimestamp = record['latest_rng_timestamp']
-            else:
-                dbObject.latestRngTimestamp = None
-        return dbObject
+    def get_object_from_record(self, record):
+        """Return a Packet object from a database record."""
+        db_object = self.create()
+        if record:
+            db_object.id = record["id"]
+            db_object.station_id = int(record["station_id"])
+            db_object.sender_id = int(record["sender_id"])
+            db_object.packet_type_id = record["packet_type_id"]
+            db_object.timestamp = int(record["timestamp"])
+            db_object.latitude = float(record["latitude"]) if record["latitude"] is not None else None
+            db_object.longitude = float(record["longitude"]) if record["longitude"] is not None else None
+            db_object.posambiguity = record['posambiguity']
+            db_object.symbol = record["symbol"]
+            db_object.symbol_table = record["symbol_table"]
+            db_object.map_sector = record["map_sector"]
+            db_object.related_map_sectors = record["related_map_sectors"]
+            db_object.map_id = record["map_id"]
+            db_object.source_id = record["source_id"]
+            db_object.marker_id = record["marker_id"]
+            db_object.speed = record["speed"]
+            db_object.course = record["course"]
+            db_object.altitude = record["altitude"]
+            db_object.is_moving = record['is_moving']
+            db_object.reported_timestamp = int(record["reported_timestamp"]) if record["reported_timestamp"] is not None else None
+            db_object.position_timestamp = int(record["position_timestamp"]) if record["position_timestamp"] is not None else None
+            db_object.packet_tail_timestamp = record.get('packet_tail_timestamp', db_object.timestamp)
+            db_object.marker_counter = record.get('marker_counter', 1)
+            db_object.comment = record.get('comment')
+            db_object.raw_path = record.get('raw_path')
+            db_object.raw = record.get('raw')
+            db_object.phg = record.get('phg')
+            db_object.rng = record.get('rng')
+            db_object.latest_phg_timestamp = record.get('latest_phg_timestamp')
+            db_object.latest_rng_timestamp = record.get('latest_rng_timestamp')
+        return db_object
 
     def create(self):
-        """Creates an empty Packet
-
-        Returns:
-            Packet
-        """
+        """Create an empty Packet."""
         return Packet(self.db)

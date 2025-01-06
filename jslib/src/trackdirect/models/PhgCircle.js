@@ -9,11 +9,26 @@ trackdirect.models.PhgCircle = function (packet, map, isHalf) {
   this._defaultMap = map;
 
   if (typeof google === "object" && typeof google.maps === "object") {
-    google.maps.Circle.call(this, this._getGoogleCircleOptions(packet, isHalf));
+    const googleCircle = new google.maps.Circle(
+      this._getGoogleCircleOptions(packet, isHalf)
+    );
+
+    for (const key of Object.keys(this)) {
+      googleCircle[key] = this[key];
+    }
+    for (const key of Object.getOwnPropertyNames(
+      Object.getPrototypeOf(this)
+    )) {
+      if (key !== "constructor" && typeof this[key] === "function") {
+        googleCircle[key] = this[key];
+      }
+    }
+
+    return googleCircle;
   } else if (typeof L === "object") {
     if (L.version <= "0.7.7") {
-      var range = this._getCircleRadius(packet, isHalf);
-      var center = this._getCircleCenter(packet, isHalf);
+      let range = this._getCircleRadius(packet, isHalf);
+      let center = this._getCircleCenter(packet, isHalf);
       L.Circle.call(
         this,
         [center.lat, center.lng],
@@ -79,11 +94,11 @@ trackdirect.models.PhgCircle.prototype._getGoogleCircleOptions = function (
   packet,
   isHalf
 ) {
-  var color = trackdirect.services.stationColorCalculator.getColor(packet);
-  var range = this._getCircleRadius(packet, isHalf);
-  var center = this._getCircleCenter(packet, isHalf);
+  let color = trackdirect.services.stationColorCalculator.getColor(packet);
+  let range = this._getCircleRadius(packet, isHalf);
+  let center = this._getCircleCenter(packet, isHalf);
 
-  var options = {
+  let options = {
     strokeColor: color,
     strokeOpacity: 0.6,
     strokeWeight: 1,
@@ -107,9 +122,9 @@ trackdirect.models.PhgCircle.prototype._getLeafletCircleOptions = function (
   packet,
   isHalf
 ) {
-  var color = trackdirect.services.stationColorCalculator.getColor(packet);
-  var range = this._getCircleRadius(packet, isHalf);
-  var options = {
+  let color = trackdirect.services.stationColorCalculator.getColor(packet);
+  let range = this._getCircleRadius(packet, isHalf);
+  let options = {
     color: color,
     opacity: 0.6,
     weight: 1,
@@ -131,7 +146,7 @@ trackdirect.models.PhgCircle.prototype._getCircleRadius = function (
   packet,
   isHalf
 ) {
-  var range = packet.getPHGRange();
+  let range = packet.getPHGRange();
   if (range === null) {
     range = 0;
   }
@@ -151,10 +166,10 @@ trackdirect.models.PhgCircle.prototype._getCircleCenter = function (
   packet,
   isHalf
 ) {
-  var direction = packet.getPhgDirectionDegree();
-  var center = packet.getLatLngLiteral();
+  let direction = packet.getPhgDirectionDegree();
+  let center = packet.getLatLngLiteral();
   if (direction != null) {
-    var range = packet.getPHGRange();
+    let range = packet.getPHGRange();
     if (range === null) {
       range = 0;
     }
@@ -163,7 +178,7 @@ trackdirect.models.PhgCircle.prototype._getCircleCenter = function (
       range = range / 2;
     }
 
-    var distance = (range * 2) / 3 / 2;
+    let distance = (range * 2) / 3 / 2;
     center = trackdirect.services.distanceCalculator.getPositionByDistance(
       center,
       direction,

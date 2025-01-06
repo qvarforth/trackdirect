@@ -78,7 +78,7 @@ trackdirect.models.Ruler.prototype.leafletInit = function (defaultLength) {
       270,
       defaultLength / 2
     ),
-    { draggable: true }
+    {draggable: true}
   );
   this.marker1.addTo(this._map);
 
@@ -88,7 +88,7 @@ trackdirect.models.Ruler.prototype.leafletInit = function (defaultLength) {
       90,
       defaultLength / 2
     ),
-    { draggable: true }
+    {draggable: true}
   );
   this.marker2.addTo(this._map);
 
@@ -161,7 +161,7 @@ trackdirect.models.Ruler.prototype.hide = function () {
  * Add listerners
  */
 trackdirect.models.Ruler.prototype._addGoolgeMapsListeners = function () {
-  var me = this;
+  let me = this;
   google.maps.event.addListener(this.marker1, "drag", function () {
     me.line.setPath([me.marker1.getPosition(), me.marker2.getPosition()]);
     me._updateLabels();
@@ -176,7 +176,7 @@ trackdirect.models.Ruler.prototype._addGoolgeMapsListeners = function () {
  * Add listerners
  */
 trackdirect.models.Ruler.prototype._addLeafletListeners = function () {
-  var me = this;
+  let me = this;
   this.marker1.on("drag", function (e) {
     me.line.setLatLngs([me.marker1.getLatLng(), me.marker2.getLatLng()]);
     me._updateLabels();
@@ -237,9 +237,9 @@ trackdirect.models.Ruler.prototype._updateLabels = function () {
  * @return {string}
  */
 trackdirect.models.Ruler.prototype._getDistance = function (marker1, marker2) {
-  var p1 = this._getPositionLiteral(marker1);
-  var p2 = this._getPositionLiteral(marker2);
-  var distance = Math.round(
+  let p1 = this._getPositionLiteral(marker1);
+  let p2 = this._getPositionLiteral(marker2);
+  let distance = Math.round(
     trackdirect.services.distanceCalculator.getDistance(p1, p2),
     0
   );
@@ -270,7 +270,7 @@ trackdirect.models.Ruler.prototype._getDistance = function (marker1, marker2) {
   } else {
     distance = distance.toString() + " m";
   }
-  var bearing = Math.round(
+  let bearing = Math.round(
     trackdirect.services.distanceCalculator.getBearing(p2, p1),
     0
   ).toString();
@@ -284,16 +284,16 @@ trackdirect.models.Ruler.prototype._getDistance = function (marker1, marker2) {
  */
 trackdirect.models.Ruler.prototype._getPositionLiteral = function (marker) {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var latLng = marker.getPosition();
+    let latLng = marker.getPosition();
     if (typeof latLng !== "undefined" && typeof latLng.lat === "function") {
-      return { lat: latLng.lat(), lng: latLng.lng() };
+      return {lat: latLng.lat(), lng: latLng.lng()};
     } else {
       return latLng;
     }
   } else if (typeof L === "object") {
-    var latLng = marker.getLatLng();
+    let latLng = marker.getLatLng();
     if (typeof latLng !== "undefined") {
-      return { lat: latLng.lat, lng: latLng.lng };
+      return {lat: latLng.lat, lng: latLng.lng};
     } else {
       return latLng;
     }

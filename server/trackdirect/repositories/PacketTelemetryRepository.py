@@ -1,125 +1,117 @@
 import time
-
-from trackdirect.common.Repository import Repository
-from trackdirect.objects.PacketTelemetry import PacketTelemetry
-from trackdirect.database.PacketTelemetryTableCreator import PacketTelemetryTableCreator
-from trackdirect.exceptions.TrackDirectMissingTableError import TrackDirectMissingTableError
+from server.trackdirect.common.Repository import Repository
+from server.trackdirect.objects.PacketTelemetry import PacketTelemetry
+from server.trackdirect.database.PacketTelemetryTableCreator import PacketTelemetryTableCreator
+from server.trackdirect.exceptions.TrackDirectMissingTableError import TrackDirectMissingTableError
 
 
 class PacketTelemetryRepository(Repository):
-    """A Repository class for the PacketTelemetry class
-    """
+    """A Repository class for the PacketTelemetry class."""
 
     def __init__(self, db):
-        """The __init__ method.
+        """Initialize the repository with a database connection.
 
         Args:
-            db (psycopg2.Connection):    Database connection
+            db (psycopg2.Connection): Database connection
         """
-        self.db = db
-        self.packetTelemetryTableCreator = PacketTelemetryTableCreator(self.db)
-        self.packetTelemetryTableCreator.disableCreateIfMissing()
+        super().__init__(db)
+        self.packet_telemetry_table_creator = PacketTelemetryTableCreator(self.db)
+        self.packet_telemetry_table_creator.disable_create_if_missing()
 
-    def getObjectById(self, id):
-        """The getObjectById method is supposed to return an object based on the specified id in database
+    def get_object_by_id(self, id):
+        """Return an object based on the specified id in the database.
 
         Args:
-            id (int):  Database row id
+            id (int): Database row id
 
         Returns:
             PacketTelemetry
         """
-        selectCursor = self.db.cursor()
-        selectCursor.execute("""select * from packet_telemetry where id = %s""", (id,))
-        record = selectCursor.fetchone()
-        selectCursor.close()
-        return self.getObjectFromRecord(record)
+        with self.db.cursor() as cursor:
+            cursor.execute("SELECT * FROM packet_telemetry WHERE id = %s", (id,))
+            record = cursor.fetchone()
+        return self.get_object_from_record(record)
 
-    def getObjectByPacketIdAndTimestamp(self, id, timestamp):
-        """Returns an object based on the specified packet id in database
+    def get_object_by_packet_id_and_timestamp(self, id, timestamp):
+        """Return an object based on the specified packet id and timestamp in the database.
 
         Args:
-            id (int):         Database row id
-            timestamp (int):  Unix timestamp for requested packet
+            id (int): Database row id
+            timestamp (int): Unix timestamp for requested packet
 
         Returns:
             PacketTelemetry
         """
         try:
-            table = self.packetTelemetryTableCreator.getPacketTelemetryTable(
-                timestamp)
-            selectCursor = self.db.cursor()
-            selectCursor.execute("""select * from """ +
-                                 table + """ where packet_id = %s""", (id,))
-            record = selectCursor.fetchone()
-            selectCursor.close()
-            return self.getObjectFromRecord(record)
-        except TrackDirectMissingTableError as e:
+            table = self.packet_telemetry_table_creator.get_table(timestamp)
+            with self.db.cursor() as cursor:
+                cursor.execute(f"SELECT * FROM {table} WHERE packet_id = %s", (id,))
+                record = cursor.fetchone()
+            return self.get_object_from_record(record)
+        except TrackDirectMissingTableError:
             return self.create()
 
-    def getObjectFromRecord(self, record):
-        """Returns a packet telemetry object from a record
+    def get_object_from_record(self, record):
+        """Return a packet telemetry object from a database record.
 
         Args:
-            record (dict):  Database record dict to convert to a packet telemetry object
-
-        Returns:
-            A packet telemetry object
-        """
-        dbObject = self.create()
-        if (record is not None):
-            dbObject.id = record["id"]
-            dbObject.packetId = int(record["packet_id"])
-            dbObject.stationId = int(record["station_id"])
-            dbObject.timestamp = int(record["timestamp"])
-            dbObject.val1 = int(record["val1"])
-            dbObject.val2 = int(record["val2"])
-            dbObject.val3 = int(record["val3"])
-            dbObject.val4 = int(record["val4"])
-            dbObject.val5 = int(record["val5"])
-            dbObject.bits = int(record["bits"])
-            dbObject.seq = int(record["seq"])
-        return dbObject
-
-    def getObjectFromPacketData(self, data):
-        """Create object from raw packet data
-
-        Note:
-            stationId will not be set
-
-        Args:
-            data (dict):  Raw packet data
+            record (dict): Database record dict to convert to a packet telemetry object
 
         Returns:
             PacketTelemetry
         """
-        newObject = self.create()
-        if ("telemetry" in data):
-            # Remove one second since that will give us a more accurate timestamp
-            newObject.timestamp = int(time.time()) - 1
+        db_object = self.create()
+        if record is not None:
+            db_object.id = record["id"]
+            db_object.packet_id = int(record["packet_id"])
+            db_object.station_id = int(record["station_id"])
+            db_object.timestamp = int(record["timestamp"])
+            db_object.val1 = int(record["val1"])
+            db_object.val2 = int(record["val2"])
+            db_object.val3 = int(record["val3"])
+            db_object.val4 = int(record["val4"])
+            db_object.val5 = int(record["val5"])
+            db_object.bits = int(record["bits"])
+            db_object.seq = int(record["seq"])
+        return db_object
 
-            if ("vals" in data["telemetry"]):
-                newObject.val1 = data["telemetry"]["vals"][0]
-                newObject.val2 = data["telemetry"]["vals"][1]
-                newObject.val3 = data["telemetry"]["vals"][2]
-                newObject.val4 = data["telemetry"]["vals"][3]
-                newObject.val5 = data["telemetry"]["vals"][4]
+    def get_object_from_packet_data(self, data):
+        """Create an object from raw packet data.
 
-            if ("bits" in data["telemetry"]):
-                newObject.bits = data["telemetry"]["bits"]
+        Note:
+            stationId will not be set.
 
-            if ("seq" in data["telemetry"]):
-                if isinstance(data["telemetry"]["seq"], str):
+        Args:
+            data (dict): Raw packet data
+
+        Returns:
+            PacketTelemetry
+        """
+        new_object = self.create()
+        if "telemetry" in data:
+            # Remove one second for a more accurate timestamp
+            new_object.timestamp = int(time.time()) - 1
+
+            telemetry = data["telemetry"]
+            if "vals" in telemetry:
+                new_object.val1, new_object.val2, new_object.val3, new_object.val4, new_object.val5 = telemetry["vals"]
+
+            if "bits" in telemetry:
+                new_object.bits = telemetry["bits"]
+
+            if "seq" in telemetry:
+                seq = telemetry["seq"]
+                if isinstance(seq, str):
                     try:
-                        newObject.seq = int(data["telemetry"]["seq"], 10)
+                        new_object.seq = int(seq, 10)
                     except ValueError:
-                        newObject.seq = None
-                elif isinstance(data["telemetry"]["seq"], int):
-                    newObject.seq = data["telemetry"]["seq"]
-        return newObject
+                        new_object.seq = None
+                elif isinstance(seq, int):
+                    new_object.seq = seq
+        return new_object
 
     def create(self):
-        """Creates an empty PacketTelemetry object
+        """Create an empty PacketTelemetry object.
 
         Returns:
             PacketTelemetry

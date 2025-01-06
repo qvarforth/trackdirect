@@ -10,6 +10,10 @@ htdocs/public/heatmaps/heatmap.*.png
 # Custom config files
 config/*
 !config/trackdirect.ini
+!config/aprsc.conf
+!config/postgresql.conf
+!config/aprsc.conf
+!config/apache-default.conf
 
 ogndevices
 
@@ -18,3 +22,4 @@ db
 # virtualenvs
 /venv
 /virtualenv
+.qodo

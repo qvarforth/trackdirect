@@ -1,81 +1,73 @@
-import logging
-from twisted.python import log
 import datetime
-import time
 
 
-class DatabaseObjectFinder():
-    """The DatabaseObjectFinder class can be used to check if a database table exists or not
-    """
+class DatabaseObjectFinder:
+    """The DatabaseObjectFinder class can be used to check if a database table exists or not."""
 
     existingTables = {}
 
     def __init__(self, db):
-        """The __init__ method.
+        """
+        Initialize the DatabaseObjectFinder.
 
         Args:
-            db (psycopg2.Connection):  Database connection
+            db (psycopg2.Connection): Database connection.
         """
         self.db = db
 
-    def setTableExists(self, tablename):
-        """Mark a table as existing
-
-        Args:
-            tablename (str):  table to be marked as existing
+    def set_table_exists(self, table_name):
         """
-        DatabaseObjectFinder.existingTables[tablename] = True
-
-    def checkTableExists(self, tablename):
-        """Returns true if specified table exists in database
+        Mark a table as existing.
 
         Args:
-            tablename (str):       Table that we want's to know if it exists or not
+            table_name (str): Table to be marked as existing.
+        """
+        DatabaseObjectFinder.existingTables[table_name] = True
+
+    def check_table_exists(self, table_name):
+        """
+        Check if the specified table exists in the database.
+
+        Args:
+            table_name (str): Table to check for existence.
 
         Returns:
-            Returns true if specified table exists in database otherwise false
+            bool: True if the specified table exists in the database, otherwise False.
         """
-        todayDateStr = datetime.datetime.utcfromtimestamp(
-            int(time.time())).strftime('%Y%m%d')
-        yesterdayDateStr = datetime.datetime.utcfromtimestamp(
-            int(time.time()) - 86400).strftime('%Y%m%d')
+        today_date_str = datetime.datetime.utcnow().strftime('%Y%m%d')
+        yesterday_date_str = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime('%Y%m%d')
 
-        if (todayDateStr in tablename or yesterdayDateStr in tablename):
+        if today_date_str in table_name or yesterday_date_str in table_name:
             # We only trust cache for the latest two days
-            if (tablename in DatabaseObjectFinder.existingTables):
-                # we know table exists
+            if table_name in DatabaseObjectFinder.existingTables:
                 return True
 
-        cur = self.db.cursor()
-        cur.execute("""
-            SELECT COUNT(*)
-            FROM information_schema.tables
-            WHERE table_name = '{0}'
-            """.format(tablename.replace('\'', '\'\'')))
-        if cur.fetchone()[0] == 1:
-            DatabaseObjectFinder.existingTables[tablename] = True
-            cur.close()
-            return True
-        else:
-            cur.close()
-            return False
+        with self.db.cursor() as cur:
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_name = %s
+            """, (table_name,))
+            if cur.fetchone()[0] == 1:
+                DatabaseObjectFinder.existingTables[table_name] = True
+                return True
+            else:
+                return False
 
-    def checkIndexExists(self, index):
-        """Returns true if specified index exists in database
+    def check_index_exists(self, index):
+        """
+        Check if the specified index exists in the database.
 
         Args:
-            index (str): index that we want's to know if it exists or not
+            index (str): Index to check for existence.
 
         Returns:
-            Returns true if specified index exists in database otherwise false
+            bool: True if the specified index exists in the database, otherwise False.
         """
-        cur = self.db.cursor()
-        cur.execute("""select to_regclass('{0}') \"name\"""".format(
-            index.replace('\'', '\'\'')))
-        record = cur.fetchone()
-        if record and record['name'] == index.replace('\'', '\'\''):
-            cur.close()
-            return True
-        else:
-            cur.close()
-            return False
+        with self.db.cursor() as cur:
+            cur.execute("SELECT to_regclass(%s) AS name", (index,))
+            record = cur.fetchone()
+            if record and record['name'] == index:
+                return True
+            else:
+                return False

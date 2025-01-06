@@ -10,11 +10,26 @@ trackdirect.models.RngCircle = function (packet, map, isHalf) {
 
   // Call the parent constructor
   if (typeof google === "object" && typeof google.maps === "object") {
-    google.maps.Circle.call(this, this._getGoogleCircleOptions(packet, isHalf));
+    const googleCircle = new google.maps.Circle(
+      this._getGoogleCircleOptions(packet, isHalf)
+    );
+
+    for (const key of Object.keys(this)) {
+      googleCircle[key] = this[key];
+    }
+    for (const key of Object.getOwnPropertyNames(
+      Object.getPrototypeOf(this)
+    )) {
+      if (key !== "constructor" && typeof this[key] === "function") {
+        googleCircle[key] = this[key];
+      }
+    }
+
+    return googleCircle;
   } else if (typeof L === "object") {
-    var center = packet.getLatLngLiteral();
+    let center = packet.getLatLngLiteral();
     if (L.version <= "0.7.7") {
-      var range = this._getCircleRadius(packet, isHalf);
+      let range = this._getCircleRadius(packet, isHalf);
       L.Circle.call(
         this,
         [center.lat, center.lng],
@@ -80,10 +95,10 @@ trackdirect.models.RngCircle.prototype._getGoogleCircleOptions = function (
   packet,
   isHalf
 ) {
-  var color = trackdirect.services.stationColorCalculator.getColor(packet);
-  var range = this._getCircleRadius(packet, isHalf);
+  let color = trackdirect.services.stationColorCalculator.getColor(packet);
+  let range = this._getCircleRadius(packet, isHalf);
 
-  var options = {
+  let options = {
     strokeColor: color,
     strokeOpacity: 0.6,
     strokeWeight: 1,
@@ -107,10 +122,10 @@ trackdirect.models.RngCircle.prototype._getLeafletCircleOptions = function (
   packet,
   isHalf
 ) {
-  var color = trackdirect.services.stationColorCalculator.getColor(packet);
-  var range = this._getCircleRadius(packet, isHalf);
+  let color = trackdirect.services.stationColorCalculator.getColor(packet);
+  let range = this._getCircleRadius(packet, isHalf);
 
-  var options = {
+  let options = {
     color: color,
     opacity: 0.6,
     weight: 1,
@@ -132,7 +147,7 @@ trackdirect.models.RngCircle.prototype._getCircleRadius = function (
   packet,
   isHalf
 ) {
-  var range = packet.getRNGRange();
+  let range = packet.getRNGRange();
   if (range === null) {
     range = 0;
   }

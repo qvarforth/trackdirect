@@ -15,11 +15,24 @@ trackdirect.models.InfoWindow = function (marker, map, disableAutoPan) {
 
   // Call the parent constructor
   if (typeof google === "object" && typeof google.maps === "object") {
-    google.maps.InfoWindow.call(this, {
+    const googleInfoWindow = new google.maps.InfoWindow({
       disableAutoPan: disableAutoPan,
     });
+
+    for (const key of Object.keys(this)) {
+      googleInfoWindow[key] = this[key];
+    }
+    for (const key of Object.getOwnPropertyNames(
+      Object.getPrototypeOf(this)
+    )) {
+      if (key !== "constructor" && typeof this[key] === "function") {
+        googleInfoWindow[key] = this[key];
+      }
+    }
+
+    return googleInfoWindow;
   } else if (typeof L === "object") {
-    var yOffset = 2;
+    let yOffset = 2;
     if (!marker.isDotMarker()) {
       yOffset = -5;
     }
@@ -32,7 +45,7 @@ trackdirect.models.InfoWindow = function (marker, map, disableAutoPan) {
   }
 
   // Handle close click
-  var me = this;
+  let me = this;
   if (typeof google === "object" && typeof google.maps === "object") {
     google.maps.event.addListener(this, "closeclick", function () {
       me._hideRelatedMarkerTail();
@@ -199,7 +212,7 @@ trackdirect.models.InfoWindow.prototype.hide = function () {
     arg
   ) {
     if (event in this._tdEventListeners) {
-      for (var i = 0; i < this._tdEventListeners[event].length; i++) {
+      for (let i = 0; i < this._tdEventListeners[event].length; i++) {
         this._tdEventListeners[event][i](arg);
       }
     }
@@ -210,25 +223,27 @@ trackdirect.models.InfoWindow.prototype.hide = function () {
  * @param {boolean} compactVersion
  */
 trackdirect.models.InfoWindow.prototype._create = function (compactVersion) {
+  let mainDiv;
+  let menuwrapper;
   if (compactVersion) {
-    var mainDiv = this._getCompactMainDiv();
-    var menuwrapper = this._getMenuDiv(false);
+    mainDiv = this._getCompactMainDiv();
+    menuwrapper = this._getMenuDiv(false);
 
     this._polyline = this._defaultMap.markerCollection.getMarkerPolyline(
       this._marker.markerIdKey
     );
   } else {
-    var mainDiv = this._getMainDiv();
+    mainDiv = this._getMainDiv();
     if (!trackdirect.isMobile) {
       mainDiv.append(this._getIconDiv());
     }
 
     mainDiv.append(this._getCompletePacketDiv());
-    var menuwrapper = this._getMenuDiv(true);
+    menuwrapper = this._getMenuDiv(true);
   }
 
   mainDiv.append(menuwrapper);
-  var wrapperDiv = $(document.createElement("div"));
+  let wrapperDiv = $(document.createElement("div"));
   wrapperDiv.append(mainDiv);
   if (typeof google === "object" && typeof google.maps === "object") {
     this.setContent(wrapperDiv.html());
@@ -246,12 +261,12 @@ trackdirect.models.InfoWindow.prototype._hideRelatedMarkerTail = function () {
       !this._defaultMap.state.isFilterMode &&
       this._defaultMap.getZoom() < trackdirect.settings.minZoomForMarkerTail
     ) {
-      var markerIdKey = this._polyline.markerIdKey;
+      let markerIdKey = this._polyline.markerIdKey;
       if (this._defaultMap.markerCollection.isExistingMarker(markerIdKey)) {
-        var stationId =
+        let stationId =
           this._defaultMap.markerCollection.getMarker(markerIdKey).packet
             .station_id;
-        var stationLatestMarker =
+        let stationLatestMarker =
           this._defaultMap.markerCollection.getStationLatestMarker(stationId);
         if (stationLatestMarker !== null) {
           stationLatestMarker.hideMarkerTail();
@@ -273,7 +288,7 @@ trackdirect.models.InfoWindow.prototype._hideRelatedMarkerTail = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getMainDiv = function () {
-  var mainDiv = $(document.createElement("div"));
+  let mainDiv = $(document.createElement("div"));
   mainDiv.css("font-family", "Verdana,Arial,sans-serif");
   if (!trackdirect.isMobile) {
     mainDiv.css("font-size", "11px");
@@ -291,7 +306,7 @@ trackdirect.models.InfoWindow.prototype._getMainDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getIconDiv = function () {
-  var iconUrl64 = trackdirect.services.symbolPathFinder.getFilePath(
+  let iconUrl64 = trackdirect.services.symbolPathFinder.getFilePath(
     this._marker.packet.symbol_table,
     this._marker.packet.symbol,
     null,
@@ -300,14 +315,14 @@ trackdirect.models.InfoWindow.prototype._getIconDiv = function () {
     64,
     64
   );
-  var iconImg = $(document.createElement("img"));
+  let iconImg = $(document.createElement("img"));
   iconImg.css("width", "64px");
   iconImg.css("height", "64px");
   iconImg.attr("src", iconUrl64);
   iconImg.attr("alt", ""); // Set the icon description
   iconImg.attr("title", ""); // Set the icon description
 
-  var leftIconDiv = $(document.createElement("div"));
+  let leftIconDiv = $(document.createElement("div"));
   leftIconDiv.css("display", "inline-block");
   leftIconDiv.css("vertical-align", "top");
   leftIconDiv.css("padding-right", "15px");
@@ -321,7 +336,7 @@ trackdirect.models.InfoWindow.prototype._getIconDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getPacketDiv = function () {
-  var packetDiv = $(document.createElement("div"));
+  let packetDiv = $(document.createElement("div"));
   packetDiv.css("display", "inline-block");
   packetDiv.css("vertical-align", "top");
   packetDiv.css("max-width", "350px");
@@ -333,7 +348,7 @@ trackdirect.models.InfoWindow.prototype._getPacketDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getNameIconDiv = function () {
-  var iconUrl24 = trackdirect.services.symbolPathFinder.getFilePath(
+  let iconUrl24 = trackdirect.services.symbolPathFinder.getFilePath(
     this._marker.packet.symbol_table,
     this._marker.packet.symbol,
     null,
@@ -342,7 +357,7 @@ trackdirect.models.InfoWindow.prototype._getNameIconDiv = function () {
     24,
     24
   );
-  var iconImg = $(document.createElement("img"));
+  let iconImg = $(document.createElement("img"));
   iconImg.css("width", "24px");
   iconImg.css("height", "24px");
   iconImg.css("vertical-align", "middle");
@@ -357,7 +372,7 @@ trackdirect.models.InfoWindow.prototype._getNameIconDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getNameLink = function () {
-  var nameLink = $(document.createElement("a"));
+  let nameLink = $(document.createElement("a"));
   nameLink.css("color", "#337ab7");
   if (trackdirect.isMobile) {
     nameLink.css("vertical-align", "-2px");
@@ -367,8 +382,8 @@ trackdirect.models.InfoWindow.prototype._getNameLink = function () {
   nameLink.attr(
     "onclick",
     "trackdirect.openStationInformationDialog(" +
-      this._marker.packet.station_id +
-      "); return false;"
+    this._marker.packet.station_id +
+    "); return false;"
   );
 
   nameLink.html(escapeHtml(this._marker.packet.station_name));
@@ -380,7 +395,7 @@ trackdirect.models.InfoWindow.prototype._getNameLink = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getSenderNameLink = function () {
-  var nameLink = $(document.createElement("span"));
+  let nameLink = $(document.createElement("span"));
   if (trackdirect.isMobile) {
     nameLink.css("vertical-align", "-2px");
   }
@@ -394,7 +409,7 @@ trackdirect.models.InfoWindow.prototype._getSenderNameLink = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getNameDiv = function () {
-  var nameDiv = $(document.createElement("div"));
+  let nameDiv = $(document.createElement("div"));
   nameDiv.css("clear", "both");
   nameDiv.css("font-size", "12px");
   nameDiv.css("font-weight", "bold");
@@ -405,7 +420,7 @@ trackdirect.models.InfoWindow.prototype._getNameDiv = function () {
   }
   nameDiv.append(this._getNameLink());
   if (this._marker.packet.getOgnRegistration() != null) {
-    var name = escapeHtml(this._marker.packet.getOgnRegistration());
+    let name = escapeHtml(this._marker.packet.getOgnRegistration());
     if (this._marker.packet.getOgnCN() !== null) {
       name += " [" + escapeHtml(this._marker.packet.getOgnCN()) + "]";
     }
@@ -426,23 +441,23 @@ trackdirect.models.InfoWindow.prototype._getNameDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getCompletePacketDiv = function () {
-  var packetDiv = this._getPacketDiv();
+  let packetDiv = this._getPacketDiv();
   packetDiv.append(this._getNameDiv());
   packetDiv.append(this._getPacketTimeDiv());
   if (this._marker.packet.timestamp > 0) {
     if ($(window).height() >= 300) {
       packetDiv.append(this._getPacketPathDiv());
     }
-    var phgRange = this._marker.packet.getPHGRange();
-    var rngRange = this._marker.packet.getRNGRange();
+    let phgRange = this._marker.packet.getPHGRange();
+    let rngRange = this._marker.packet.getRNGRange();
     if (phgRange !== null || rngRange !== null) {
       packetDiv.append(this._getSpaceDiv());
       packetDiv.append(this._getPhgDiv(phgRange));
       packetDiv.append(this._getRngDiv(rngRange));
     }
     if ($(window).height() >= 300) {
-      var transmitDistance = this._getTransmitDistance(this._marker.packet);
-      var tailDistance = this._getTailDistance(
+      let transmitDistance = this._getTransmitDistance(this._marker.packet);
+      let tailDistance = this._getTailDistance(
         this._defaultMap.markerCollection.getMarkerMasterMarkerKeyId(
           this._marker.markerIdKey
         )
@@ -474,14 +489,14 @@ trackdirect.models.InfoWindow.prototype._getCompletePacketDiv = function () {
     }
     if (
       typeof this._marker.packet.latest_telemetry_packet_timestamp !==
-        "undefined" &&
+      "undefined" &&
       this._marker.packet.latest_telemetry_packet_timestamp !== null
     ) {
       packetDiv.append(this._getSpaceDiv());
       packetDiv.append(this._getTelemetryDiv());
     }
 
-    var commentDiv = this._getPacketCommentDiv();
+    let commentDiv = this._getPacketCommentDiv();
     if (commentDiv != null) {
       packetDiv.append(this._getSpaceDiv());
       packetDiv.append(commentDiv);
@@ -495,19 +510,17 @@ trackdirect.models.InfoWindow.prototype._getCompletePacketDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getPacketTimeDiv = function () {
+  let dateString
   if (this._marker.packet.timestamp == 0) {
-    dateString =
-      '<span style="color: grey;">No known packet for specified limits.</span>';
+    dateString = '<span style="color: grey;">No known packet for specified limits.</span>';
   } else {
-    var date = new Date(this._marker.packet.timestamp * 1000);
-    var dateString = moment(date).format(
-      trackdirect.settings.dateFormatNoTimeZone
-    );
+    let date = new Date(this._marker.packet.timestamp * 1000);
+    dateString = moment(date).format(trackdirect.settings.dateFormatNoTimeZone);
     if (
       this._marker.packet.timestamp > this._marker.packet.position_timestamp &&
       !trackdirect.isMobile
     ) {
-      var positionDate = new Date(
+      let positionDate = new Date(
         this._marker.packet.position_timestamp * 1000
       );
       dateString =
@@ -519,11 +532,10 @@ trackdirect.models.InfoWindow.prototype._getPacketTimeDiv = function () {
       this._defaultMap.state.endTimeTravelTimestamp !== null &&
       this._marker.packet.map_id == 12
     ) {
-      dateString +=
-        '<br/><span style="color: grey;">(exact time for this is not known)</span>';
+      dateString += '<br/><span style="color: grey;">(exact time for this is not known)</span>';
     }
   }
-  var timeDiv = $(document.createElement("div"));
+  let timeDiv = $(document.createElement("div"));
   timeDiv.css("clear", "both");
   timeDiv.html(dateString);
   return timeDiv;
@@ -534,9 +546,9 @@ trackdirect.models.InfoWindow.prototype._getPacketTimeDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getPacketPathDiv = function () {
-  var rawPath = this._marker.packet.getLinkifiedRawPath(); // Html allready escaped
+  let rawPath = this._marker.packet.getLinkifiedRawPath(); // Html allready escaped
   if (rawPath !== null) {
-    var rawPathDiv = $(document.createElement("div"));
+    let rawPathDiv = $(document.createElement("div"));
     rawPathDiv.css("clear", "both");
     rawPathDiv.html("[" + rawPath + "]");
     return rawPathDiv;
@@ -549,7 +561,7 @@ trackdirect.models.InfoWindow.prototype._getPacketPathDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getSpaceDiv = function () {
-  var spaceDiv = $(document.createElement("div"));
+  let spaceDiv = $(document.createElement("div"));
   spaceDiv.css("clear", "both");
   spaceDiv.css("line-height", "4px");
   spaceDiv.html("&nbsp;");
@@ -562,59 +574,61 @@ trackdirect.models.InfoWindow.prototype._getSpaceDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getPhgDiv = function (phgRange) {
+  let phgRangeToShow = phgRange;
+  let phgRangeUnit = '';
   if (phgRange !== null) {
     if (this._defaultMap.state.useImperialUnit) {
-      var phgRange =
+      phgRangeToShow =
         Math.round(
           trackdirect.services.imperialConverter.convertKilometerToMile(
             phgRange / 1000
           ) * 10
         ) / 10; // converted to miles
-      var phgRangeUnit = "miles";
+      phgRangeUnit = "miles";
     } else {
-      var phgRange = Math.round(phgRange / 10) / 100; // converted to km
-      var phgRangeUnit = "km";
+      phgRangeToShow = Math.round(phgRange / 10) / 100; // converted to km
+      phgRangeUnit = "km";
     }
-    var phgDiv = $(document.createElement("div"));
+    let phgDiv = $(document.createElement("div"));
     phgDiv.attr(
       "id",
       "phglinks-" +
-        this._marker.packet.station_id +
-        "-" +
-        this._marker.packet.id
+      this._marker.packet.station_id +
+      "-" +
+      this._marker.packet.id
     );
-    var halfPhgLink = $(
+    let halfPhgLink = $(
       "<a style='color: #337ab7;' id='half-phg-" +
-        this._marker.packet.station_id +
-        "-" +
-        this._marker.packet.id +
-        "' href='#'>Half</a>"
+      this._marker.packet.station_id +
+      "-" +
+      this._marker.packet.id +
+      "' href='#'>Half</a>"
     );
-    var fullPhgLink = $(
+    let fullPhgLink = $(
       "<a style='color: #337ab7;' id='full-phg-" +
-        this._marker.packet.station_id +
-        "-" +
-        this._marker.packet.id +
-        "' href='#'>Full</a>"
+      this._marker.packet.station_id +
+      "-" +
+      this._marker.packet.id +
+      "' href='#'>Full</a>"
     );
-    var nonePhgLink = $(
+    let nonePhgLink = $(
       "<a style='color: #337ab7;' id='none-phg-" +
-        this._marker.packet.station_id +
-        "-" +
-        this._marker.packet.id +
-        "' href='#'>None</a>"
+      this._marker.packet.station_id +
+      "-" +
+      this._marker.packet.id +
+      "' href='#'>None</a>"
     );
     phgDiv.css("clear", "both");
     phgDiv.css("display", "none");
     phgDiv.css("color", "#440B2A");
-    phgDiv.append("PHG calculated range: " + phgRange + " " + phgRangeUnit);
+    phgDiv.append("PHG calculated range: " + phgRangeToShow + " " + phgRangeUnit);
 
     if (typeof L === "object" && L.version <= "0.7.7") {
       // Skip PHG links for older Leaflet version
       return phgDiv;
     }
 
-    if (phgRange > 0) {
+    if (phgRangeToShow > 0) {
       phgDiv.append("<br/>");
       phgDiv.append("PHG circle: ");
       phgDiv.append(fullPhgLink);
@@ -634,59 +648,61 @@ trackdirect.models.InfoWindow.prototype._getPhgDiv = function (phgRange) {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getRngDiv = function (rngRange) {
+  let rngRangeToShow = rngRange;
+  let rngRangeUnit = '';
   if (rngRange !== null) {
     if (this._defaultMap.state.useImperialUnit) {
-      var rngRange =
+      rngRangeToShow =
         Math.round(
           trackdirect.services.imperialConverter.convertKilometerToMile(
             rngRange / 1000
           ) * 10
         ) / 10; // converted to miles
-      var rngRangeUnit = "miles";
+      rngRangeUnit = "miles";
     } else {
-      var rngRange = Math.round(rngRange * 100) / 100; // converted to km
-      var rngRangeUnit = "km";
+      rngRangeToShow = Math.round(rngRange * 100) / 100; // converted to km
+      rngRangeUnit = "km";
     }
-    var rngDiv = $(document.createElement("div"));
+    let rngDiv = $(document.createElement("div"));
     rngDiv.attr(
       "id",
       "rnglinks-" +
-        this._marker.packet.station_id +
-        "-" +
-        this._marker.packet.id
+      this._marker.packet.station_id +
+      "-" +
+      this._marker.packet.id
     );
-    var halfRngLink = $(
+    let halfRngLink = $(
       "<a style='color: #337ab7;' id='half-rng-" +
-        this._marker.packet.station_id +
-        "-" +
-        this._marker.packet.id +
-        "' href='#'>Half</a>"
+      this._marker.packet.station_id +
+      "-" +
+      this._marker.packet.id +
+      "' href='#'>Half</a>"
     );
-    var fullRngLink = $(
+    let fullRngLink = $(
       "<a style='color: #337ab7;' id='full-rng-" +
-        this._marker.packet.station_id +
-        "-" +
-        this._marker.packet.id +
-        "' href='#'>Full</a>"
+      this._marker.packet.station_id +
+      "-" +
+      this._marker.packet.id +
+      "' href='#'>Full</a>"
     );
-    var noneRngLink = $(
+    let noneRngLink = $(
       "<a style='color: #337ab7;' id='none-rng-" +
-        this._marker.packet.station_id +
-        "-" +
-        this._marker.packet.id +
-        "' href='#'>None</a>"
+      this._marker.packet.station_id +
+      "-" +
+      this._marker.packet.id +
+      "' href='#'>None</a>"
     );
     rngDiv.css("clear", "both");
     rngDiv.css("display", "none");
     rngDiv.css("color", "#440B2A");
-    rngDiv.append("RNG precalculated range: " + rngRange + " " + rngRangeUnit);
+    rngDiv.append("RNG precalculated range: " + rngRangeToShow + " " + rngRangeUnit);
 
     if (typeof L === "object" && L.version <= "0.7.7") {
       // Skip RNG links for older Leaflet version
       return rngDiv;
     }
 
-    if (rngRange > 0) {
+    if (rngRangeToShow > 0) {
       rngDiv.append("<br/>");
       rngDiv.append("RNG circle: ");
       rngDiv.append(fullRngLink);
@@ -709,7 +725,7 @@ trackdirect.models.InfoWindow.prototype._getTransmitDistanceDiv = function (
   transmitDistance
 ) {
   if (transmitDistance !== null && Math.round(transmitDistance / 100) != 0) {
-    var transmitDistanceDiv = $(document.createElement("div"));
+    let transmitDistanceDiv = $(document.createElement("div"));
     transmitDistanceDiv.css("clear", "both");
     transmitDistanceDiv.css("color", "#273c20");
     if (this._defaultMap.state.useImperialUnit) {
@@ -726,10 +742,10 @@ trackdirect.models.InfoWindow.prototype._getTransmitDistanceDiv = function (
     }
     transmitDistanceDiv.append(
       '<span title="Transmit distance to receiving digipeater/igate">Transmit distance: ' +
-        transmitDistance +
-        " " +
-        transmitDistanceUnit +
-        "</span>"
+      transmitDistance +
+      " " +
+      transmitDistanceUnit +
+      "</span>"
     );
     return transmitDistanceDiv;
   }
@@ -745,7 +761,7 @@ trackdirect.models.InfoWindow.prototype._getTailDistanceDiv = function (
   tailDistance
 ) {
   if (tailDistance !== null && Math.round(tailDistance) > 0) {
-    var distanceDiv = $(document.createElement("div"));
+    let distanceDiv = $(document.createElement("div"));
     distanceDiv.css("clear", "both");
     distanceDiv.css("color", "#273c20");
     if (tailDistance < 1000) {
@@ -776,10 +792,10 @@ trackdirect.models.InfoWindow.prototype._getTailDistanceDiv = function (
     }
     distanceDiv.append(
       '<span title="Current shown tail distance (depends on the time settings)">Current tail distance: ' +
-        tailDistance +
-        " " +
-        tailDistanceUnit +
-        "</span>"
+      tailDistance +
+      " " +
+      tailDistanceUnit +
+      "</span>"
     );
     return distanceDiv;
   }
@@ -797,7 +813,7 @@ trackdirect.models.InfoWindow.prototype._getPacketSpeedAltitudeCourseDiv =
       Math.round(this._marker.packet.course) != 0 ||
       Math.round(this._marker.packet.altitude) != 0
     ) {
-      var speedDiv = $(document.createElement("div"));
+      let speedDiv = $(document.createElement("div"));
       speedDiv.css("clear", "both");
       speedDiv.css("font-weight", "bold");
 
@@ -823,12 +839,12 @@ trackdirect.models.InfoWindow.prototype._getPacketSpeedAltitudeCourseDiv =
         if (this._defaultMap.state.useImperialUnit) {
           speedDiv.append(
             " alt " +
-              Math.round(
-                trackdirect.services.imperialConverter.convertMeterToFeet(
-                  this._marker.packet.altitude
-                )
-              ) +
-              " ft "
+            Math.round(
+              trackdirect.services.imperialConverter.convertMeterToFeet(
+                this._marker.packet.altitude
+              )
+            ) +
+            " ft "
           );
         } else {
           speedDiv.append(
@@ -848,8 +864,10 @@ trackdirect.models.InfoWindow.prototype._getPacketSpeedAltitudeCourseDiv =
  */
 trackdirect.models.InfoWindow.prototype._getWeatherDivRainString = function () {
   if (isNumeric(this._marker.packet.weather.rain_1h)) {
+    let rain1h = "-";
+    let rain24h = "-";
+    let rainSinceMidnight = "-";
     if (this._defaultMap.state.useImperialUnit) {
-      var rain1h = "-";
       if (isNumeric(this._marker.packet.weather.rain_1h)) {
         rain1h =
           Math.round(
@@ -858,7 +876,6 @@ trackdirect.models.InfoWindow.prototype._getWeatherDivRainString = function () {
             )
           ) + "in";
       }
-      var rain24h = "-";
       if (isNumeric(this._marker.packet.weather.rain_24h)) {
         rain24h =
           Math.round(
@@ -867,7 +884,6 @@ trackdirect.models.InfoWindow.prototype._getWeatherDivRainString = function () {
             )
           ) + "in";
       }
-      var rainSinceMidnight = "-";
       if (isNumeric(this._marker.packet.weather.rain_since_midnight)) {
         rainSinceMidnight =
           Math.round(
@@ -877,15 +893,12 @@ trackdirect.models.InfoWindow.prototype._getWeatherDivRainString = function () {
           ) + "in";
       }
     } else {
-      var rain1h = "-";
       if (isNumeric(this._marker.packet.weather.rain_1h)) {
         rain1h = Math.round(this._marker.packet.weather.rain_1h) + "mm";
       }
-      var rain24h = "-";
       if (isNumeric(this._marker.packet.weather.rain_24h)) {
         rain24h = Math.round(this._marker.packet.weather.rain_24h) + "mm";
       }
-      var rainSinceMidnight = "-";
       if (isNumeric(this._marker.packet.weather.rain_since_midnight)) {
         rainSinceMidnight =
           Math.round(this._marker.packet.weather.rain_since_midnight) + "mm";
@@ -984,7 +997,7 @@ trackdirect.models.InfoWindow.prototype._getWeatherDivPressureString =
  */
 trackdirect.models.InfoWindow.prototype._getWeatherDivWindString = function () {
   if (isNumeric(this._marker.packet.weather.wind_speed)) {
-    var windDir = "";
+    let windDir = "";
     if (
       typeof this._marker.packet.weather.wind_direction !== "undefined" &&
       isNumeric(this._marker.packet.weather.wind_direction)
@@ -1003,7 +1016,7 @@ trackdirect.models.InfoWindow.prototype._getWeatherDivWindString = function () {
               this._marker.packet.weather.wind_speed
             ) * 10
           ) /
-            10 +
+          10 +
           " mph" +
           " (" +
           Math.round(
@@ -1011,7 +1024,7 @@ trackdirect.models.InfoWindow.prototype._getWeatherDivWindString = function () {
               this._marker.packet.weather.wind_gust
             ) * 10
           ) /
-            10 +
+          10 +
           " mph)<br/>"
         );
       } else {
@@ -1023,7 +1036,7 @@ trackdirect.models.InfoWindow.prototype._getWeatherDivWindString = function () {
               this._marker.packet.weather.wind_speed
             ) * 10
           ) /
-            10 +
+          10 +
           " mph<br/>"
         );
       }
@@ -1056,11 +1069,11 @@ trackdirect.models.InfoWindow.prototype._getWeatherDivWindString = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getWeatherDiv = function () {
-  var weatherDiv = $(document.createElement("div"));
+  let weatherDiv = $(document.createElement("div"));
   weatherDiv.css("clear", "both");
   weatherDiv.css("color", "#227152");
 
-  var weatherDate = new Date(this._marker.packet.timestamp * 1000);
+  let weatherDate = new Date(this._marker.packet.timestamp * 1000);
   if (
     typeof this._marker.packet.weather.timestamp !== "undefined" &&
     this._marker.packet.weather.timestamp !== null
@@ -1087,11 +1100,11 @@ trackdirect.models.InfoWindow.prototype._getWeatherDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getTelemetryDiv = function () {
-  var telemetryDiv = $(document.createElement("div"));
+  let telemetryDiv = $(document.createElement("div"));
   telemetryDiv.css("clear", "both");
   telemetryDiv.css("color", "#823030");
 
-  var telemetryDate = new Date(
+  let telemetryDate = new Date(
     this._marker.packet.latest_telemetry_packet_timestamp * 1000
   );
   telemetryDateString = moment(telemetryDate).format(
@@ -1107,8 +1120,8 @@ trackdirect.models.InfoWindow.prototype._getTelemetryDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getPacketCommentDiv = function () {
-  var comment = "";
-  var ognSummary = escapeHtml(this._marker.packet.getOgnSummary());
+  let comment = "";
+  let ognSummary = escapeHtml(this._marker.packet.getOgnSummary());
   if (ognSummary != "") {
     comment = ognSummary;
   } else if (
@@ -1122,7 +1135,7 @@ trackdirect.models.InfoWindow.prototype._getPacketCommentDiv = function () {
   if (comment == "") {
     return null;
   }
-  var commentDiv = $(document.createElement("div"));
+  let commentDiv = $(document.createElement("div"));
   commentDiv.css("clear", "both");
   commentDiv.css("font-weight", "bold");
   if (!trackdirect.isMobile) {
@@ -1139,7 +1152,7 @@ trackdirect.models.InfoWindow.prototype._getPacketCommentDiv = function () {
  * @return none
  */
 trackdirect.models.InfoWindow.prototype._addPhgLinkListeners = function () {
-  var marker = this._marker;
+  let marker = this._marker;
   $("#half-phg-" + marker.packet.station_id + "-" + marker.packet.id).click(
     function (e) {
       marker.showPHGCircle(true);
@@ -1173,7 +1186,7 @@ trackdirect.models.InfoWindow.prototype._addPhgLinkListeners = function () {
  * @return none
  */
 trackdirect.models.InfoWindow.prototype._addRngLinkListeners = function () {
-  var marker = this._marker;
+  let marker = this._marker;
   $("#half-rng-" + marker.packet.station_id + "-" + marker.packet.id).click(
     function (e) {
       marker.showRNGCircle(true);
@@ -1210,12 +1223,12 @@ trackdirect.models.InfoWindow.prototype._addRngLinkListeners = function () {
 trackdirect.models.InfoWindow.prototype._getMenuDiv = function (
   isInfoWindowOpen
 ) {
-  var menuWrapperDiv = this._getMenuDivWrapperDiv();
+  let menuWrapperDiv = this._getMenuDivWrapperDiv();
 
-  var menuDiv = this._getMenuDivMainDiv();
+  let menuDiv = this._getMenuDivMainDiv();
   menuWrapperDiv.append(menuDiv);
 
-  var menuUl = this._getMenuDivUlDiv();
+  let menuUl = this._getMenuDivUlDiv();
   menuDiv.append(menuUl);
 
   menuUl.append(this._getMenuDivTrackLink());
@@ -1240,7 +1253,7 @@ trackdirect.models.InfoWindow.prototype._getMenuDiv = function (
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getMenuDivWrapperDiv = function () {
-  var menuWrapperDiv = $(document.createElement("div"));
+  let menuWrapperDiv = $(document.createElement("div"));
   menuWrapperDiv.addClass("infowindow-menu-wrapper");
   menuWrapperDiv.css("clear", "both");
   menuWrapperDiv.css("width", "100%");
@@ -1253,7 +1266,7 @@ trackdirect.models.InfoWindow.prototype._getMenuDivWrapperDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getMenuDivMainDiv = function () {
-  var menuDiv = $(document.createElement("div"));
+  let menuDiv = $(document.createElement("div"));
   menuDiv.addClass("infowindow-menu");
   menuDiv.css("width", "100%");
   menuDiv.css("border-top", "1px solid #cecece");
@@ -1265,7 +1278,7 @@ trackdirect.models.InfoWindow.prototype._getMenuDivMainDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getMenuDivUlDiv = function () {
-  var menuUl = $(document.createElement("ul"));
+  let menuUl = $(document.createElement("ul"));
   menuUl.css("list-style-type", "none");
   menuUl.css("list-style", "none");
   menuUl.css("text-align", "center");
@@ -1280,7 +1293,7 @@ trackdirect.models.InfoWindow.prototype._getMenuDivUlDiv = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getMenuDivLinkCss = function () {
-  var liLinkCss = {
+  let liLinkCss = {
     "list-style": "none",
     display: "table-cell",
     "text-align": "center",
@@ -1295,21 +1308,21 @@ trackdirect.models.InfoWindow.prototype._getMenuDivLinkCss = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getMenuDivTrackLink = function () {
-  var trackLinkElementClass =
+  let trackLinkElementClass =
     "trackStationLink" + this._marker.packet.station_id;
-  var menuLi = $(document.createElement("li"));
+  let menuLi = $(document.createElement("li"));
   menuLi.css(this._getMenuDivLinkCss());
-  var menuLink = $(document.createElement("a"));
+  let menuLink = $(document.createElement("a"));
   menuLink.css("color", "#337ab7");
   menuLink.attr("href", "#");
   menuLink.addClass(trackLinkElementClass);
   menuLink.attr(
     "onclick",
     "trackdirect.handleTrackStationRequest(" +
-      this._marker.packet.station_id +
-      ', "' +
-      trackLinkElementClass +
-      '"); return false;'
+    this._marker.packet.station_id +
+    ', "' +
+    trackLinkElementClass +
+    '"); return false;'
   );
   if (
     this._defaultMap.state.getTrackStationId() !== null &&
@@ -1328,20 +1341,20 @@ trackdirect.models.InfoWindow.prototype._getMenuDivTrackLink = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getMenuDivFilterLink = function () {
-  var filterLinkElementClass =
+  let filterLinkElementClass =
     "filterStationLink" + this._marker.packet.station_id;
-  var menuLi = $(document.createElement("li"));
+  let menuLi = $(document.createElement("li"));
   menuLi.css(this._getMenuDivLinkCss());
-  var menuLink = $(document.createElement("a"));
+  let menuLink = $(document.createElement("a"));
   menuLink.css("color", "#337ab7");
   menuLink.addClass(filterLinkElementClass);
   menuLink.attr(
     "onclick",
     "trackdirect.handleFilterStationRequest(" +
-      this._marker.packet.station_id +
-      ', "' +
-      filterLinkElementClass +
-      '"); return false;'
+    this._marker.packet.station_id +
+    ', "' +
+    filterLinkElementClass +
+    '"); return false;'
   );
   if (
     this._defaultMap.state.filterStationIds.length > 0 &&
@@ -1350,15 +1363,15 @@ trackdirect.models.InfoWindow.prototype._getMenuDivFilterLink = function () {
     ) > -1
   ) {
     menuLink.html("Unfilter");
-    var center = this._defaultMap.getCenterLiteral();
+    let center = this._defaultMap.getCenterLiteral();
     menuLink.attr(
       "href",
       "/center/" +
-        Number.parseFloat(center.lat).toFixed(5) +
-        "," +
-        Number.parseFloat(center.lng).toFixed(5) +
-        "/zoom/" +
-        this._defaultMap.getZoom()
+      Number.parseFloat(center.lat).toFixed(5) +
+      "," +
+      Number.parseFloat(center.lng).toFixed(5) +
+      "/zoom/" +
+      this._defaultMap.getZoom()
     );
   } else {
     menuLink.html("Filter");
@@ -1373,11 +1386,11 @@ trackdirect.models.InfoWindow.prototype._getMenuDivFilterLink = function () {
  * @return {object}
  */
 trackdirect.models.InfoWindow.prototype._getMenuDivCoverageLink = function () {
-  var coverageLinkElementClass =
+  let coverageLinkElementClass =
     "stationCoverageLink" + this._marker.packet.station_id;
-  var menuLi = $(document.createElement("li"));
+  let menuLi = $(document.createElement("li"));
   menuLi.css(this._getMenuDivLinkCss());
-  var menuLink = $(document.createElement("a"));
+  let menuLink = $(document.createElement("a"));
   menuLink.css("color", "#337ab7");
   menuLink.css("white-space", "nowrap");
   menuLink.attr("href", "#");
@@ -1385,13 +1398,13 @@ trackdirect.models.InfoWindow.prototype._getMenuDivCoverageLink = function () {
   menuLink.attr(
     "onclick",
     "trackdirect.toggleStationCoverage(" +
-      this._marker.packet.station_id +
-      ', "' +
-      coverageLinkElementClass +
-      '"); return false;'
+    this._marker.packet.station_id +
+    ', "' +
+    coverageLinkElementClass +
+    '"); return false;'
   );
 
-  var coveragePolygon = this._defaultMap.markerCollection.getStationCoverage(
+  let coveragePolygon = this._defaultMap.markerCollection.getStationCoverage(
     this._marker.packet.station_id
   );
   if (coveragePolygon !== null && coveragePolygon.isRequestedToBeVisible()) {
@@ -1411,44 +1424,44 @@ trackdirect.models.InfoWindow.prototype._getMenuDivCoverageLink = function () {
 trackdirect.models.InfoWindow.prototype._getMenuDivCenterLink = function (
   isInfoWindowOpen
 ) {
-  var menuLi = $(document.createElement("li"));
+  let menuLi = $(document.createElement("li"));
   menuLi.css(this._getMenuDivLinkCss());
-  var menuLink = $(document.createElement("a"));
+  let menuLink = $(document.createElement("a"));
   menuLink.css("color", "#337ab7");
   if (isInfoWindowOpen) {
     menuLink.attr(
       "href",
       "/center/" +
-        this._marker.packet.latitude.toFixed(5) +
-        "," +
-        this._marker.packet.longitude.toFixed(5) +
-        "/zoom/" +
-        this._defaultMap.getZoom()
+      this._marker.packet.latitude.toFixed(5) +
+      "," +
+      this._marker.packet.longitude.toFixed(5) +
+      "/zoom/" +
+      this._defaultMap.getZoom()
     );
     menuLink.attr(
       "onclick",
       "trackdirect.setCenter(" +
-        this._marker.packet.latitude +
-        "," +
-        this._marker.packet.longitude +
-        "); return false;"
+      this._marker.packet.latitude +
+      "," +
+      this._marker.packet.longitude +
+      "); return false;"
     );
     menuLink.html("Center");
   } else {
     menuLink.attr(
       "href",
       "/center/" +
-        this._marker.packet.latitude.toFixed(5) +
-        "," +
-        this._marker.packet.longitude.toFixed(5) +
-        "/zoom/" +
-        this._defaultMap.getZoom()
+      this._marker.packet.latitude.toFixed(5) +
+      "," +
+      this._marker.packet.longitude.toFixed(5) +
+      "/zoom/" +
+      this._defaultMap.getZoom()
     );
     menuLink.attr(
       "onclick",
       "trackdirect.focusOnMarkerId(" +
-        this._marker.packet.marker_id +
-        "); return false;"
+      this._marker.packet.marker_id +
+      "); return false;"
     );
     menuLink.html("Focus");
   }
@@ -1464,42 +1477,42 @@ trackdirect.models.InfoWindow.prototype._getMenuDivCenterLink = function (
 trackdirect.models.InfoWindow.prototype._getMenuDivZoomLink = function (
   isInfoWindowOpen
 ) {
-  var menuLi = $(document.createElement("li"));
+  let menuLi = $(document.createElement("li"));
   menuLi.css(this._getMenuDivLinkCss());
-  var menuLink = $(document.createElement("a"));
+  let menuLink = $(document.createElement("a"));
   menuLink.css("color", "#337ab7");
   if (isInfoWindowOpen) {
     menuLink.attr(
       "href",
       "/center/" +
-        this._marker.packet.latitude.toFixed(5) +
-        "," +
-        this._marker.packet.longitude.toFixed(5) +
-        "/zoom/14"
+      this._marker.packet.latitude.toFixed(5) +
+      "," +
+      this._marker.packet.longitude.toFixed(5) +
+      "/zoom/14"
     );
     menuLink.attr(
       "onclick",
       "trackdirect.setCenter(" +
-        this._marker.packet.latitude +
-        "," +
-        this._marker.packet.longitude +
-        ", 14); return false;"
+      this._marker.packet.latitude +
+      "," +
+      this._marker.packet.longitude +
+      ", 14); return false;"
     );
     menuLink.html("Zoom");
   } else {
     menuLink.attr(
       "href",
       "/center/" +
-        this._marker.packet.latitude.toFixed(5) +
-        "," +
-        this._marker.packet.longitude.toFixed(5) +
-        "/zoom/14"
+      this._marker.packet.latitude.toFixed(5) +
+      "," +
+      this._marker.packet.longitude.toFixed(5) +
+      "/zoom/14"
     );
     menuLink.attr(
       "onclick",
       "trackdirect.focusOnMarkerId(" +
-        this._marker.packet.marker_id +
-        ", 14); return false;"
+      this._marker.packet.marker_id +
+      ", 14); return false;"
     );
     menuLink.html("Zoom");
   }
@@ -1512,10 +1525,10 @@ trackdirect.models.InfoWindow.prototype._getMenuDivZoomLink = function (
  * @return string
  */
 trackdirect.models.InfoWindow.prototype._getCompactMainDiv = function () {
-  var packet = this._marker.packet;
+  let packet = this._marker.packet;
 
   // Init main div
-  var mainDiv = $(document.createElement("div"));
+  let mainDiv = $(document.createElement("div"));
   mainDiv.css("font-family", "Verdana,Arial,sans-serif");
   if (!trackdirect.isMobile) {
     mainDiv.css("font-size", "11px");
@@ -1527,17 +1540,17 @@ trackdirect.models.InfoWindow.prototype._getCompactMainDiv = function () {
   mainDiv.css("text-align", "left");
 
   // Init polyline div
-  var polylineDiv = $(document.createElement("div"));
+  let polylineDiv = $(document.createElement("div"));
   polylineDiv.css("float", "left");
 
   // Name
-  var nameDiv = $(document.createElement("div"));
+  let nameDiv = $(document.createElement("div"));
   nameDiv.css("clear", "both");
   nameDiv.css("font-size", "12px");
   nameDiv.css("font-weight", "bold");
 
   // Init img
-  var iconUrl24 = trackdirect.services.symbolPathFinder.getFilePath(
+  let iconUrl24 = trackdirect.services.symbolPathFinder.getFilePath(
     packet.symbol_table,
     packet.symbol,
     null,
@@ -1546,7 +1559,7 @@ trackdirect.models.InfoWindow.prototype._getCompactMainDiv = function () {
     24,
     24
   );
-  var iconImg = $(document.createElement("img"));
+  let iconImg = $(document.createElement("img"));
   iconImg.css("vertical-align", "middle");
   iconImg.css("width", "24px");
   iconImg.css("height", "24px");
@@ -1557,7 +1570,7 @@ trackdirect.models.InfoWindow.prototype._getCompactMainDiv = function () {
   nameDiv.append("&nbsp;");
   nameDiv.append("&nbsp;");
 
-  var nameLink = $(document.createElement("a"));
+  let nameLink = $(document.createElement("a"));
   nameLink.css("color", "#337ab7");
   if (trackdirect.isMobile) {
     nameLink.css("vertical-align", "-2px");
@@ -1567,8 +1580,8 @@ trackdirect.models.InfoWindow.prototype._getCompactMainDiv = function () {
   nameLink.attr(
     "onclick",
     "trackdirect.openStationInformationDialog(" +
-      packet.station_id +
-      "); return false;"
+    packet.station_id +
+    "); return false;"
   );
 
   nameLink.html(escapeHtml(packet.station_name));
@@ -1576,7 +1589,7 @@ trackdirect.models.InfoWindow.prototype._getCompactMainDiv = function () {
 
   if (packet.sender_name != packet.station_name) {
     nameDiv.append("&nbsp;(");
-    var nameLink2 = $(document.createElement("span"));
+    let nameLink2 = $(document.createElement("span"));
     if (trackdirect.isMobile) {
       nameLink2.css("vertical-align", "-2px");
     }
@@ -1587,13 +1600,13 @@ trackdirect.models.InfoWindow.prototype._getCompactMainDiv = function () {
   }
   polylineDiv.append(nameDiv);
 
-  var tailDistance = this._getTailDistance(
+  let tailDistance = this._getTailDistance(
     this._defaultMap.markerCollection.getMarkerMasterMarkerKeyId(
       this._marker.markerIdKey
     )
   );
   if (tailDistance !== null && Math.round(tailDistance) > 0) {
-    var distanceDiv = $(document.createElement("div"));
+    let distanceDiv = $(document.createElement("div"));
     distanceDiv.css("clear", "both");
     distanceDiv.css("padding-top", "4px");
     distanceDiv.append("Tail distance: ");
@@ -1617,8 +1630,8 @@ trackdirect.models.InfoWindow.prototype._getCompactMainDiv = function () {
               tailDistance / 1000
             ) * 10
           ) /
-            10 +
-            " miles "
+          10 +
+          " miles "
         );
       } else {
         distanceDiv.append(Math.round(tailDistance / 100) / 10 + " km ");
@@ -1641,20 +1654,20 @@ trackdirect.models.InfoWindow.prototype._getTailDistance = function (
   markerIdKey
 ) {
   if (this._defaultMap.markerCollection.isExistingMarker(markerIdKey)) {
-    var marker = this._defaultMap.markerCollection.getMarker(markerIdKey);
+    let marker = this._defaultMap.markerCollection.getMarker(markerIdKey);
     if (
       marker.packet.hasConfirmedMapId() &&
       marker.packet.is_moving == 1 &&
       marker.overwrite !== true
     ) {
-      var distance = 0;
+      let distance = 0;
       if (this._defaultMap.markerCollection.hasDotMarkers(markerIdKey)) {
-        var prevLatLng = null;
-        var dotMarkers =
+        let prevLatLng = null;
+        let dotMarkers =
           this._defaultMap.markerCollection.getDotMarkers(markerIdKey);
-        for (var i = 0; i < dotMarkers.length; i++) {
-          var dotMarker = dotMarkers[i];
-          var latLng = dotMarker.packet.getLatLngLiteral();
+        for (let i = 0; i < dotMarkers.length; i++) {
+          let dotMarker = dotMarkers[i];
+          let latLng = dotMarker.packet.getLatLngLiteral();
 
           if (prevLatLng !== null) {
             distance += trackdirect.services.distanceCalculator.getDistance(
@@ -1666,7 +1679,7 @@ trackdirect.models.InfoWindow.prototype._getTailDistance = function (
         }
 
         if (prevLatLng !== null) {
-          var latLng = marker.packet.getLatLngLiteral();
+          let latLng = marker.packet.getLatLngLiteral();
           if (prevLatLng !== latLng) {
             distance += trackdirect.services.distanceCalculator.getDistance(
               prevLatLng,
@@ -1676,7 +1689,7 @@ trackdirect.models.InfoWindow.prototype._getTailDistance = function (
         }
       }
 
-      var dashedPolyline =
+      let dashedPolyline =
         this._defaultMap.markerCollection.getMarkerDashedPolyline(markerIdKey);
       if (dashedPolyline !== null) {
         // We are connected to a previous marker
@@ -1709,11 +1722,11 @@ trackdirect.models.InfoWindow.prototype._getTransmitDistance = function (
     packet.station_location_path !== null &&
     packet.station_location_path.length >= 1
   ) {
-    var relatedStationLatLng = {
+    let relatedStationLatLng = {
       lat: parseFloat(packet.station_location_path[0][0]),
       lng: parseFloat(packet.station_location_path[0][1]),
     };
-    var distance = trackdirect.services.distanceCalculator.getDistance(
+    let distance = trackdirect.services.distanceCalculator.getDistance(
       packet.getLatLngLiteral(),
       relatedStationLatLng
     );
@@ -1727,9 +1740,9 @@ trackdirect.models.InfoWindow.prototype._getTransmitDistance = function (
     packet.station_id_path !== null &&
     packet.station_id_path.length >= 1
   ) {
-    for (var i = 0; i < packet.station_id_path.length; i++) {
-      var relatedStationId = packet.station_id_path[i];
-      var relatedStationPacket =
+    for (let i = 0; i < packet.station_id_path.length; i++) {
+      let relatedStationId = packet.station_id_path[i];
+      let relatedStationPacket =
         this._defaultMap.markerCollection.getStationLatestPacket(
           relatedStationId
         );
@@ -1740,11 +1753,11 @@ trackdirect.models.InfoWindow.prototype._getTransmitDistance = function (
     }
 
     if (relatedStationPacket !== null) {
-      var relatedStationLatLng = {
+      let relatedStationLatLng = {
         lat: parseFloat(relatedStationPacket.latitude),
         lng: parseFloat(relatedStationPacket.longitude),
       };
-      var distance = trackdirect.services.distanceCalculator.getDistance(
+      let distance = trackdirect.services.distanceCalculator.getDistance(
         packet.getLatLngLiteral(),
         relatedStationLatLng
       );

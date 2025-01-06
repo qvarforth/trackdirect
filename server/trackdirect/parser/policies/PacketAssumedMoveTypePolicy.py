@@ -1,174 +1,156 @@
-from trackdirect.parser.policies.AprsPacketSymbolPolicy import AprsPacketSymbolPolicy
-from trackdirect.database.PacketTableCreator import PacketTableCreator
+from server.trackdirect.parser.policies.AprsPacketSymbolPolicy import AprsPacketSymbolPolicy
+from server.trackdirect.database.PacketTableCreator import PacketTableCreator
 
 
-class PacketAssumedMoveTypePolicy():
-    """PacketAssumedMoveTypeIdPolicy calculates a packets default move type
-    """
+class PacketAssumedMoveTypePolicy:
+    """PacketAssumedMoveTypeIdPolicy calculates a packet's default move type."""
 
     def __init__(self, db):
-        """The __init__ method.
+        """Initialize the PacketAssumedMoveTypePolicy.
 
         Args:
             db (psycopg2.Connection): Database connection
         """
         self.db = db
+        self.aprs_packet_symbol_policy = AprsPacketSymbolPolicy()
+        self.packet_table_creator = PacketTableCreator(db)
 
-    def getAssumedMoveType(self, packet, prevPacket):
-        """Returns the current packet move type based on if it seems to be moving or not
-
-        Args:
-            packet (Packet):       Packet that we want to know move typ for
-            prevPacket (Packet):   Previous related packet for the same station
-
-        Returns:
-            Returns the current packet move type id as integer
-        """
-        isMoving = self._getDefaultAssumedMoveType(packet)
-        if (prevPacket.isExistingObject()
-                and isMoving == 0
-                and not self._isBalloonPredictedTouchdown(packet)):
-            aprsPacketSymbolPolicy = AprsPacketSymbolPolicy()
-
-            # If assumed stationary we validate this by comparing to previous packet
-            if (packet.isSymbolEqual(prevPacket)
-                    and (prevPacket.timestamp - prevPacket.positionTimestamp) < 36000
-                    and prevPacket.isMoving == 1):
-                # Previous packet has same symbol and is moving
-                # (If previous was moving so should this)
-                isMoving = 1
-
-            elif (aprsPacketSymbolPolicy.isMaybeMovingSymbol(packet.symbol, packet.symbolTable)
-                    and prevPacket.isMoving == 1):
-                # symbol that maybe is moving is considered moving if prev packet is moving
-                isMoving = 1
-
-            elif (packet.isSymbolEqual(prevPacket)
-                    and not packet.isPostitionEqual(prevPacket)):
-                # Previous packet has same symbol and another position
-                isMoving = 1
-
-            elif (not packet.isPostitionEqual(prevPacket)):
-                # Previous packet has another symbol and another position
-                # In this case we do a deper investigation... (this is to heavy to do for all packets)
-                numberOfPackets = self._getNumberOfPacketWithSameSymbolAndOtherPos(
-                    packet, packet.timestamp - 86400
-                )
-
-                if (numberOfPackets > 0):
-                    # We have more then 1 positions for this symbol from this station, assume it is moving
-                    isMoving = 1
-        return isMoving
-
-    def _isBalloonPredictedTouchdown(self, packet):
-        """Returns true if packet probably is a balloon touchdown
+    def get_assumed_move_type(self, packet, prev_packet):
+        """Determine the current packet move type based on its movement status.
 
         Args:
-            packet (Packet):  Packet that we want to know move typ for
+            packet (Packet): Packet to determine move type for
+            prev_packet (Packet): Previous related packet for the same station
 
         Returns:
-            true if packet probably is a balloon touchdown otherwise false
+            int: The current packet move type id
         """
-        if (packet.symbolTable != "/" and packet.symbol == "o"):
-            # Symbol is a small circle often used as predicted touchdown
-            if (packet.comment is not None and "touchdown" in packet.comment):
-                return True
-        return False
+        is_moving = self._get_default_assumed_move_type(packet)
 
-    def _getDefaultAssumedMoveType(self, packet):
-        """Returns the default packet move type id
+        if prev_packet.is_existing_object() and is_moving == 0 and not self._is_balloon_predicted_touchdown(packet):
+            # If assumed stationary, validate by comparing to previous packet
+            if self._should_assume_moving(packet, prev_packet):
+                is_moving = 1
+            elif self._has_different_position(packet, prev_packet):
+                number_of_packets = self._get_number_of_packet_with_same_symbol_and_other_pos(packet, packet.timestamp - 86400)
+                if number_of_packets > 0:
+                    is_moving = 1
+
+        return is_moving
+
+    def _is_balloon_predicted_touchdown(self, packet):
+        """Check if the packet is likely a balloon touchdown.
 
         Args:
-            packet (Packet):  Packet that we want to know move typ for
+            packet (Packet): Packet to check
 
         Returns:
-            Returns the default packet move type id as integer
+            bool: True if packet is likely a balloon touchdown, otherwise False
         """
-        # Default is moving and if we are not sure we should choose moving
-        isMoving = 1
-        if (packet is not None
-                and packet.symbol is not None
-                and packet.symbolTable is not None):
-            # First we set a initial value based on symbol
-            aprsPacketSymbolPolicy = AprsPacketSymbolPolicy()
-            if (aprsPacketSymbolPolicy.isStationarySymbol(packet.symbol, packet.symbolTable)
-                    or aprsPacketSymbolPolicy.isMaybeMovingSymbol(packet.symbol, packet.symbolTable)):
-                isMoving = 0
-            if (isMoving == 0 and self._isSsidIndicateMoving(packet.stationName)
-                    and aprsPacketSymbolPolicy.isMaybeMovingSymbol(packet.symbol, packet.symbolTable)):
-                isMoving = 1
-            if (isMoving == 0
-                    and (packet.course is not None or packet.speed is not None)
-                    and packet.packetTypeId != 3):
-                # Packet has a speed and a course and is not a weather packet!
-                # If it looks like a weather station we validate that speed is higher than 0
-                if (aprsPacketSymbolPolicy.isMaybeMovingSymbol(packet.symbol, packet.symbolTable)):
-                    isMoving = 1
-                elif (self._isSsidIndicateMoving(packet.stationName)):
-                    isMoving = 1
-                elif (packet.speed is not None and packet.speed > 0):
-                    # A moving stationary station?!
-                    isMoving = 1
-                elif (packet.course is not None and packet.course > 0):
-                    # A moving stationary station?!
-                    isMoving = 1
-        return isMoving
+        return packet.symbol_table != "/" and packet.symbol == "o" and packet.comment and "touchdown" in packet.comment
 
-    def _isSsidIndicateMoving(self, stationName):
-        """Returns true if station SSID indicates moving
+    def _get_default_assumed_move_type(self, packet):
+        """Determine the default move type id for the packet.
 
         Args:
-            stationName (string):   Packet station name
+            packet (Packet): Packet to determine move type for
 
         Returns:
-            Returns true if station SSID indicates moving otherwise false
+            int: The default packet move type id
         """
-        if (stationName.endswith('-7')):
-            # walkie talkies, HT's or other human portable
-            return True
-        elif (stationName.endswith('-8')):
-            # boats, sailboats, RV's or second main mobile
-            return True
-        elif (stationName.endswith('-9')):
-            # Primary Mobile (usually message capable)
-            return True
-        elif (stationName.endswith('-11')):
-            # balloons, aircraft, spacecraft, etc
-            return True
-        elif (stationName.endswith('-14')):
-            # Truckers or generally full time drivers
-            return True
-        else:
-            return False
+        if not packet or not packet.symbol or not packet.symbol_table:
+            return 1  # Default to moving
 
-    def _getNumberOfPacketWithSameSymbolAndOtherPos(self, packet, minTimestamp):
-        """Returns the number of packets that has the same symbol but another position (for the same station)
+        is_moving = 1
+        if self.aprs_packet_symbol_policy.is_stationary_symbol(packet.symbol, packet.symbol_table) or \
+           self.aprs_packet_symbol_policy.is_maybe_moving_symbol(packet.symbol, packet.symbol_table):
+            is_moving = 0
+
+        if is_moving == 0 and self._is_ssid_indicate_moving(packet.stationName) and \
+           self.aprs_packet_symbol_policy.is_maybe_moving_symbol(packet.symbol, packet.symbol_table):
+            is_moving = 1
+
+        if is_moving == 0 and (packet.course or packet.speed) and packet.packet_type_id != 3:
+            if self.aprs_packet_symbol_policy.is_maybe_moving_symbol(packet.symbol, packet.symbol_table) or \
+               self._is_ssid_indicate_moving(packet.stationName) or \
+               (packet.speed and packet.speed > 0) or \
+               (packet.course and packet.course > 0):
+                is_moving = 1
+
+        return is_moving
+
+    def _is_ssid_indicate_moving(self, station_name):
+        """Check if the station SSID indicates movement.
 
         Args:
-            stationId (int):     Id of the station
-            packet (Packet):     Packet instance that we base the search on
+            station_name (str): Station name to check
 
         Returns:
-            The number of packets that has the same symbol but another position
+            bool: True if SSID indicates movement, otherwise False
         """
-        selectCursor = self.db.cursor()
-        packetTableCreator = PacketTableCreator(self.db)
-        packetTables = packetTableCreator.getPacketTables(minTimestamp)
+        moving_ssids = ['-7', '-8', '-9', '-11', '-14']
+        return any(station_name.endswith(ssid) for ssid in moving_ssids)
+
+    def _get_number_of_packet_with_same_symbol_and_other_pos(self, packet, min_timestamp):
+        """Count packets with the same symbol but different positions.
+
+        Args:
+            packet (Packet): Packet to base the search on
+            min_timestamp (int): Minimum timestamp for the search
+
+        Returns:
+            int: Number of packets with the same symbol but different positions
+        """
+        cursor = self.db.cursor()
+        packet_tables = self.packet_table_creator.get_tables(min_timestamp)
         result = 0
-        for packetTable in packetTables:
-            sql = selectCursor.mogrify("""select count(*) number_of_packets from """ + packetTable + """ where station_id = %s and map_id = 1 and symbol = %s and symbol_table = %s and latitude != %s and longitude != %s""", (
-                packet.stationId,
-                packet.symbol,
-                packet.symbolTable,
-                packet.latitude,
-                packet.longitude,))
 
-            selectCursor = self.db.cursor()
-            selectCursor.execute(sql)
-            record = selectCursor.fetchone()
+        for packet_table in packet_tables:
+            sql = cursor.mogrify(
+                f"""SELECT COUNT(*) AS number_of_packets 
+                    FROM {packet_table} 
+                    WHERE station_id = %s AND map_id = 1 AND symbol = %s AND symbol_table = %s 
+                    AND latitude != %s AND longitude != %s""",
+                (packet.station_id, packet.symbol, packet.symbol_table, packet.latitude, packet.longitude)
+            )
+            cursor.execute(sql)
+            record = cursor.fetchone()
+            if record:
+                result += record["number_of_packets"]
 
-            if (record is not None):
-                result = result + record["number_of_packets"]
-
-        selectCursor.close()
+        cursor.close()
         return result
+
+    def _should_assume_moving(self, packet, prev_packet):
+        """Determine if the packet should be assumed as moving based on previous packet.
+
+        Args:
+            packet (Packet): Current packet
+            prev_packet (Packet): Previous packet
+
+        Returns:
+            bool: True if the packet should be assumed as moving, otherwise False
+        """
+        return (
+                packet.is_symbol_equal(prev_packet) and
+                (prev_packet.timestamp - prev_packet.position_timestamp) < 36000 and
+                prev_packet.is_moving == 1
+        ) or (
+                self.aprs_packet_symbol_policy.is_maybe_moving_symbol(packet.symbol, packet.symbol_table) and
+                prev_packet.is_moving == 1
+        ) or (
+            packet.is_symbol_equal(prev_packet) and
+            not packet.is_position_equal(prev_packet)
+        )
+
+    def _has_different_position(self, packet, prev_packet):
+        """Check if the packet has a different position compared to the previous packet.
+
+        Args:
+            packet (Packet): Current packet
+            prev_packet (Packet): Previous packet
+
+        Returns:
+            bool: True if the packet has a different position, otherwise False
+        """
+        return not packet.is_position_equal(prev_packet)

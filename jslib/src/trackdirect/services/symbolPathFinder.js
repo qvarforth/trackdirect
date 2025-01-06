@@ -23,6 +23,8 @@ trackdirect.services.symbolPathFinder = {
     scaleWidth,
     scaleHeight
   ) {
+    let symbolAsciiValue;
+    let symbolTableAsciiValue;
     if (
       typeof symbol !== "undefined" &&
       typeof symbolTable !== "undefined" &&
@@ -31,21 +33,21 @@ trackdirect.services.symbolPathFinder = {
       symbol.length >= 1 &&
       symbolTable.length >= 1
     ) {
-      var symbolAsciiValue = symbol.charCodeAt(0);
-      var symbolTableAsciiValue = symbolTable.charCodeAt(0);
+      symbolAsciiValue = symbol.charCodeAt(0);
+      symbolTableAsciiValue = symbolTable.charCodeAt(0);
     } else {
-      var symbolAsciiValue = 125;
-      var symbolTableAsciiValue = 47;
+      symbolAsciiValue = 125;
+      symbolTableAsciiValue = 47;
     }
 
-    var sizeStrValue = "";
+    let sizeStrValue = "";
     if (width !== null && height !== null) {
       sizeStrValue = "-" + width + "x" + height;
     }
 
-    var scaleStrValue = this._getIconFilePathScalePart(scaleWidth, scaleHeight);
-    var courseStrValue = this._getIconFilePathCoursePart(course);
-    var url =
+    let scaleStrValue = this._getIconFilePathScalePart(scaleWidth, scaleHeight);
+    let courseStrValue = this._getIconFilePathCoursePart(course);
+    let url =
       trackdirect.settings.markerSymbolBaseDir +
       "symbol-" +
       symbolAsciiValue +
@@ -66,9 +68,9 @@ trackdirect.services.symbolPathFinder = {
    * @return {string}
    */
   _getIconFilePathCoursePart: function (course) {
-    var courseStrValue = "";
+    let courseStrValue = "";
     if (course !== null) {
-      var courseValue = Math.round(parseInt(course) / 10) * 10;
+      let courseValue = Math.round(parseInt(course) / 10) * 10;
       while (courseValue > 360) {
         courseValue = courseValue - 360;
       }
@@ -89,7 +91,7 @@ trackdirect.services.symbolPathFinder = {
    * @return {string}
    */
   _getIconFilePathScalePart: function (scaleWidth, scaleHeight) {
-    var scaleStrValue = "";
+    let scaleStrValue = "";
     if (scaleWidth !== null && scaleHeight !== null) {
       if (isHighDensity()) {
         scaleStrValue = "-scale" + scaleWidth * 2 + "x" + scaleHeight * 2;

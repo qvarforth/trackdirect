@@ -7,7 +7,8 @@ if [ $# -eq 0 ]
 fi
 
 DATABASE=$1
-PORT=$2
+HOST=$2
+PORT=$3
 
 pushd `dirname $0` > /dev/null
 SCRIPTPATH=`pwd -P`
@@ -33,7 +34,7 @@ else
 sed '/^#/ d' < ogndevices.csv > ogndevices2.csv
 
 # Load file into database (assumes .pgpass is correctly set)
-psql -p $PORT $DATABASE << EOF
+psql -h $HOST -p $PORT $DATABASE << EOF
 
 create table if not exists ogn_device (
     "device_type" text not null,

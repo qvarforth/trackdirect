@@ -4,7 +4,7 @@
  */
 trackdirect.models.Packet = function (data) {
   this.init();
-  for (var key in data) {
+  for (let key in data) {
     this[key] = data[key];
   }
 };
@@ -71,7 +71,7 @@ trackdirect.models.Packet.prototype.getStationName = function () {
  * @return {LatLngLiteral}
  */
 trackdirect.models.Packet.prototype.getLatLngLiteral = function () {
-  return { lat: parseFloat(this.latitude), lng: parseFloat(this.longitude) };
+  return {lat: parseFloat(this.latitude), lng: parseFloat(this.longitude)};
 };
 
 /**
@@ -231,12 +231,12 @@ trackdirect.models.Packet.prototype.getOgnCN = function () {
  * @return {string}
  */
 trackdirect.models.Packet.prototype.getOgnSummary = function () {
-  var senderAddress = this.getOgnSenderAddress();
-  var aircraftType = this.getOgnAircraftType();
-  var ddbAircraftType = this.getOgnDdbAircraftType();
-  var addressType = this.getOgnAddressType();
+  let senderAddress = this.getOgnSenderAddress();
+  let aircraftType = this.getOgnAircraftType();
+  let ddbAircraftType = this.getOgnDdbAircraftType();
+  let addressType = this.getOgnAddressType();
 
-  var summary = "";
+  let summary = "";
   if (ddbAircraftType !== null) {
     summary += ddbAircraftType;
   } else if (aircraftType !== null) {
@@ -269,7 +269,7 @@ trackdirect.models.Packet.prototype.hasDirectionSupport = function () {
     this.is_moving == 1 &&
     this.hasConfirmedMapId()
   ) {
-    var symbolCategory = 1;
+    let symbolCategory = 1;
     if (this.symbol_table.charCodeAt(0) == "92") {
       symbolCategory = 2;
     }
@@ -336,12 +336,12 @@ trackdirect.models.Packet.prototype.getRNGRange = function () {
  */
 trackdirect.models.Packet.prototype.getPHGRange = function () {
   if (this.getPhg() !== null) {
-    var p = this.getPhgPower();
-    var h = this.getPhgHaat(false);
-    var g = this.getPhgGain();
+    let p = this.getPhgPower();
+    let h = this.getPhgHaat(false);
+    let g = this.getPhgGain();
 
-    var gain = Math.pow(10, g / 10); //converts from DB to decimal
-    var range = Math.sqrt(2 * h * Math.sqrt((p / 10) * (gain / 2)));
+    let gain = Math.pow(10, g / 10); //converts from DB to decimal
+    let range = Math.sqrt(2 * h * Math.sqrt((p / 10) * (gain / 2)));
     return range / 0.000621371192; // convert to m and return
   }
   return null;
@@ -353,12 +353,12 @@ trackdirect.models.Packet.prototype.getPHGRange = function () {
  */
 trackdirect.models.Packet.prototype.getPHGDescription = function () {
   if (this.getPhg() !== null) {
-    var power = this.getPhgPower();
-    var haat = this.getPhgHaat();
-    var gain = this.getPhgGain();
-    var direction = this.getPhgDirection();
+    let power = this.getPhgPower();
+    let haat = this.getPhgHaat();
+    let gain = this.getPhgGain();
+    let direction = this.getPhgDirection();
 
-    var description = "";
+    let description = "";
     if (power !== null) {
       description += "Power " + power + "W";
     }
@@ -402,7 +402,7 @@ trackdirect.models.Packet.prototype.getPhgHaat = function (inMeters) {
   if (this.getPhg() != null) {
     value = parseInt(this.getPhg().substring(1, 2));
 
-    var haat = 10;
+    let haat = 10;
     if (value == 1) {
       haat = 20;
     } else if (value > 1) {
@@ -513,11 +513,11 @@ trackdirect.models.Packet.prototype.getPhgDirectionDegree = function () {
  * @return {float}
  */
 trackdirect.models.Packet.prototype.getMarkerDistance = function (marker) {
-  var packetLatLng = {
+  let packetLatLng = {
     lat: parseFloat(this.latitude),
     lng: parseFloat(this.longitude),
   };
-  var markerPacketLatLng = {
+  let markerPacketLatLng = {
     lat: parseFloat(marker.packet.latitude),
     lng: parseFloat(marker.packet.longitude),
   };
@@ -552,18 +552,18 @@ trackdirect.models.Packet.prototype.getLinkifiedRawPath = function () {
     this.raw_path !== null &&
     this.raw_path !== ""
   ) {
-    var rawPath = escapeHtml(this.raw_path);
+    let rawPath = escapeHtml(this.raw_path);
     rawPath = "#" + rawPath + "#";
-    for (var i = 0; i < this.station_id_path.length; i++) {
-      var relatedStationId = this.station_id_path[i];
+    for (let i = 0; i < this.station_id_path.length; i++) {
+      let relatedStationId = this.station_id_path[i];
       if (
         typeof this.station_name_path !== "undefined" &&
         this.station_name_path !== null
       ) {
-        var relatedStationName = escapeHtml(this.station_name_path[i]);
-        var relatedStationNameReplacement =
+        let relatedStationName = escapeHtml(this.station_name_path[i]);
+        let relatedStationNameReplacement =
           '<a href="#" onclick="' +
-          " var relatedStationLatestPacket = trackdirect._map.markerCollection.getStationLatestPacket(" +
+          " let relatedStationLatestPacket = trackdirect._map.markerCollection.getStationLatestPacket(" +
           relatedStationId +
           ");" +
           " if (relatedStationLatestPacket !== null) {" +
@@ -615,9 +615,9 @@ trackdirect.models.Packet.prototype.getLinkifiedRawPath = function () {
     }
     rawPath = rawPath.replace(/#+$/, "");
     rawPath = rawPath.replace(/^#+/, "");
-    var rawPathArray = rawPath.split(",");
+    let rawPathArray = rawPath.split(",");
     if (rawPathArray.length > 0) {
-      var rawPath =
+      rawPath =
         rawPathArray[0] +
         " via " +
         rawPathArray.join(",").replace(rawPathArray[0] + ",", "");

@@ -1,168 +1,139 @@
-import datetime, time, calendar
-from trackdirect.repositories.PacketRepository import PacketRepository
-from trackdirect.repositories.StationRepository import StationRepository
-from trackdirect.parser.policies.MapSectorPolicy import MapSectorPolicy
+from server.trackdirect.repositories.PacketRepository import PacketRepository
+from server.trackdirect.repositories.StationRepository import StationRepository
+from server.trackdirect.parser.policies.MapSectorPolicy import MapSectorPolicy
 
-class MissingPacketsQuery() :
-    """This query class is used to find a packet for all stations that we are missing a packet for (when we rely need a packet for them)
+class MissingPacketsQuery:
+    """This class is used to find packets for all stations that are missing packets when they are needed.
 
     Note:
-        If no packet are found we will simulate them
+        If no packets are found, they will be simulated.
     """
 
-    def __init__(self, state, db) :
-        """The __init__ method.
+    def __init__(self, state, db):
+        """
+        Initialize the MissingPacketsQuery.
 
         Args:
-            state (WebsocketConnectionState):   The current state for a websocket connection
-            db (psycopg2.Connection):           Database connection
+            state (WebsocketConnectionState): The current state for a websocket connection.
+            db (psycopg2.Connection): Database connection.
         """
         self.state = state
         self.db = db
-        self.packetRepository = PacketRepository(db)
-        self.stationRepository = StationRepository(db)
-        self.simulateEmptyStation = False
+        self.packet_repository = PacketRepository(db)
+        self.station_repository = StationRepository(db)
+        self.simulate_empty_station = False
 
+    def enable_simulate_empty_station(self):
+        """Enable simulation even if no packets are available from the station."""
+        self.simulate_empty_station = True
 
-    def enableSimulateEmptyStation(self) :
-        """Enable simulation even if we have no packet from station at all
+    def get_missing_packets(self, station_ids, found_packets):
         """
-        self.simulateEmptyStation = True
-
-
-    def getMissingPackets(self, stationIds, foundPackets) :
-        """Fetch latest packets for stations that has no packet in foundPackets
+        Fetch the latest packets for stations that have no packets in found_packets.
 
         Args:
-            stationIds (array):   An array of all stations we should filter on
-            foundPackets (array): Packets that we have found
+            station_ids (list): A list of station IDs to filter on.
+            found_packets (list): Packets that have been found.
 
         Returns:
-            array
+            list: A sorted list of missing packets.
         """
-        foundMissingPackets = []
-        for stationId in stationIds :
-            foundStationPacket = False
-            for packet in foundPackets :
-                if packet.stationId == stationId :
-                    foundStationPacket = True
-                    break # will go to next stationId
+        found_missing_packets = []
+        for station_id in station_ids:
+            if not any(packet.station_id == station_id for packet in found_packets):
+                missing_packet = self._get_latest_packet(station_id)
+                if missing_packet is not None:
+                    found_missing_packets.append(missing_packet)
 
-            # Get latest packet for this station
-            if (not foundStationPacket) :
-                missingPacket = self._getLatestPacket(stationId)
-                if (missingPacket is not None) :
-                    foundMissingPackets.append(missingPacket)
+        return sorted(found_missing_packets, key=lambda item: item.timestamp)
 
-        def getSortKey(item) :
-            return item.timestamp
-        return sorted(foundMissingPackets, key = getSortKey)
-
-
-    def _getLatestPacket(self, stationId) :
-        """This method tries to find a packet for the specified station, in worst case a packet will be simulated based on old data
+    def _get_latest_packet(self, station_id):
+        """
+        Try to find a packet for the specified station; simulate a packet based on old data if necessary.
 
         Args:
-            stationId (int): Stations id that we need a packet for
+            station_id (int): Station ID that needs a packet.
 
         Returns:
-            Packet
+            Packet: The latest packet or a simulated packet.
         """
-        if (self.state.latestTimeTravelRequest is not None) :
-            ts = int(self.state.latestTimeTravelRequest) - (30*24*60*60) # For time travelers we need a limit
-            olderPackets = self.packetRepository.getLatestObjectListByStationIdListAndTimeInterval([stationId], ts, self.state.latestTimeTravelRequest)
-        else :
-            olderPackets = self.packetRepository.getLatestConfirmedObjectListByStationIdList([stationId], 0)
+        if self.state.latest_time_travel_request is not None:
+            ts = int(self.state.latest_time_travel_request) - (30 * 24 * 60 * 60)  # Limit for time travelers
+            older_packets = self.packet_repository.get_latest_object_list_by_station_id_list_and_time_interval(
+                [station_id], ts, self.state.latest_time_travel_request
+            )
+        else:
+            older_packets = self.packet_repository.get_latest_confirmed_object_list_by_station_id_list([station_id], 0)
 
-        if (len(olderPackets) > 0) :
-            return olderPackets[0] # The lastet is the first in array
-        else :
-            # Lets try not confirmed packets
-            if (self.state.latestTimeTravelRequest is not None) :
-                ts = int(self.state.latestTimeTravelRequest) - (30*24*60*60) # For time travelers we need a limit
-                olderNonConfirmedPackets = self.packetRepository.getLatestObjectListByStationIdListAndTimeInterval([stationId], ts, self.state.latestTimeTravelRequest, False)
-            else :
-                olderNonConfirmedPackets = self.packetRepository.getLatestObjectListByStationIdList([stationId], 0)
+        if older_packets:
+            return older_packets[0]  # The latest is the first in the list
 
-            if (len(olderNonConfirmedPackets) > 0) :
-                # Make this ghost-packet visible...
-                packet = olderNonConfirmedPackets[0]
-                packet.mapId = 1
-                packet.sourceId = 0 #simulated
-                return packet
-            else :
-                # We still do not have packets for this station, just get what we have from the station-table
-                return self._getSimulatedPacket(stationId)
-        return None
+        # Try non-confirmed packets
+        if self.state.latest_time_travel_request is not None:
+            ts = int(self.state.latest_time_travel_request) - (30 * 24 * 60 * 60)
+            older_non_confirmed_packets = self.packet_repository.get_latest_object_list_by_station_id_list_and_time_interval(
+                [station_id], ts, self.state.latest_time_travel_request, False
+            )
+        else:
+            older_non_confirmed_packets = self.packet_repository.get_latest_object_list_by_station_id_list([station_id], 0)
 
+        if older_non_confirmed_packets:
+            packet = older_non_confirmed_packets[0]
+            packet.map_id = 1
+            packet.source_id = 0  # Simulated
+            return packet
 
-    def _getSimulatedPacket(self, stationId) :
-        """Creates a simulated packet based on data saved in the station table
+        # Simulate a packet if none are found
+        return self._get_simulated_packet(station_id)
+
+    def _get_simulated_packet(self, station_id):
+        """
+        Create a simulated packet based on data saved in the station table.
 
         Args:
-            stationId (int):                  The station that we want a packet from
+            station_id (int): The station ID for which a packet is needed.
 
         Returns:
-            Packet
+            Packet: A simulated packet or None if not possible.
         """
-        station = self.stationRepository.getObjectById(stationId)
-        if (station.isExistingObject()
-                and (station.latestConfirmedPacketId is not None
-                        or self.simulateEmptyStation)) :
-            packet = self.packetRepository.create()
-            packet.stationId = station.id
-            packet.senderId = station.latestSenderId
-            packet.sourceId = station.sourceId
-            packet.ogn_sender_address = station.latestOgnSenderAddress
+        station = self.station_repository.get_object_by_id(station_id)
+        if station.is_existing_object() and (station.latest_confirmed_packet_id is not None or self.simulate_empty_station):
+            packet = self.packet_repository.create()
+            packet.station_id = station.id
+            packet.sender_id = station.latest_sender_id
+            packet.source_id = station.source_id
+            packet.ogn_sender_address = station.latest_ogn_sender_address
 
-            if (station.latestConfirmedPacketId is not None) :
-                packet.id = station.latestConfirmedPacketId
-            else :
-                packet.id = -station.id # simulate a packet id that is uniqe
+            packet.id = station.latest_confirmed_packet_id if station.latest_confirmed_packet_id is not None else -station.id
+            packet.marker_id = station.latest_confirmed_marker_id if station.latest_confirmed_marker_id is not None else -station.id
 
-            if (station.latestConfirmedMarkerId is not None) :
-                packet.markerId = station.latestConfirmedMarkerId
-            else :
-                packet.markerId = -station.id # simulate a marker id
+            packet.is_moving = 0
+            packet.packet_type_id = 1  # Assume it was a position packet
 
-            packet.isMoving = 0
-            packet.packetTypeId = 1 # Assume it was a position packet...
+            packet.latitude = station.latest_confirmed_latitude if station.latest_confirmed_latitude is not None else 0.0
+            packet.longitude = station.latest_confirmed_longitude if station.latest_confirmed_longitude is not None else 0.0
 
-            if (station.latestConfirmedLatitude is not None and station.latestConfirmedLongitude is not None) :
-                packet.latitude = station.latestConfirmedLatitude
-                packet.longitude = station.latestConfirmedLongitude
-            else :
-                packet.latitude = float(0.0)
-                packet.longitude = float(0.0)
+            packet.timestamp = (
+                0 if self.state.latest_time_travel_request is not None else station.latest_confirmed_packet_timestamp or 0
+            )
 
-            if (self.state.latestTimeTravelRequest is not None) :
-                packet.timestamp = 0 # don't know anything better to set here...
-            elif (station.latestConfirmedPacketTimestamp is not None) :
-                packet.timestamp = station.latestConfirmedPacketTimestamp
-            else :
-                packet.timestamp = 0
-
-            packet.reportedTimestamp = None
-            packet.positionTimestamp = packet.timestamp
+            packet.reported_timestamp = None
+            packet.position_timestamp = packet.timestamp
             packet.posambiguity = 0
 
-            if (station.latestConfirmedSymbol is not None and station.latestConfirmedSymbolTable is not None) :
-                packet.symbol = station.latestConfirmedSymbol
-                packet.symbolTable = station.latestConfirmedSymbolTable
-            else :
-                packet.symbol = None
-                packet.symbolTable = None
+            packet.symbol = station.latest_confirmed_symbol
+            packet.symbol_table = station.latest_confirmed_symbol_table
 
-            mapSectorPolicy = MapSectorPolicy()
-            packet.mapSector = mapSectorPolicy.getMapSector(packet.latitude, packet.longitude)
-            packet.relatedMapSectors = []
-            packet.mapId = 1
+            map_sector_policy = MapSectorPolicy()
+            packet.map_sector = map_sector_policy.get_map_sector(packet.latitude, packet.longitude)
+            packet.related_map_sectors = []
+            packet.map_id = 1
             packet.speed = None
             packet.course = None
             packet.altitude = None
-            packet.packetTailTimestamp = packet.timestamp
+            packet.packet_tail_timestamp = packet.timestamp
             packet.comment = None
-            packet.rawPath = None
+            packet.raw_path = None
             packet.raw = None
 
             return packet

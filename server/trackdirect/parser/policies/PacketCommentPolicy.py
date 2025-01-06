@@ -1,135 +1,111 @@
 import re
 
 
-class PacketCommentPolicy():
-    """The PacketCommentPolicy class handles logic to format comments
-    """
+class PacketCommentPolicy:
+    """The PacketCommentPolicy class handles logic to format comments."""
 
     def __init__(self):
-        """The __init__ method.
-        """
+        """Initialize the PacketCommentPolicy class."""
+        pass
 
-    def getComment(self, data, packetTypeId):
-        """Returns the packet comment
+    def get_comment(self, data, packet_type_id):
+        """Returns the packet comment.
 
         Args:
-            data (dict):         Raw packet data
-            packetTypeId (int):  Packet type id
+            data (dict): Raw packet data.
+            packet_type_id (int): Packet type id.
 
         Returns:
-            String
+            str: Formatted comment.
         """
         comment = None
-        if (packetTypeId == 7 and "message_text" in data):
+        if packet_type_id == 7 and "message_text" in data:
             # We save messages as a comment (a message packet does not have a comment so this column is free)
             comment = data["message_text"]
-        elif (packetTypeId == 10 and "status" in data):
+        elif packet_type_id == 10 and "status" in data:
             # We save status as comment (a status message does not have a comment so this column is free)
             comment = data["status"]
-        elif ("comment" in data):
+        elif "comment" in data:
             comment = data["comment"]
 
         if isinstance(comment, bytes):
-            comment = comment.encode('ascii', 'ignore')
+            comment = comment.decode('ascii', 'ignore')
             comment = comment.replace('\x00', '')
 
-        return self._formatComment(comment)
+        return self._format_comment(comment)
 
-    def _formatComment(self, comment):
-        """Remove junk from comment
+    def _format_comment(self, comment):
+        """Remove junk from comment.
 
         Args:
-            comment (string):   Comment from packet
+            comment (str): Comment from packet.
 
         Returns:
-            String
+            str: Cleaned comment.
         """
-        comment = self._lchop(comment, "!=")
-        comment = self._rchop(comment, "!=")
-        comment = self._lchop(comment, "]=")
-        comment = self._rchop(comment, "]=")
-        comment = self._lchop(comment, ">=")
-        comment = self._rchop(comment, ">=")
-        comment = self._lchop(comment, "_%")
-        comment = self._rchop(comment, "_%")
-        comment = self._lchop(comment, "_#")
-        comment = self._rchop(comment, "_#")
-        comment = self._lchop(comment, "_\"")
-        comment = self._rchop(comment, "_\"")
-        comment = self._lchop(comment, "_$")
-        comment = self._rchop(comment, "_$")
-        comment = self._lchop(comment, "_)")
-        comment = self._rchop(comment, "_)")
-        comment = self._lchop(comment, "_(")
-        comment = self._rchop(comment, "_(")
-        comment = self._lchop(comment, "()")
-        comment = self._rchop(comment, "()")
-        comment = self._lchop(comment, "^")
-        comment = self._rchop(comment, "^")
-        comment = self._lchop(comment, "\\x")
-        comment = self._rchop(comment, "\\x")
-        comment = self._lchop(comment, "/")
-        comment = self._rchop(comment, "/")
-        comment = self._lchop(comment, "\\!")
-        comment = self._rchop(comment, "\\!")
-        comment = self._lchop(comment, "1}")
-        comment = self._rchop(comment, "1}")
-        comment = self._lchop(comment, "_1")
-        comment = self._rchop(comment, "_1")
-        comment = self._lchop(comment, "\"(}")
-        comment = self._rchop(comment, "\"(}")
-        comment = self._rchop(comment, "=")
-        comment = self._lchop(comment, "]")
-        comment = self._lchopRegex(comment, "\.\.\.\/\d\d\d")
-        comment = self._lchopRegex(comment, "\d\d\d\/\d\d\d")
-        comment = self._lchop(comment, ".../...")
+        if comment is None:
+            return None
 
-        if (comment is not None and len(comment) <= 1):
-            # Comments with one letter is probably wrong
+        junk_list = [
+            "!=","!=", "]=", "]=", ">=", ">=", "_%", "_%", "_#", "_#", "_\"", "_\"", "_$", "_$", "_)", "_)", "_(", "_(",
+            "()", "()", "^", "^", "\\x", "\\x", "/", "/", "\\!", "\\!", "1}", "1}", "_1", "_1", "\"(}", "\"(}", "=", "]",
+            ".../..."
+        ]
+
+        for junk in junk_list:
+            comment = self._lchop(comment, junk)
+            comment = self._rchop(comment, junk)
+
+        comment = self._lchop_regex(comment, r"\.\.\.\/\d\d\d")
+        comment = self._lchop_regex(comment, r"\d\d\d\/\d\d\d")
+
+        if len(comment) <= 1:
+            # Comments with one letter are probably wrong
             comment = None
+
         return comment
 
     def _rchop(self, string, substr):
-        """Chops substr from right of string
+        """Chops substr from right of string.
 
         Args:
-            string (str): String to do modification on
-            substr (str): Substr to look for in string
+            string (str): String to do modification on.
+            substr (str): Substr to look for in string.
 
         Returns:
-            Updated version of string
+            str: Updated version of string.
         """
-        if (string is not None and string.endswith(substr)):
+        if string and string.endswith(substr):
             return string[:-len(substr)]
         return string
 
     def _lchop(self, string, substr):
-        """Chops substr from left of string
+        """Chops substr from left of string.
 
         Args:
-            string (str): String to do modification on
-            substr (str): Substr to look for in string
+            string (str): String to do modification on.
+            substr (str): Substr to look for in string.
 
         Returns:
-            Updated version of string
+            str: Updated version of string.
         """
-        if (string is not None and string.startswith(substr)):
+        if string and string.startswith(substr):
             return string[len(substr):]
         return string
 
-    def _lchopRegex(self, string, substrRegex):
-        """Chops substr from left of string
+    def _lchop_regex(self, string, substr_regex):
+        """Chops substr from left of string using regex.
 
         Args:
-            string (str): String to do modification on
-            substrRegex (str): Substr to look for in string
+            string (str): String to do modification on.
+            substr_regex (str): Substr regex to look for in string.
 
         Returns:
-            Updated version of string
+            str: Updated version of string.
         """
-        regex = re.compile(substrRegex)
-        if (string is not None):
-            m = re.match(regex, string)
-            if (m):
-                return string[len(m.group(0)):]
+        regex = re.compile(substr_regex)
+        if string:
+            match = re.match(regex, string)
+            if match:
+                return string[len(match.group(0)):]
         return string

@@ -1,167 +1,155 @@
 import logging
-import collections
-from trackdirect.common.Repository import Repository
-from trackdirect.objects.Sender import Sender
-from trackdirect.objects.Station import Station
-from trackdirect.exceptions.TrackDirectMissingSenderError import TrackDirectMissingSenderError
+from server.trackdirect.objects.Sender import Sender
+from server.trackdirect.objects.Station import Station
+from server.trackdirect.exceptions.TrackDirectMissingSenderError import TrackDirectMissingSenderError
+from server.trackdirect.common.Repository import Repository
 
 
 class SenderRepository(Repository):
-    """A Repository class for the Sender class
-    """
+    """A Repository class for the Sender class."""
 
-    # static class variables
+    # Static class variables for caching
     senderIdCache = {}
     senderNameCache = {}
+    maxNumberOfSenders = 100
 
     def __init__(self, db):
-        """The __init__ method.
+        """Initialize the SenderRepository with a database connection.
 
         Args:
             db (psycopg2.Connection): Database connection
         """
-        self.db = db
+        super().__init__(db)
         self.logger = logging.getLogger('trackdirect')
 
-    def getObjectById(self, id):
-        """The getObjectById method is supposed to return an object based on the specified id in database
+    def get_object_by_id(self, id):
+        """Retrieve a Sender object by its ID.
 
         Args:
-            id (int):  Database row id
+            id (int): Database row ID
 
         Returns:
-            Sender instance
+            Sender: An instance of Sender
         """
-        selectCursor = self.db.cursor()
-        selectCursor.execute("""select * from sender where id = %s""", (id,))
-        record = selectCursor.fetchone()
+        with self.db.cursor() as cursor:
+            cursor.execute("SELECT * FROM sender WHERE id = %s", (id,))
+            record = cursor.fetchone()
 
         dbObject = Sender(self.db)
-        if (record is not None):
+        if record:
             dbObject.id = record["id"]
             dbObject.name = record["name"]
-        else:
-            # sender do not exists, return empty object
-            pass
 
-        selectCursor.close()
         return dbObject
 
-    def getObjectByName(self, name, createNewIfMissing=True, sourceId=None):
-        """Returns an object based on the specified name
+    def get_object_by_name(self, name, createNewIfMissing=True, sourceId=None):
+        """Retrieve a Sender object by its name, optionally creating it if missing.
 
         Args:
-            name (str):                     Name of the requested sender
-            createNewIfMissing (boolean):   Set to true if sender should be created if it can not be found
+            name (str): Name of the requested sender
+            createNewIfMissing (bool): Create sender if not found
+            sourceId (int, optional): Source ID for the station
 
         Returns:
-            Sender instance
+            Sender: An instance of Sender
         """
-        selectCursor = self.db.cursor()
-        selectCursor.execute(
-            """select * from sender where name = %s""", (name.strip(),))
-        record = selectCursor.fetchone()
+        with self.db.cursor() as cursor:
+            cursor.execute("SELECT * FROM sender WHERE name = %s", (name.strip(),))
+            record = cursor.fetchone()
 
         dbObject = self.create()
-        if (record is not None):
+        if record:
             dbObject.id = record["id"]
             dbObject.name = record["name"]
-        elif (createNewIfMissing):
-            # sender do not exists, create it
+        elif createNewIfMissing:
             dbObject.name = name
             dbObject.save()
 
-            # Also create a related station
             stationObject = Station(self.db)
             stationObject.name = name
-            stationObject.sourceId = sourceId
+            stationObject.source_id = sourceId
             stationObject.save()
 
-        selectCursor.close()
         return dbObject
 
-    def getObjectByStationId(self, stationId):
-        """Returns an object based on the specified station id
+    def get_object_by_station_id(self, stationId):
+        """Retrieve a Sender object by its associated station ID.
 
         Args:
-            stationId (int):     Id of the station
+            stationId (int): ID of the station
 
         Returns:
-            Sender instance
+            Sender: An instance of Sender
         """
-        selectCursor = self.db.cursor()
-        selectCursor.execute(
-            """select * from sender where id in (select latest_sender_id from station where id = %s)""", (stationId,))
-        record = selectCursor.fetchone()
+        with self.db.cursor() as cursor:
+            cursor.execute(
+                """SELECT * FROM sender WHERE id IN 
+                   (SELECT latest_sender_id FROM station WHERE id = %s)""",
+                (stationId,)
+            )
+            record = cursor.fetchone()
 
         dbObject = self.create()
-        if (record is not None):
+        if record:
             dbObject.id = record["id"]
             dbObject.name = record["name"]
 
-        selectCursor.close()
         return dbObject
 
-    def getCachedObjectById(self, senderId):
-        """Get Sender based on sender id
+    def get_cached_object_by_id(self, senderId):
+        """Retrieve a cached Sender object by its ID.
 
         Args:
-            senderId (int):     Id of the sender
+            senderId (int): ID of the sender
 
         Returns:
-            Sender
+            Sender: An instance of Sender
         """
-        if (senderId not in SenderRepository.senderIdCache):
-            sender = self.getObjectById(senderId)
-            if (sender.isExistingObject()):
-                maxNumberOfSenders = 100
-                if (len(SenderRepository.senderIdCache) > maxNumberOfSenders):
-                    # reset cache
-                    SenderRepository.senderIdCache = {}
-                SenderRepository.senderIdCache[senderId] = sender
+        if senderId not in SenderRepository.senderIdCache:
+            sender = self.get_object_by_id(senderId)
+            if sender.is_existing_object():
+                self._cache_sender_by_id(senderId, sender)
                 return sender
         else:
-            try:
-                return SenderRepository.senderIdCache[senderId]
-            except KeyError as e:
-                sender = self.getObjectById(senderId)
-                if (sender.isExistingObject()):
-                    return sender
-        raise TrackDirectMissingSenderError(
-            'No sender with specified id found')
+            return SenderRepository.senderIdCache[senderId]
 
-    def getCachedObjectByName(self, senderName):
-        """Get Sender based on sender name
+        raise TrackDirectMissingSenderError('No sender with specified id found')
+
+    def get_cached_object_by_name(self, senderName):
+        """Retrieve a cached Sender object by its name.
 
         Args:
-            senderName (string):  Sender name
+            senderName (str): Sender name
 
         Returns:
-            Sender
+            Sender: An instance of Sender
         """
-        if (senderName not in SenderRepository.senderNameCache):
-            sender = self.getObjectByName(senderName, False)
-            if (sender.isExistingObject()):
-                maxNumberOfSenders = 100
-                if (len(SenderRepository.senderNameCache) > maxNumberOfSenders):
-                    # reset cache
-                    SenderRepository.senderNameCache = {}
-                SenderRepository.senderNameCache[senderName] = sender
+        if senderName not in SenderRepository.senderNameCache:
+            sender = self.get_object_by_name(senderName, False)
+            if sender.is_existing_object():
+                self._cache_sender_by_name(senderName, sender)
                 return sender
         else:
-            try:
-                return SenderRepository.senderNameCache[senderName]
-            except KeyError as e:
-                sender = self.getObjectByName(senderName, False)
-                if (sender.isExistingObject()):
-                    return sender
-        raise TrackDirectMissingSenderError(
-            'No sender with specified sender name found')
+            return SenderRepository.senderNameCache[senderName]
+
+        raise TrackDirectMissingSenderError('No sender with specified sender name found')
 
     def create(self):
-        """Creates an empty Sender object
+        """Create an empty Sender object.
 
         Returns:
-            Sender instance
+            Sender: An instance of Sender
         """
         return Sender(self.db)
+
+    def _cache_sender_by_id(self, senderId, sender):
+        """Cache a Sender object by its ID."""
+        if len(SenderRepository.senderIdCache) > SenderRepository.maxNumberOfSenders:
+            SenderRepository.senderIdCache.clear()
+        SenderRepository.senderIdCache[senderId] = sender
+
+    def _cache_sender_by_name(self, senderName, sender):
+        """Cache a Sender object by its name."""
+        if len(SenderRepository.senderNameCache) > SenderRepository.maxNumberOfSenders:
+            SenderRepository.senderNameCache.clear()
+        SenderRepository.senderNameCache[senderName] = sender

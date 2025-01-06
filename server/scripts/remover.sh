@@ -15,7 +15,7 @@ else
     CURRENTDIR=$(dirname $0)
 
     export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect
-    cd $CURRENTDIR/..
+    cd $CURRENTDIR/../..
     python $CURRENTDIR/../bin/remover.py $CONFIGFILE
     exit 0
 fi

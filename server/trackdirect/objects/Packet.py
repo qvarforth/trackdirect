@@ -1,22 +1,16 @@
 import logging
-import re
-from twisted.python import log
 import json
-import datetime
-import time
-from math import sin, cos, sqrt, atan2, radians, floor, ceil
+from math import sin, cos, sqrt, atan2, radians
 
-from trackdirect.common.Model import Model
-from trackdirect.repositories.StationRepository import StationRepository
-from trackdirect.repositories.SenderRepository import SenderRepository
-from trackdirect.objects.Station import Station
-
-from trackdirect.exceptions.TrackDirectMissingSenderError import TrackDirectMissingSenderError
-from trackdirect.exceptions.TrackDirectMissingStationError import TrackDirectMissingStationError
+from server.trackdirect.common.Model import Model
+from server.trackdirect.repositories.StationRepository import StationRepository
+from server.trackdirect.repositories.SenderRepository import SenderRepository
+from server.trackdirect.exceptions.TrackDirectMissingSenderError import TrackDirectMissingSenderError
+from server.trackdirect.exceptions.TrackDirectMissingStationError import TrackDirectMissingStationError
 
 
 class Packet(Model):
-    """Packet represents a APRS packet, AIS packet or any other supported packet
+    """Packet represents an APRS packet, AIS packet or any other supported packet
 
     Note:
         Packet corresponds to a row in the packetYYYYMMDD table
@@ -28,72 +22,72 @@ class Packet(Model):
         Args:
             db (psycopg2.Connection): Database connection
         """
-        Model.__init__(self, db)
+        super().__init__(db)
         self.logger = logging.getLogger('trackdirect')
 
         self.id = None
-        self.stationId = None
-        self.senderId = None
-        self.packetTypeId = None
+        self.station_id = None
+        self.sender_id = None
+        self.packet_type_id = None
         self.timestamp = None
-        self.reportedTimestamp = None
-        self.positionTimestamp = None # Inherited from prev packet if position was equal
+        self.reported_timestamp = None
+        self.position_timestamp = None  # Inherited from prev packet if position was equal
         self.latitude = None
         self.longitude = None
         self.symbol = None
-        self.symbolTable = None
-        self.markerId = None
-        self.markerCounter = None
-        self.markerPrevPacketTimestamp = None
-        self.mapId = None
-        self.sourceId = None
-        self.mapSector = None
-        self.relatedMapSectors = []
+        self.symbol_table = None
+        self.marker_id = None
+        self.marker_counter = None
+        self.marker_prev_packet_timestamp = None
+        self.map_id = None
+        self.source_id = None
+        self.map_sector = None
+        self.related_map_sectors = []
         self.speed = None
         self.course = None
         self.altitude = None
         self.rng = None
         self.phg = None
-        self.latestRngTimestamp = None
-        self.latestPhgTimestamp = None
+        self.latest_rng_timestamp = None
+        self.latest_phg_timestamp = None
         self.comment = None
-        self.rawPath = None
+        self.raw_path = None
         self.raw = None
 
         # packet tail timestamp indicates how long time ago we had a tail
-        self.packetTailTimestamp = None
+        self.packet_tail_timestamp = None
 
         # If packet reports a new position for a moving symbol is_moving will be 1 otherwise 0
-        # Some times is_moving will be 0 for a moving symbol, but as fast we realize it is moving related packets will have is_moving set to 1
-        self.isMoving = 1
+        # Sometimes is_moving will be 0 for a moving symbol, but as fast we realize it is moving related packets will have is_moving set to 1
+        self.is_moving = 1
 
         self.posambiguity = None
 
-        # Following attributes will not allways be loaded from database (comes from related tables)
-        self.stationIdPath = []
-        self.stationNamePath = []
-        self.stationLocationPath = []
+        # Following attributes will not always be loaded from database (comes from related tables)
+        self.station_id_path = []
+        self.station_name_path = []
+        self.station_location_path = []
 
         # Will only be used when packet is not inserted to database yet
-        self.replacePacketId = None
-        self.replacePacketTimestamp = None
-        self.abnormalPacketId = None
-        self.abnormalPacketTimestamp = None
-        self.confirmPacketId = None
-        self.confirmPacketTimestamp = None
+        self.replace_packet_id = None
+        self.replace_packet_timestamp = None
+        self.abnormal_packet_id = None
+        self.abnormal_packet_timestamp = None
+        self.confirm_packet_id = None
+        self.confirm_packet_timestamp = None
 
         # Will only be used when packet is not inserted to database yet
         self.ogn = None
         self.weather = None
         self.telemetry = None
-        self.stationTelemetryBits = None
-        self.stationTelemetryEqns = None
-        self.stationTelemetryParam = None
-        self.stationTelemetryUnit = None
+        self.station_telemetry_bits = None
+        self.station_telemetry_eqns = None
+        self.station_telemetry_param = None
+        self.station_telemetry_unit = None
         self.senderName = None
         self.stationName = None
 
-    def validate(self):
+    def validate(self) -> bool:
         """Returns true on success (when object content is valid), otherwise false
 
         Returns:
@@ -101,7 +95,7 @@ class Packet(Model):
         """
         return True
 
-    def insert(self):
+    def insert(self) -> bool:
         """Method to call when we want to save a new object to database
 
         Since packet will be inserted in batch we never use this method.
@@ -111,7 +105,7 @@ class Packet(Model):
         """
         return False
 
-    def update(self):
+    def update(self) -> bool:
         """Method to call when we want to save changes to database
 
         Since packet will be updated in batch we never use this method.
@@ -121,239 +115,195 @@ class Packet(Model):
         """
         return False
 
-    def getDistance(self, p2Lat, p2Lng):
+    def get_distance(self, p2_lat: float, p2_lng: float) -> float | None:
         """Get distance in meters between current position and specified position
 
         Args:
-            p2Lat (float): Position 2 latitude
-            p2Lng (float): Position 2 longitude
+            p2_lat (float): Position 2 latitude
+            p2_lng (float): Position 2 longitude
 
         Returns:
             Distance in meters between the two specified positions (as float)
         """
-        if (self.latitude is not None
-                and self.longitude is not None):
-            p1Lat = self.latitude
-            p1Lng = self.longitude
-            R = 6378137  # Earths mean radius in meter
-            dLat = radians(p2Lat - p1Lat)
-            dLong = radians(p2Lng - p1Lng)
-            a = sin(dLat / 2) * sin(dLat / 2) + cos(radians(p1Lat)) * \
-                cos(radians(p2Lat)) * sin(dLong / 2) * sin(dLong / 2)
+        if self.latitude is not None and self.longitude is not None:
+            p1_lat = self.latitude
+            p1_lng = self.longitude
+            R = 6378137  # Earth's mean radius in meters
+            d_lat = radians(p2_lat - p1_lat)
+            d_long = radians(p2_lng - p1_lng)
+            a = sin(d_lat / 2) ** 2 + cos(radians(p1_lat)) * cos(radians(p2_lat)) * sin(d_long / 2) ** 2
             c = 2 * atan2(sqrt(a), sqrt(1 - a))
             d = R * c
-            return d  # returns the distance in meter
-        else:
-            return None
+            return d  # returns the distance in meters
+        return None
 
-    def getCalculatedSpeed(self, prevPacket):
+    def get_calculated_speed(self, prev_packet: 'Packet') -> float | None:
         """Get speed compared to previous packet position and timestamp
 
         Args:
-            prevPacket (Packet):  Previous related packet for the same station
+            prev_packet (Packet):  Previous related packet for the same station
 
         Returns:
-            Speed in kmh compared to previous packet position and timestamp (as float)
+            Speed in km/h compared to previous packet position and timestamp (as float)
         """
-        if (self.latitude is not None
-                and self.longitude is not None):
-            distance = self.getDistance(
-                prevPacket.latitude, prevPacket.longitude)
-            time = abs(prevPacket.timestamp - self.timestamp)
-            if (self.reportedTimestamp is not None
-                    and prevPacket.reportedTimestamp is not None
-                    and self.reportedTimestamp != 0
-                    and prevPacket.reportedTimestamp != 0
-                    and (self.reportedTimestamp % 60 != 0 or prevPacket.reportedTimestamp % 60 != 0)
-                    and prevPacket.reportedTimestamp != self.reportedTimestamp):
-                time = abs(prevPacket.reportedTimestamp -
-                           self.reportedTimestamp)
+        if self.latitude is not None and self.longitude is not None:
+            distance = self.get_distance(prev_packet.latitude, prev_packet.longitude)
+            time = abs(prev_packet.timestamp - self.timestamp)
+            if (self.reported_timestamp is not None
+                    and prev_packet.reported_timestamp is not None
+                    and self.reported_timestamp != 0
+                    and prev_packet.reported_timestamp != 0
+                    and (self.reported_timestamp % 60 != 0 or prev_packet.reported_timestamp % 60 != 0)
+                    and prev_packet.reported_timestamp != self.reported_timestamp):
+                time = abs(prev_packet.reported_timestamp - self.reported_timestamp)
 
-            if (time == 0):
+            if time == 0:
                 return 0
             return distance / time  # meters per second
-        else:
-            return None
+        return None
 
-    def isSymbolEqual(self, comparePacket):
+    def is_symbol_equal(self, compare_packet: 'Packet') -> bool:
         """Returns true if current symbol is equal to symbol in specified packet
 
         Args:
-            comparePacket (Packet): Packet to compare current symbol with
+            compare_packet (Packet): Packet to compare current symbol with
 
         Returns:
             True if current symbol is equal to symbol in specified packet
         """
-        if (self.symbol is not None
-            and self.symbolTable is not None
-            and comparePacket.symbol is not None
-            and comparePacket.symbolTable is not None
-            and self.symbol == comparePacket.symbol
-                and self.symbolTable == comparePacket.symbolTable):
-            return True
-        else:
-            return False
+        return (self.symbol is not None
+                and self.symbol_table is not None
+                and compare_packet.symbol is not None
+                and compare_packet.symbol_table is not None
+                and self.symbol == compare_packet.symbol
+                and self.symbol_table == compare_packet.symbol_table)
 
-    def isPostitionEqual(self, comparePacket):
+    def is_position_equal(self, compare_packet: 'Packet') -> bool:
         """Returns true if current position is equal to position in specified packet
 
         Args:
-            comparePacket (Packet): Packet to compare current position with
+            compare_packet (Packet): Packet to compare current position with
 
         Returns:
             True if current position is equal to position in specified packet
         """
-        if (comparePacket.latitude is not None
-              and comparePacket.longitude is not None
-              and self.longitude is not None
-              and self.latitude is not None
-              and round(self.latitude, 5) == round(comparePacket.latitude, 5)
-              and round(self.longitude, 5) == round(comparePacket.longitude, 5)):
-            return True
-        else:
-            return False
+        return (compare_packet.latitude is not None
+                and compare_packet.longitude is not None
+                and self.longitude is not None
+                and self.latitude is not None
+                and round(self.latitude, 5) == round(compare_packet.latitude, 5)
+                and round(self.longitude, 5) == round(compare_packet.longitude, 5))
 
-    def getTransmitDistance(self):
+    def get_transmit_distance(self) -> float | None:
         """Calculate the transmit distance
 
         Notes:
             require that stationLocationPath is set
 
-        Args:
-            None
-
         Returns:
             Distance in meters for this transmission
         """
-        if (self.stationLocationPath is None
-                or len(self.stationLocationPath) < 1):
+        if not self.station_location_path:
             return None
 
-        location = self.stationLocationPath[0]
-        if (location[0] is None
-                or location[1] is None):
+        location = self.station_location_path[0]
+        if location[0] is None or location[1] is None:
             return None
 
-        if (self.latitude is not None
-                and self.longitude is not None):
-
+        if self.latitude is not None and self.longitude is not None:
             # Current packet contains position, use that
-            return self.getDistance(location[0], location[1])
+            return self.get_distance(location[0], location[1])
         else:
-
             # Current packet is missing position, use latest station position
             stationRepository = StationRepository(self.db)
-            station = stationRepository.getObjectById(self.stationId)
-            if (not station.isExistingObject()):
+            station = stationRepository.get_object_by_id(self.station_id)
+            if not station.is_existing_object():
                 return None
 
-            if (station.latestConfirmedLatitude is not None and station.latestConfirmedLongitude is not None):
+            if station.latest_confirmed_latitude is not None and station.latest_confirmed_longitude is not None:
                 curStationLatestLocationPacket = Packet(self.db)
-                curStationLatestLocationPacket.latitude = station.latestConfirmedLatitude
-                curStationLatestLocationPacket.longitude = station.latestConfirmedLongitude
-                return curStationLatestLocationPacket.getDistance(location[0], location[1])
-            else:
-                return None
+                curStationLatestLocationPacket.latitude = station.latest_confirmed_latitude
+                curStationLatestLocationPacket.longitude = station.latest_confirmed_longitude
+                return curStationLatestLocationPacket.get_distance(location[0], location[1])
+            return None
 
-    def getDict(self, includeStationName=False):
+    def get_dict(self, include_station_name: bool = False) -> dict:
         """Returns a dict representation of the object
 
         Args:
-            includeStationName (Boolean):  Include station name and sender name in dict
+            include_station_name (Boolean):  Include station name and sender name in dict
 
         Returns:
             Dict representation of the object
         """
-        data = {}
-        data['id'] = self.id
+        data = {
+            'id': self.id,
+            'station_id': int(self.station_id) if self.station_id is not None else None,
+            'sender_id': int(self.sender_id) if self.sender_id is not None else None,
+            'packet_type_id': self.packet_type_id,
+            'timestamp': self.timestamp,
+            'reported_timestamp': self.reported_timestamp,
+            'position_timestamp': self.position_timestamp,
+            'latitude': float(self.latitude) if self.latitude is not None else None,
+            'longitude': float(self.longitude) if self.longitude is not None else None,
+            'symbol': self.symbol,
+            'symbol_table': self.symbol_table,
+            'marker_id': self.marker_id,
+            'marker_counter': self.marker_counter,
+            'map_id': self.map_id,
+            'source_id': self.source_id,
+            'map_sector': self.map_sector,
+            'related_map_sectors': self.related_map_sectors,
+            'speed': self.speed,
+            'course': self.course,
+            'altitude': self.altitude,
+            'rng': self.rng,
+            'phg': self.phg,
+            'latest_phg_timestamp': self.latest_phg_timestamp,
+            'latest_rng_timestamp': self.latest_rng_timestamp,
+            'comment': self.comment,
+            'raw_path': self.raw_path,
+            'raw': self.raw,
+            'packet_tail_timestamp': self.packet_tail_timestamp,
+            'is_moving': self.is_moving,
+            'posambiguity': self.posambiguity,
+            'db': 1,
+            'station_id_path': self.station_id_path,
+            'station_name_path': self.station_name_path,
+            'station_location_path': self.station_location_path,
+            'telemetry': self.telemetry.get_dict() if self.telemetry is not None else None,
+            'weather': self.weather.get_dict() if self.weather is not None else None,
+            'ogn': self.ogn.get_dict() if self.ogn is not None else None,
+        }
 
-        if (self.stationId is not None):
-            data['station_id'] = int(self.stationId)
-        else:
-            data['station_id'] = None
-
-        if (self.senderId is not None):
-            data['sender_id'] = int(self.senderId)
-        else:
-            data['sender_id'] = None
-
-        data['packet_type_id'] = self.packetTypeId
-        data['timestamp'] = self.timestamp
-        data['reported_timestamp'] = self.reportedTimestamp
-        data['position_timestamp'] = self.positionTimestamp
-
-        if (self.latitude is not None and self.longitude is not None):
-            data['latitude'] = float(self.latitude)
-            data['longitude'] = float(self.longitude)
-        else:
-            data['latitude'] = None
-            data['longitude'] = None
-
-        data['symbol'] = self.symbol
-        data['symbol_table'] = self.symbolTable
-        data['marker_id'] = self.markerId
-        data['marker_counter'] = self.markerCounter
-        data['map_id'] = self.mapId
-        data['source_id'] = self.sourceId
-        data['map_sector'] = self.mapSector
-        data['related_map_sectors'] = self.relatedMapSectors
-        data['speed'] = self.speed
-        data['course'] = self.course
-        data['altitude'] = self.altitude
-        data['rng'] = self.rng
-        data['phg'] = self.phg
-        data['latest_phg_timestamp'] = self.latestPhgTimestamp
-        data['latest_rng_timestamp'] = self.latestRngTimestamp
-        data['comment'] = self.comment
-        data['raw_path'] = self.rawPath
-        data['raw'] = self.raw
-        data['packet_tail_timestamp'] = self.packetTailTimestamp
-        data['is_moving'] = self.isMoving
-        data['posambiguity'] = self.posambiguity
-        data['db'] = 1
-
-        if (includeStationName):
+        if include_station_name:
             try:
                 stationRepository = StationRepository(self.db)
-                station = stationRepository.getCachedObjectById(
-                    data['station_id'])
+                station = stationRepository.get_cached_object_by_id(data['station_id'])
                 data['station_name'] = station.name
-            except TrackDirectMissingStationError as e:
+            except TrackDirectMissingStationError:
                 data['station_name'] = ''
 
             try:
                 senderRepository = SenderRepository(self.db)
-                sender = senderRepository.getCachedObjectById(
-                    data['sender_id'])
+                sender = senderRepository.get_cached_object_by_id(data['sender_id'])
                 data['sender_name'] = sender.name
-            except TrackDirectMissingSenderError as e:
+            except TrackDirectMissingSenderError:
                 data['sender_name'] = ''
 
-        data['station_id_path'] = self.stationIdPath
-        data['station_name_path'] = self.stationNamePath
-        data['station_location_path'] = self.stationLocationPath
-        data['telemetry'] = None
-        if (self.telemetry is not None):
-            data['telemetry'] = self.telemetry.getDict()
-        data['weather'] = None
-        if (self.weather is not None):
-            data['weather'] = self.weather.getDict()
-        data['ogn'] = None
-        if (self.ogn is not None):
-            data['ogn'] = self.ogn.getDict()
         return data
 
-    def getJson(self):
+    def get_json(self) -> str | None:
         """Returns a json representation of the object
 
         Returns:
-            Json representation of the object (returnes None on failure)
+            Json representation of the object (returns None on failure)
         """
-        data = self.getDict()
+        data = self.get_dict()
 
         try:
             return json.dumps(data, ensure_ascii=False).encode('utf8')
-        except (ValueError) as exp:
+        except ValueError as e:
             self.logger.error(e, exc_info=1)
 
         return None

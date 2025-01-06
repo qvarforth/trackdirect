@@ -1,139 +1,125 @@
 import logging
-from twisted.python import log
-
 import collections
-from trackdirect.exceptions.TrackDirectParseError import TrackDirectParseError
 
+class PacketDuplicatePolicy:
+    """Handles duplicate checks."""
 
-class PacketDuplicatePolicy():
-    """Handles duplicate checks
-    """
+    # Static class variables
+    latest_packets_hash_ordered_dict = collections.OrderedDict()
 
-    # static class variables
-    latestPacketsHashOrderedDict = collections.OrderedDict()
+    def __init__(self, station_repository):
+        """Initialize PacketDuplicatePolicy.
 
-    def __init__(self, stationRepository):
-        """The __init__ method.
+        Args:
+            station_repository: Repository to access station data.
         """
-        self.minutesBackToLookForDuplicates = 30
-        self.stationRepository = stationRepository
-
+        self.minutes_back_to_look_for_duplicates = 30
+        self.station_repository = station_repository
         self.logger = logging.getLogger('trackdirect')
 
-    def isDuplicate(self, packet):
-        """Method used to check if this packet is a duplicate
+    def is_duplicate(self, packet):
+        """Check if the packet is a duplicate.
 
         Args:
-            packet (Packet): Packet that may be a duplicate
+            packet (Packet): Packet that may be a duplicate.
 
         Returns:
-            Boolean
+            bool: True if the packet is a duplicate, False otherwise.
         """
-        if (packet.mapId in [1, 5, 7, 8, 9]
-                and (packet.isMoving == 1 or packet.mapId == 8)
+        if (packet.map_id in [1, 5, 7, 8, 9]
+                and (packet.is_moving == 1 or packet.map_id == 8)
                 and packet.latitude is not None
                 and packet.longitude is not None):
-            if (self._isPacketBodyInCache(packet)):
-                # It looks like a duplicate, treat it as one if needed
-                # (if position is equal to the latest confirmed position it doesn't matter if we treat it as a duplicate or not)
-                if (self._isToBeTreateAsDuplicate(packet)):
+            if self._is_packet_body_in_cache(packet):
+                if self._is_to_be_treated_as_duplicate(packet):
                     return True
-            self._addToCache(packet)
-
-        elif (packet.sourceId == 3):
-            # It is a duplicate (everything from this source is)
+            self._add_to_cache(packet)
+        elif packet.source_id == 3:
             return True
-
         return False
 
-    def _isPacketBodyInCache(self, packet):
-        """Returns true if packet body is in cache
+    def _is_packet_body_in_cache(self, packet):
+        """Check if the packet body is in cache.
 
         Args:
-            packet (Packet):   Packet look for in cashe
+            packet (Packet): Packet to look for in cache.
 
         Returns:
-            Boolean
+            bool: True if packet body is in cache, False otherwise.
         """
-        packetHash = self._getPacketHash(packet)
-        if (packetHash is None):
+        packet_hash = self._get_packet_hash(packet)
+        if packet_hash is None:
             return False
 
-        if (packetHash in PacketDuplicatePolicy.latestPacketsHashOrderedDict):
-            prevPacketValues = PacketDuplicatePolicy.latestPacketsHashOrderedDict[packetHash]
-            if (packet.rawPath != prevPacketValues['path']
-                    and prevPacketValues['timestamp'] > packet.timestamp - (60*self.minutesBackToLookForDuplicates)):
+        if packet_hash in PacketDuplicatePolicy.latest_packets_hash_ordered_dict:
+            prev_packet_values = PacketDuplicatePolicy.latest_packets_hash_ordered_dict[packet_hash]
+            if (packet.raw_path != prev_packet_values['path']
+                    and prev_packet_values['timestamp'] > packet.timestamp - (60 * self.minutes_back_to_look_for_duplicates)):
                 return True
         return False
 
-    def _isToBeTreateAsDuplicate(self, packet):
-        """Returns true if packet should be treated as duplicate
+    def _is_to_be_treated_as_duplicate(self, packet):
+        """Check if the packet should be treated as a duplicate.
 
         Args:
-            packet (Packet):   Packet to check
+            packet (Packet): Packet to check.
 
         Returns:
-            Boolean
+            bool: True if packet should be treated as duplicate, False otherwise.
         """
-        station = self.stationRepository.getObjectById(packet.stationId)
-        if (station.latestConfirmedLatitude is not None and station.latestConfirmedLongitude is not None):
-            stationLatCmp = int(round(station.latestConfirmedLatitude*100000))
-            stationLngCmp = int(round(station.latestConfirmedLongitude*100000))
+        station = self.station_repository.get_object_by_id(packet.station_id)
+        if station.latest_confirmed_latitude is not None and station.latest_confirmed_longitude is not None:
+            station_lat_cmp = int(round(station.latest_confirmed_latitude * 100000))
+            station_lng_cmp = int(round(station.latest_confirmed_longitude * 100000))
         else:
-            stationLatCmp = 0
-            stationLngCmp = 0
+            station_lat_cmp = 0
+            station_lng_cmp = 0
 
-        packetlatCmp = int(round(packet.latitude*100000))
-        packetlngCmp = int(round(packet.longitude*100000))
+        packet_lat_cmp = int(round(packet.latitude * 100000))
+        packet_lng_cmp = int(round(packet.longitude * 100000))
 
-        if (station.isExistingObject()
-            and stationLatCmp != 0
-            and stationLngCmp != 0
-                and (packet.mapId == 8 or stationLatCmp != packetlatCmp or stationLngCmp != packetlngCmp)):
-
-            # We treat this packet as a duplicate
+        if (station.is_existing_object()
+            and station_lat_cmp != 0
+            and station_lng_cmp != 0
+            and (packet.map_id == 8 or station_lat_cmp != packet_lat_cmp or station_lng_cmp != packet_lng_cmp)):
             return True
-        else:
-            return False
+        return False
 
-    def _getPacketHash(self, packet):
-        """Returns a hash value of the Packet object
+    def _get_packet_hash(self, packet):
+        """Get a hash value of the Packet object.
 
         Args:
-            packet (Packet): Packet to get hash for
+            packet (Packet): Packet to get hash for.
 
         Returns:
-            A string that contains the hash value
+            str: Hash value of the packet.
         """
-        if (packet.raw is None or packet.raw == ''):
+        if not packet.raw:
             return None
 
-        packetString = packet.raw.split(':', 1)[1]
-        if (packetString == ''):
+        packet_string = packet.raw.split(':', 1)[1]
+        if not packet_string:
             return None
-        else:
-            return hash(packetString.strip())
+        return hash(packet_string.strip())
 
-    def _addToCache(self, packet):
-        """Add packet to cache
+    def _add_to_cache(self, packet):
+        """Add packet to cache.
 
         Args:
-            packet (Packet):  Packet to add to cache
+            packet (Packet): Packet to add to cache.
         """
-        packetHash = self._getPacketHash(packet)
-        PacketDuplicatePolicy.latestPacketsHashOrderedDict[packetHash] = {
-            'path': packet.rawPath,
+        packet_hash = self._get_packet_hash(packet)
+        PacketDuplicatePolicy.latest_packets_hash_ordered_dict[packet_hash] = {
+            'path': packet.raw_path,
             'timestamp': packet.timestamp
         }
-        self._cacheMaintenance()
+        self._cache_maintenance()
 
-    def _cacheMaintenance(self):
-        """Make sure cache does not contain to many packets
-        """
-        maxNumberOfPackets = self.minutesBackToLookForDuplicates * 60 * 100 # We assume that we have an average of 100 packets per second
-        if (len(PacketDuplicatePolicy.latestPacketsHashOrderedDict) > maxNumberOfPackets):
+    def _cache_maintenance(self):
+        """Ensure cache does not contain too many packets."""
+        max_number_of_packets = self.minutes_back_to_look_for_duplicates * 60 * 100  # Assume an average of 100 packets per second
+        if len(PacketDuplicatePolicy.latest_packets_hash_ordered_dict) > max_number_of_packets:
             try:
-                PacketDuplicatePolicy.latestPacketsHashOrderedDict.popitem(
-                    last=False)
-            except (KeyError, StopIteration) as e:
+                PacketDuplicatePolicy.latest_packets_hash_ordered_dict.popitem(last=False)
+            except (KeyError, StopIteration):
                 pass

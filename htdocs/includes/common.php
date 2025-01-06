@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Returnes true if user probably prefer Imperial Units
+ * Returns true if user probably prefer Imperial Units
  *
  * @return boolean
  */
@@ -112,7 +112,7 @@ function convertMbarToMmhg($value)
 }
 
 /**
- * Returnes true if value is float
+ * Returns true if value is float
  *
  * @param  mixed $value
  * @return boolean
@@ -127,7 +127,7 @@ function isFloat($value)
 }
 
 /**
- * Returnes true if value is int
+ * Returns true if value is int
  *
  * @param  mixed $value
  * @return boolean
@@ -156,7 +156,7 @@ function str_replace_first($search, $replace, $string)
 }
 
 /*
- * Returnes symbol description
+ * Returns symbol description
  *
  * @param string $symbolTable
  * @param string $symbol
@@ -1748,9 +1748,8 @@ function getSymbolDescription($symbolTable, $symbol, $includeUndefinedOverlay)
     }
 }
 
-
 /**
- * Returnes true if we may show data older than 24h
+ * Returns true if we may show data older than 24h
  *
  * @return boolean
  */
@@ -1780,7 +1779,29 @@ function isAllowedToShowOlderData() {
 }
 
 /**
- * Returnes valid view path
+ * Returns true if specified source is used on this website
+ *
+ * @return boolean
+ */
+function isSourceIdUsed($sourceId) {
+    $isSourceUsed = false;
+    $config = parse_ini_file(ROOT . '/../config/trackdirect.ini', true);
+
+    if (isset($config['websocket_server'])) {
+        if (isset($config['websocket_server']['aprs_source_id1']) && $config['websocket_server']['aprs_source_id1'] == $sourceId) {
+            $isSourceUsed = true;
+        }
+
+        if (isset($config['websocket_server']['aprs_source_id2']) && $config['websocket_server']['aprs_source_id2'] == $sourceId) {
+            $isSourceUsed = true;
+        }
+    }
+
+    return $isSourceUsed;
+}
+
+/**
+ * Returns valid view path
  *
  * @param {string} $request
  * @return string
@@ -1803,7 +1824,7 @@ function getView($request) {
 }
 
 /**
- * Returnes an assoc array containing website related values from config
+ * Returns an assoc array containing website related values from config
  *
  * @param {string} $key
  * @return string

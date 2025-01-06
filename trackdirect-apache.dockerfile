@@ -1,4 +1,4 @@
-FROM php:7.2-apache
+FROM php:8.2-apache
 
 RUN apt-get update && apt-get install -y \
   git \
@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 RUN pecl install imagick && docker-php-ext-enable imagick && docker-php-ext-install pdo pdo_pgsql && docker-php-ext-install gd && docker-php-ext-enable gd
 
 COPY . /root/trackdirect
-COPY config/000-default.conf /etc/apache2/sites-enabled/
+COPY config/apache-default.conf /etc/apache2/sites-enabled/000-default.conf
 
 RUN a2enmod rewrite
 RUN chmod a+rx / && chmod a+rx -R /root

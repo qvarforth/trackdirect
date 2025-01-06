@@ -1,248 +1,184 @@
 import sys
-import os.path
+import os
 import logging
 import logging.handlers
 import datetime
 import time
-import trackdirect
+from server.trackdirect.TrackDirectConfig import TrackDirectConfig
+from server.trackdirect.database.DatabaseConnection import DatabaseConnection
+from server.trackdirect.database.DatabaseObjectFinder import DatabaseObjectFinder
+from server.trackdirect.repositories.PacketRepository import PacketRepository
 
-from trackdirect.database.DatabaseConnection import DatabaseConnection
-from trackdirect.database.DatabaseObjectFinder import DatabaseObjectFinder
-from trackdirect.repositories.PacketRepository import PacketRepository
+def setup_logging(db_name):
+    log_file = os.path.expanduser(f'~/trackdirect/server/log/remover_{db_name}.log')
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(),
+            logging.handlers.RotatingFileHandler(filename=log_file, mode='a', maxBytes=1000000, backupCount=10)
+        ]
+    )
+    return logging.getLogger('trackdirect')
 
-if __name__ == '__main__':
-
-    if (len(sys.argv) < 2):
-        print("\n" + sys.argv[0] + ' [config.ini]')
+def validate_config_file(config_file):
+    if not os.path.isfile(config_file):
+        print(f"\n File {config_file} does not exist")
+        print("\nUsage: script.py [config.ini]")
         sys.exit()
-    elif (sys.argv[1].startswith("/")):
-        if (not os.path.isfile(sys.argv[1])):
-            print(f"\n File {sys.argv[1]} does not exists")
-            print("\n" + sys.argv[0] + ' [config.ini]')
-            sys.exit()
-    elif (not os.path.isfile(os.path.expanduser('~/trackdirect/config/' + sys.argv[1]))):
-        print(f"\n File ~/trackdirect/config/{sys.argv[1]} does not exists")
-        print("\n" + sys.argv[0] + ' [config.ini]')
+
+def drop_table_if_exists(cursor, table_name, logger):
+    if DatabaseObjectFinder.check_table_exists(table_name):
+        cursor.execute(f"DROP TABLE {table_name}")
+        logger.info(f"Dropped table {table_name}")
+
+def main():
+    if len(sys.argv) < 2:
+        print("\nUsage: script.py [config.ini]")
         sys.exit()
 
-    config = trackdirect.TrackDirectConfig()
-    config.populate(sys.argv[1])
+    config_file = sys.argv[1]
+    if not config_file.startswith("/"):
+        config_file = os.path.expanduser(f'~/trackdirect/config/{config_file}')
+    validate_config_file(config_file)
 
-    maxDaysToSavePositionData = int(config.daysToSavePositionData)
-    maxDaysToSaveStationData = int(config.daysToSaveStationData)
-    maxDaysToSaveWeatherData = int(config.daysToSaveWeatherData)
-    maxDaysToSaveTelemetryData = int(config.daysToSaveTelemetryData)
+    config = TrackDirectConfig()
+    config.populate(config_file)
+
+    logger = setup_logging(config.db_name)
+
+    max_days_to_save_position_data = config.days_to_save_position_data
+    max_days_to_save_station_data = config.days_to_save_station_data
+    max_days_to_save_weather_data = config.days_to_save_weather_data
+    max_days_to_save_telemetry_data = config.days_to_save_telemetry_data
+
+    logger.info("Starting")
+    logger.info(f"Saving position data for {max_days_to_save_position_data} days")
+    logger.info(f"Saving station data for {max_days_to_save_station_data} days")
+    logger.info(f"Saving weather data for {max_days_to_save_weather_data} days")
+    logger.info(f"Saving telemetry data for {max_days_to_save_telemetry_data} days")
 
     try:
-        fh = logging.handlers.RotatingFileHandler(filename=os.path.expanduser(
-            '~/trackdirect/server/log/remover_' + config.dbName + '.log'), mode='a', maxBytes=1000000, backupCount=10)
-
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        fh.setFormatter(formatter)
-
-        consoleHandler = logging.StreamHandler()
-        consoleHandler.setFormatter(formatter)
-
-        trackDirectLogger = logging.getLogger('trackdirect')
-        trackDirectLogger.addHandler(fh)
-        trackDirectLogger.addHandler(consoleHandler)
-        trackDirectLogger.setLevel(logging.INFO)
-
-        trackDirectLogger.info("Starting")
-        trackDirectLogger.info(
-            "Saving position data for %s days" % (maxDaysToSavePositionData))
-        trackDirectLogger.info(
-            "Saving station data for %s days" % (maxDaysToSaveStationData))
-        trackDirectLogger.info(
-            "Saving weather data for %s days" % (maxDaysToSaveWeatherData))
-        trackDirectLogger.info(
-            "Saving telemetry data for %s days" % (maxDaysToSaveTelemetryData))
-
-        trackDirectDb = DatabaseConnection()
-        dbNoAutoCommit = trackDirectDb.getConnection(False)
-        db = trackDirectDb.getConnection(True)
+        track_direct_db = DatabaseConnection()
+        db_no_auto_commit = track_direct_db.get_connection(False)
+        db = track_direct_db.get_connection(True)
         db.set_isolation_level(0)
         cursor = db.cursor()
         cursor.execute("SET statement_timeout = '240s'")
 
-        trackDirectDbObjectFinder = DatabaseObjectFinder(db)
+        track_direct_db_object_finder = DatabaseObjectFinder(db)
+        packet_repository = PacketRepository(db)
 
-        packetRepository = PacketRepository(db)
-
-        #
-        # Loop over the latest days and delete packets that is not needed any more
-        #
+        # Loop over the latest days and delete packets that are not needed anymore
         for x in range(2, 16):
-            prevDay = datetime.date.today() - datetime.timedelta(x)  # today minus x days
-            prevDayTimestamp = prevDay.strftime("%s")
-            prevDayFormat = datetime.datetime.utcfromtimestamp(
-                int(prevDayTimestamp)).strftime('%Y%m%d')
-            packetTable = "packet" + prevDayFormat
+            prev_day = datetime.date.today() - datetime.timedelta(x)
+            prev_day_timestamp = int(prev_day.strftime("%s"))
+            prev_day_format = datetime.datetime.utcfromtimestamp(prev_day_timestamp).strftime('%Y%m%d')
+            packet_table = f"packet{prev_day_format}"
 
-            if (trackDirectDbObjectFinder.checkTableExists(packetTable)):
-                deletedRows = None
-                doFullVacuum = False
-                while (deletedRows is None or deletedRows >= 5000):
-                    sql = """delete from """ + packetTable + \
-                        """ where id in (select id from """ + packetTable + \
-                        """ where map_id not in (1,12) limit 5000)"""
+            if track_direct_db_object_finder.check_table_exists(packet_table):
+                deleted_rows = None
+                do_full_vacuum = False
+                while deleted_rows is None or deleted_rows >= 5000:
+                    sql = f"""DELETE FROM {packet_table} WHERE id IN (
+                              SELECT id FROM {packet_table} WHERE map_id NOT IN (1,12) LIMIT 5000)"""
                     cursor.execute(sql)
-                    deletedRows = cursor.rowcount
-                    trackDirectLogger.info(
-                        "Deleted %s %s" % (deletedRows, packetTable))
-                    if (deletedRows > 0):
-                        doFullVacuum = True
+                    deleted_rows = cursor.rowcount
+                    logger.info(f"Deleted {deleted_rows} from {packet_table}")
+                    if deleted_rows > 0:
+                        do_full_vacuum = True
                     time.sleep(0.5)
-                if (doFullVacuum):
-                    cursor.execute("""VACUUM FULL """ +
-                                   packetTable + """_path""")
-                    cursor.execute("""REINDEX TABLE """ +
-                                   packetTable + """_path""")
-                    cursor.execute("""VACUUM FULL """ + packetTable)
-                    cursor.execute("""REINDEX TABLE """ + packetTable)
+                if do_full_vacuum:
+                    cursor.execute(f"VACUUM FULL {packet_table}_path")
+                    cursor.execute(f"REINDEX TABLE {packet_table}_path")
+                    cursor.execute(f"VACUUM FULL {packet_table}")
+                    cursor.execute(f"REINDEX TABLE {packet_table}")
 
-        #
         # Drop packet_weather
-        #
-        for x in range(maxDaysToSaveWeatherData, maxDaysToSaveWeatherData+100):
-            prevDay = datetime.date.today() - datetime.timedelta(x)  # today minus x days
-            prevDayTimestamp = prevDay.strftime("%s")
-            prevDayFormat = datetime.datetime.utcfromtimestamp(
-                int(prevDayTimestamp)).strftime('%Y%m%d')
-            packetTable = "packet" + prevDayFormat
+        for x in range(max_days_to_save_weather_data, max_days_to_save_weather_data + 100):
+            prev_day = datetime.date.today() - datetime.timedelta(x)
+            prev_day_format = prev_day.strftime('%Y%m%d')
+            packet_table = f"packet{prev_day_format}_weather"
+            drop_table_if_exists(cursor, packet_table, logger)
 
-            if (trackDirectDbObjectFinder.checkTableExists(packetTable + "_weather")):
-                cursor.execute("""drop table """ +
-                               packetTable + """_weather""")
-                trackDirectLogger.info(
-                    "Dropped table %s_weather" % (packetTable))
-
-        #
         # Drop packet_telemetry
-        #
-        for x in range(maxDaysToSaveTelemetryData, maxDaysToSaveTelemetryData+100):
-            prevDay = datetime.date.today() - datetime.timedelta(x)  # today minus x days
-            prevDayTimestamp = prevDay.strftime("%s")
-            prevDayFormat = datetime.datetime.utcfromtimestamp(
-                int(prevDayTimestamp)).strftime('%Y%m%d')
-            packetTable = "packet" + prevDayFormat
+        for x in range(max_days_to_save_telemetry_data, max_days_to_save_telemetry_data + 100):
+            prev_day = datetime.date.today() - datetime.timedelta(x)
+            prev_day_format = prev_day.strftime('%Y%m%d')
+            packet_table = f"packet{prev_day_format}_telemetry"
+            drop_table_if_exists(cursor, packet_table, logger)
 
-            if (trackDirectDbObjectFinder.checkTableExists(packetTable + "_telemetry")):
-                cursor.execute("""drop table """ +
-                               packetTable + """_telemetry""")
-                trackDirectLogger.info(
-                    "Dropped table %s_telemetry" % (packetTable))
-
-        #
         # Drop packets
-        #
-        for x in range(maxDaysToSavePositionData, maxDaysToSavePositionData+100):
-            prevDay = datetime.date.today() - datetime.timedelta(x)  # today minus x days
-            prevDayTimestamp = prevDay.strftime("%s")
-            prevDayFormat = datetime.datetime.utcfromtimestamp(
-                int(prevDayTimestamp)).strftime('%Y%m%d')
-            packetTable = "packet" + prevDayFormat
+        for x in range(max_days_to_save_position_data, max_days_to_save_position_data + 100):
+            prev_day = datetime.date.today() - datetime.timedelta(x)
+            prev_day_format = prev_day.strftime('%Y%m%d')
+            packet_table = f"packet{prev_day_format}"
 
-            # Drop packet_ogn table
-            if (trackDirectDbObjectFinder.checkTableExists(packetTable + "_ogn")):
-                cursor.execute("""drop table """ + packetTable + """_ogn""")
-                trackDirectLogger.info("Dropped table %s_ogn" % (packetTable))
+            drop_table_if_exists(cursor, f"{packet_table}_ogn", logger)
+            drop_table_if_exists(cursor, f"{packet_table}_path", logger)
+            drop_table_if_exists(cursor, packet_table, logger)
 
-            #
-            # Drop packet_path table
-            #
-            if (trackDirectDbObjectFinder.checkTableExists(packetTable + "_path")):
-                cursor.execute("""drop table """ + packetTable + """_path""")
-                trackDirectLogger.info("Dropped table %s_path" % (packetTable))
-
-            #
-            # Drop packet table
-            #
-            if (trackDirectDbObjectFinder.checkTableExists(packetTable)):
-                cursor.execute("""drop table """ + packetTable)
-                trackDirectLogger.info("Dropped table %s" % (packetTable))
-
-        #
         # Delete old stations
-        #
-        timestampLimit = int(time.time()) - (60*60*24*maxDaysToSaveStationData)
-        deletedRows = 0
-        sql = """select station.id, station.latest_sender_id, station.name
-            from station
-            where latest_packet_timestamp < %s
-                and (
-                    exists (
-                        select 1
-                        from sender
-                        where sender.id = station.latest_sender_id
-                            and sender.name != station.name
-                    )
-                    or
-                    not exists (
-                        select 1
-                        from station station2, sender
-                        where sender.id = station.latest_sender_id
-                            and station2.latest_sender_id = sender.id
-                            and station2.name != sender.name
-                    )
-                )
-            order by latest_packet_timestamp"""
+        timestamp_limit = int(time.time()) - (60 * 60 * 24 * max_days_to_save_station_data)
+        deleted_rows = 0
+        sql = """SELECT station.id, station.latest_sender_id, station.name
+                 FROM station
+                 WHERE latest_packet_timestamp < %s
+                 AND (
+                     EXISTS (
+                         SELECT 1
+                         FROM sender
+                         WHERE sender.id = station.latest_sender_id
+                         AND sender.name != station.name
+                     )
+                     OR
+                     NOT EXISTS (
+                         SELECT 1
+                         FROM station station2, sender
+                         WHERE sender.id = station.latest_sender_id
+                         AND station2.latest_sender_id = sender.id
+                         AND station2.name != sender.name
+                     )
+                 )
+                 ORDER BY latest_packet_timestamp"""
 
-        selectStationCursor = db.cursor()
-        selectStationCursor.execute(sql, (timestampLimit,))
-        for record in selectStationCursor:
-            trackDirectLogger.info("Trying to delete station %s (%s)" % (
-                record["name"], record["id"]))
+        select_station_cursor = db.cursor()
+        select_station_cursor.execute(sql, (timestamp_limit,))
+        for record in select_station_cursor:
+            logger.info(f"Trying to delete station {record['name']} ({record['id']})")
+            delete_cursor = db_no_auto_commit.cursor()
             try:
-                deleteCursor = dbNoAutoCommit.cursor()
+                for table in ['station_telemetry_bits', 'station_telemetry_eqns', 'station_telemetry_param', 'station_telemetry_unit', 'station_city']:
+                    delete_cursor.execute(f"DELETE FROM {table} WHERE station_id = %s", (record["id"],))
 
-                sql = """delete from station_telemetry_bits where station_id = %s"""
-                deleteCursor.execute(sql, (record["id"],))
+                delete_cursor.execute("DELETE FROM station WHERE id = %s", (record["id"],))
+                delete_cursor.execute("DELETE FROM sender WHERE id = %s AND NOT EXISTS (SELECT 1 FROM station WHERE latest_sender_id = sender.id)", (record["latest_sender_id"],))
 
-                sql = """delete from station_telemetry_eqns where station_id = %s"""
-                deleteCursor.execute(sql, (record["id"],))
-
-                sql = """delete from station_telemetry_param where station_id = %s"""
-                deleteCursor.execute(sql, (record["id"],))
-
-                sql = """delete from station_telemetry_unit where station_id = %s"""
-                deleteCursor.execute(sql, (record["id"],))
-
-                sql = """delete from station_city where station_id = %s"""
-                deleteCursor.execute(sql, (record["id"],))
-
-                sql = """delete from station where id = %s"""
-                deleteCursor.execute(sql, (record["id"],))
-
-                sql = """delete from sender where id = %s and not exists (select 1 from station where latest_sender_id = sender.id)"""
-                deleteCursor.execute(sql, (record["latest_sender_id"],))
-
-                dbNoAutoCommit.commit()
-                deleteCursor.close()
-                deletedRows += 1
+                db_no_auto_commit.commit()
+                delete_cursor.close()
+                deleted_rows += 1
                 time.sleep(0.5)
             except Exception as e:
-                # Something went wrong
-                #trackDirectLogger.error(e, exc_info=1)
-                dbNoAutoCommit.rollback()
-                deleteCursor.close()
+                logger.error(e, exc_info=1)
+                db_no_auto_commit.rollback()
+                delete_cursor.close()
 
-        selectStationCursor.close()
-        if (deletedRows > 0):
-            trackDirectLogger.info("Deleted %s stations" % (deletedRows))
+        select_station_cursor.close()
+        if deleted_rows > 0:
+            logger.info(f"Deleted {deleted_rows} stations")
 
-        cursor.execute("""VACUUM ANALYZE station""")
-        cursor.execute("""REINDEX TABLE station""")
-        cursor.execute("""VACUUM ANALYZE sender""")
-        cursor.execute("""REINDEX TABLE sender""")
+        cursor.execute("VACUUM ANALYZE station")
+        cursor.execute("REINDEX TABLE station")
+        cursor.execute("VACUUM ANALYZE sender")
+        cursor.execute("REINDEX TABLE sender")
 
-        #
         # Close DB connection
-        #
         cursor.close()
         db.close()
-        trackDirectLogger.info("Done!")
+        logger.info("Done!")
 
     except Exception as e:
-        trackDirectLogger.error(e, exc_info=1)
+        logger.error(e, exc_info=1)
+
+if __name__ == '__main__':
+    main()

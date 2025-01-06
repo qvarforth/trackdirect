@@ -18,12 +18,13 @@ trackdirect.services.dateFormatter = {
     includeTime = typeof includeTime !== "undefined" ? includeTime : true;
     useLocalTimeZone =
       typeof useLocalTimeZone !== "undefined" ? useLocalTimeZone : true;
-    var date = new Date(timestamp * 1000);
+    let date = new Date(timestamp * 1000);
 
+    let theMoment
     if (useLocalTimeZone) {
-      var theMoment = moment(date);
+      theMoment = moment(date);
     } else {
-      var theMoment = moment.utc(date);
+      theMoment = moment.utc(date);
     }
 
     if (!theMoment.isValid()) {
@@ -48,24 +49,24 @@ trackdirect.services.dateFormatter = {
    */
   getAgeString: function (timestamp) {
     // get total seconds between the times
-    var delta = Math.abs(Math.floor(Date.now() / 1000) - timestamp);
+    let delta = Math.abs(Math.floor(Date.now() / 1000) - timestamp);
 
     // calculate (and subtract) whole days
-    var days = Math.floor(delta / 86400);
+    let days = Math.floor(delta / 86400);
     delta -= days * 86400;
 
     // calculate (and subtract) whole hours
-    var hours = Math.floor(delta / 3600) % 24;
+    let hours = Math.floor(delta / 3600) % 24;
     delta -= hours * 3600;
 
     // calculate (and subtract) whole minutes
-    var minutes = Math.floor(delta / 60) % 60;
+    let minutes = Math.floor(delta / 60) % 60;
     delta -= minutes * 60;
 
     // what's left is seconds
-    var seconds = Math.floor(delta % 60);
+    let seconds = Math.floor(delta % 60);
 
-    var timeAgoList = [];
+    let timeAgoList = [];
     if (days > 1) {
       timeAgoList.push(days + " days");
     } else if (days > 0) {

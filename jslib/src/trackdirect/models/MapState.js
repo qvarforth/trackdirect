@@ -57,7 +57,7 @@ trackdirect.models.MapState.prototype._init = function () {
  */
 trackdirect.models.MapState.prototype.getOldestAllowedPacketTimestamp =
   function () {
-    var oldestAllowedTimestamp =
+    let oldestAllowedTimestamp =
       Math.floor(Date.now() / 1000) - this.timeLengthInSeconds;
     if (this.endTimeTravelTimestamp !== null) {
       oldestAllowedTimestamp =

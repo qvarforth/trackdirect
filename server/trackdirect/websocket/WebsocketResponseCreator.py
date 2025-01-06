@@ -1,91 +1,82 @@
 import logging
-from twisted.python import log
+import psycopg2
+from server.trackdirect.websocket.responses.FilterResponseCreator import FilterResponseCreator
+from server.trackdirect.websocket.responses.HistoryResponseCreator import HistoryResponseCreator
+from server.trackdirect.websocket.responses.FilterHistoryResponseCreator import FilterHistoryResponseCreator
 
-from math import floor, ceil
-import datetime, time
-
-import psycopg2, psycopg2.extras
-
-from trackdirect.websocket.responses.FilterResponseCreator import FilterResponseCreator
-from trackdirect.websocket.responses.HistoryResponseCreator import HistoryResponseCreator
-from trackdirect.websocket.responses.FilterHistoryResponseCreator import FilterHistoryResponseCreator
-
-class WebsocketResponseCreator():
-    """The WebsocketResponseCreator will make sure that we create a response for every valid received request
-    """
+class WebsocketResponseCreator:
+    """The WebsocketResponseCreator ensures that a response is created for every valid received request."""
 
     def __init__(self, state, db):
-        """The __init__ method.
+        """
+        Initialize the WebsocketResponseCreator.
 
         Args:
-            state (WebsocketConnectionState):    WebsocketConnectionState instance that contains current state
-            db (psycopg2.Connection):            Database connection (with autocommit)
+            state (WebsocketConnectionState): WebsocketConnectionState instance that contains current state.
+            db (psycopg2.Connection): Database connection (with autocommit).
         """
         self.state = state
-
         self.logger = logging.getLogger('trackdirect')
+        self.filter_response_creator = FilterResponseCreator(state, db)
+        self.history_response_creator = HistoryResponseCreator(state, db)
+        self.filter_history_response_creator = FilterHistoryResponseCreator(state, db)
 
-        self.filterResponseCreator = FilterResponseCreator(state, db)
-        self.historyResponseCreator = HistoryResponseCreator(state, db)
-        self.filterHistoryResponseCreator = FilterHistoryResponseCreator(state, db)
-
-    def getResponses(self, request, requestId) :
-        """Process a received request
+    def get_responses(self, request, request_id):
+        """
+        Process a received request.
 
         Args:
-            request (dict):    The request to process
-            requestId (int):   Request id of processed request
+            request (dict): The request to process.
+            request_id (int): Request id of processed request.
 
         Returns:
             generator
         """
         try:
-            if (self.state.isReset()) :
-                yield self._getResetResponse()
+            if self.state.is_reset():
+                yield self._get_reset_response()
 
-            if (request["payload_request_type"] == 1 or request["payload_request_type"] == 11) :
-                yield self._getLoadingResponse()
-                if (len(self.state.filterStationIdDict) > 0) :
-                    response = self.filterHistoryResponseCreator.getResponse()
-                    if (response is not None) :
+            payload_type = request.get("payload_request_type")
+            if payload_type in {1, 11}:
+                yield self._get_loading_response()
+                if self.state.filter_station_id_dict:
+                    response = self.filter_history_response_creator.get_response()
+                    if response is not None:
                         yield response
-                else :
-                    for response in self.historyResponseCreator.getResponses(request, requestId) :
-                        yield response
+                else:
+                    yield from self.history_response_creator.get_responses(request, request_id)
 
-            elif (request["payload_request_type"] == 7) :
+            elif payload_type == 7:
                 # Update request for single station
-                for response in self.historyResponseCreator.getResponses(request, requestId) :
-                    yield response
+                yield from self.history_response_creator.get_responses(request, request_id)
 
-            elif (request["payload_request_type"] in [4, 6, 8]) :
-                yield self._getLoadingResponse()
-                for response in self.filterResponseCreator.getResponses(request) :
-                    yield response
+            elif payload_type in {4, 6, 8}:
+                yield self._get_loading_response()
+                yield from self.filter_response_creator.get_responses(request)
 
-            else :
-                self.logger.error('Request is not supported')
-                self.logger.error(request)
+            else:
+                self.logger.error('Unsupported request type: %s', request)
 
         except psycopg2.InterfaceError as e:
             # Connection to database is lost, better just exit
             raise e
         except Exception as e:
-            self.logger.error(e, exc_info=1)
+            self.logger.error('An error occurred: %s', e, exc_info=True)
 
-    def _getLoadingResponse(self) :
-        """This method creates a loading response
+    def _get_loading_response(self):
+        """
+        Create a loading response.
 
         Returns:
-            Dict
+            dict: Loading response payload.
         """
         return {'payload_response_type': 32}
 
-    def _getResetResponse(self) :
-        """This method creates a reset response
+    def _get_reset_response(self):
+        """
+        Create a reset response.
 
         Returns:
-            Dict
+            dict: Reset response payload.
         """
-        payload =  {'payload_response_type': 40}
-        return payload
+        return {'payload_response_type': 40}

@@ -1,84 +1,73 @@
 import logging
-from twisted.python import log
+from server.trackdirect.repositories.PacketRepository import PacketRepository
+from server.trackdirect.websocket.queries.MissingPacketsQuery import MissingPacketsQuery
+from server.trackdirect.websocket.responses.ResponseDataConverter import ResponseDataConverter
+from typing import List, Dict, Optional
 
-from math import floor, ceil
-import datetime, time
-import psycopg2, psycopg2.extras
-
-from trackdirect.repositories.PacketRepository import PacketRepository
-
-from trackdirect.websocket.queries.MissingPacketsQuery import MissingPacketsQuery
-from trackdirect.websocket.responses.ResponseDataConverter import ResponseDataConverter
-
-class FilterHistoryResponseCreator():
-    """The FilterHistoryResponseCreator class creates history responses for stations that we are filtering on
-    """
-
+class FilterHistoryResponseCreator:
+    """The FilterHistoryResponseCreator class creates history responses for stations that we are filtering on."""
 
     def __init__(self, state, db):
-        """The __init__ method.
+        """
+        Initialize the FilterHistoryResponseCreator.
 
         Args:
-            state (WebsocketConnectionState):    WebsocketConnectionState instance that contains current state
-            db (psycopg2.Connection):            Database connection (with autocommit)
+            state (WebsocketConnectionState): WebsocketConnectionState instance that contains current state.
+            db (psycopg2.Connection): Database connection (with autocommit).
         """
         self.state = state
         self.logger = logging.getLogger('trackdirect')
-
         self.db = db
-        self.responseDataConverter = ResponseDataConverter(state, db)
-        self.packetRepository = PacketRepository(db)
+        self.response_data_converter = ResponseDataConverter(state, db)
+        self.packet_repository = PacketRepository(db)
 
-
-    def getResponse(self) :
-        """Returns a filter history response
+    def get_response(self) -> Optional[Dict]:
+        """Returns a filter history response.
 
         Returns:
-            Dict
+            Optional[Dict]: The response payload or None if no packets are found.
         """
-        filterStationIds = self.state.filterStationIdDict.keys()
+        filter_station_ids = list(self.state.filter_station_id_dict.keys())
+        packets = self._get_packets(filter_station_ids)
 
-        # When filtering we send everything in the same packet
-        # We need to do this since we do not send related objects,
-        # if user is filtering on two related OBJECTS they need to be sent together
-        packets = self._getPackets(filterStationIds)
-
-        # If map is empty we need to make sure that all specified stations is included
-        if (self.state.isMapEmpty()) :
+        if self.state.is_map_empty():
             query = MissingPacketsQuery(self.state, self.db)
-            query.enableSimulateEmptyStation()
-            sortedFoundMissingPackets = query.getMissingPackets(filterStationIds, packets)
-            sortedFoundMissingPackets.extend(packets)
-            packets = sortedFoundMissingPackets
+            query.enable_simulate_empty_station()
+            missing_packets = query.get_missing_packets(filter_station_ids, packets)
+            packets.extend(missing_packets)
 
-        if (packets) :
-            data = self.responseDataConverter.getResponseData(packets, [])
+        if packets:
+            data = self.response_data_converter.get_response_data(packets, [])
             payload = {'payload_response_type': 2, 'data': data}
+            self.logger.debug("Response payload created with %d packets", len(packets))
             return payload
+        else:
+            self.logger.debug("No packets found for the given station IDs.")
+            return None
 
-
-    def _getPackets(self, stationIds) :
-        """Returns packets to be used in a filter history response
+    def _get_packets(self, station_ids: List[int]) -> List:
+        """Returns packets to be used in a filter history response.
 
         Args:
-            stationIds (array):    The station id's that we want history data for
+            station_ids (List[int]): The station IDs that we want history data for.
 
         Returns:
-            array
+            List: A list of packets.
         """
-        minTimestamp = None
-        if (len(stationIds) > 0) :
-            minTimestamp = self.state.getStationLatestTimestampOnMap(list(stationIds)[0])
-        if (minTimestamp is None) :
-            minTimestamp = self.state.getMapSectorTimestamp(None) # None as argument is useful even when not dealing with map-sectors
-        if (len(stationIds) > 1) :
-            for stationId in stationIds :
-                timestamp = self.state.getStationLatestTimestampOnMap(stationId)
-                if (timestamp is not None and timestamp > minTimestamp) :
-                    minTimestamp = timestamp
+        if not station_ids:
+            return []
 
-        if (self.state.latestTimeTravelRequest is not None) :
-            if (not self.state.isStationsOnMap(stationIds)) :
-                return self.packetRepository.getObjectListByStationIdListAndTimeInterval(stationIds, minTimestamp, self.state.latestTimeTravelRequest)
-        else :
-            return self.packetRepository.getObjectListByStationIdList(stationIds, minTimestamp)
+        min_timestamp = max(
+            (self.state.get_station_latest_timestamp_on_map(station_id) for station_id in station_ids),
+            default=self.state.get_map_sector_timestamp(None)
+        )
+
+        if self.state.latest_time_travel_request is not None:
+            if not self.state.is_stations_on_map(station_ids):
+                return self.packet_repository.get_object_list_by_station_id_list_and_time_interval(
+                    station_ids, min_timestamp, self.state.latest_time_travel_request
+                )
+        else:
+            return self.packet_repository.get_object_list_by_station_id_list(station_ids, min_timestamp)
+
+        return []

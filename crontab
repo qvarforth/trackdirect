@@ -1,0 +1,2 @@
+40 * * * * ~/trackdirect/server/scripts/remover.sh trackdirect.ini
+*/30 * * * * ~/trackdirect/server/scripts/ogn_devices_install.sh trackdirect db 5432

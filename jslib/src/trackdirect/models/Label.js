@@ -36,7 +36,7 @@ if (typeof google === "object" && typeof google.maps === "object") {
    */
   trackdirect.models.Label.prototype.onAdd = function () {
     if (this.div_ === null) {
-      var jqSpan = $(document.createElement("span"));
+      let jqSpan = $(document.createElement("span"));
       jqSpan.css("color", "#101010");
       jqSpan.css(
         "text-shadow",
@@ -52,19 +52,19 @@ if (typeof google === "object" && typeof google.maps === "object") {
       jqSpan.css("z-index", "1000");
       jqSpan.css("margin", "0");
       jqSpan.css("line-height", "10px");
-      var span = (this.span_ = jqSpan[0]);
+      let span = (this.span_ = jqSpan[0]);
       span.innerHTML = this.get("text").toString();
 
-      var div = (this.div_ = document.createElement("div"));
+      let div = (this.div_ = document.createElement("div"));
       div.appendChild(span);
       div.style.cssText = "position: absolute; display: none";
     }
 
-    var pane = this.getPanes().overlayLayer;
+    let pane = this.getPanes().overlayLayer;
     pane.appendChild(this.div_);
 
     // Ensures the label is redrawn if the text or position is changed.
-    var me = this;
+    let me = this;
     this.listeners_ = [
       google.maps.event.addListener(this, "position_changed", function () {
         me.draw();
@@ -83,7 +83,7 @@ if (typeof google === "object" && typeof google.maps === "object") {
       this.div_.parentNode.removeChild(this.div_);
 
       // Label is removed from the map, stop updating its position/text.
-      for (var i = 0, I = this.listeners_.length; i < I; ++i) {
+      for (let i = 0, I = this.listeners_.length; i < I; ++i) {
         google.maps.event.removeListener(this.listeners_[i]);
       }
     }
@@ -93,22 +93,23 @@ if (typeof google === "object" && typeof google.maps === "object") {
    * Draw the label
    */
   trackdirect.models.Label.prototype.draw = function () {
-    var projection = this.getProjection();
+    let projection = this.getProjection();
+    let latLng
     if (typeof this.get("position").lat === "function") {
-      var latLng = new google.maps.LatLng({
+      latLng = new google.maps.LatLng({
         lat: this.get("position").lat(),
         lng: this.get("position").lng(),
       });
     } else {
-      var latLng = new google.maps.LatLng({
+      latLng = new google.maps.LatLng({
         lat: this.get("position").lat,
         lng: this.get("position").lng,
       });
     }
-    var position = projection.fromLatLngToDivPixel(latLng);
+    let position = projection.fromLatLngToDivPixel(latLng);
 
-    var div = this.div_;
-    var span = this.span_;
+    let div = this.div_;
+    let span = this.span_;
     span.innerHTML = this.get("text").toString();
     div.style.left = position.x + "px";
     div.style.top = position.y + "px";
@@ -178,7 +179,7 @@ if (typeof google === "object" && typeof google.maps === "object") {
   trackdirect.models.Label = function (options, map) {
     this._defaultMap = map;
 
-    var position = null;
+    let position = null;
     if (
       typeof options.position !== "undefined" &&
       typeof options.position.lat !== "undefined" &&
@@ -216,9 +217,9 @@ if (typeof google === "object" && typeof google.maps === "object") {
    * @return {object}
    */
   trackdirect.models.Label.prototype._getBasicOptions = function (options) {
-    var strlen = options.text.length;
+    let strlen = options.text.length;
 
-    var myIcon = L.divIcon({
+    let myIcon = L.divIcon({
       iconSize: new L.Point(strlen * 10, 20),
       className: "leaflet-marker-labeltext",
       html: options.text,
@@ -233,7 +234,10 @@ if (typeof google === "object" && typeof google.maps === "object") {
   };
 } else {
   // If no Label is supported we use a dummy class
-  trackdirect.models.Label = function (options, map) {};
-  trackdirect.models.Label.prototype.show = function () {};
-  trackdirect.models.Label.prototype.hide = function () {};
+  trackdirect.models.Label = function (options, map) {
+  };
+  trackdirect.models.Label.prototype.show = function () {
+  };
+  trackdirect.models.Label.prototype.hide = function () {
+  };
 }

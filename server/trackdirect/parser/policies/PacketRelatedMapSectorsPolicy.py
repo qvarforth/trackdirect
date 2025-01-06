@@ -1,133 +1,108 @@
 import time
+from server.trackdirect.parser.policies.MapSectorPolicy import MapSectorPolicy
 
-from trackdirect.parser.policies.MapSectorPolicy import MapSectorPolicy
 
+class PacketRelatedMapSectorsPolicy:
+    """PacketRelatedMapSectorsPolicy handles logic related to map sectors for a packet."""
 
-class PacketRelatedMapSectorsPolicy():
-    """PacketRelatedMapSectorsPolicy handles logic related to map sectors for a packet
-    """
-
-    def __init__(self, packetRepository):
-        """The __init__ method.
+    def __init__(self, packet_repository):
+        """
+        Initialize the PacketRelatedMapSectorsPolicy class.
 
         Args:
-            packetRepository (PacketRepository):   PacketRepository instance
+            packet_repository (PacketRepository): PacketRepository instance.
         """
-        self.packetRepository = packetRepository
+        self.packet_repository = packet_repository
 
-    def getAllRelatedMapSectors(self, packet, previousPacket):
-        """Returns all related map sectors to current packet
+    def get_all_related_map_sectors(self, packet, previous_packet):
+        """
+        Returns all related map sectors to the current packet.
 
         Note:
             A related map sector is a map-sector that is not the map sector of the current packet nor the previous packet,
             it is all the map-sectors in between the current packet and the previous packet.
 
         Args:
-            packet (Packet):         Packet that we want analyze
-            previousPacket (Packet): Packet object that represents the previous packet for this station
+            packet (Packet): Packet that we want to analyze.
+            previous_packet (Packet): Packet object that represents the previous packet for this station.
 
         Returns:
-            Returns any related map sectors (as an array)
+            list: Any related map sectors (as an array).
         """
-        if (not self._mayPacketHaveRelatedMapSectors(packet, previousPacket)):
+        if not self._is_packet_likely_to_have_related_map_sectors(packet, previous_packet):
             return []
 
-        relatedMapSectors = []
-        if (previousPacket.mapId == 7):
-            # When previous packet is unconfirmed we need to add path between prev-prev-packet and prev-packet also
-            minTimestamp = int(time.time()) - 86400  # 24 hours
-            prevpreviousPacket = self.packetRepository.getLatestConfirmedMovingObjectByStationId(
-                previousPacket.stationId, minTimestamp)
-            if (prevpreviousPacket.isExistingObject() and prevpreviousPacket.markerCounter > 1):
-                # We found a confirmed prev prev packet
-                relatedMapSectors.extend(self._getRelatedMapSectors(
-                    previousPacket, prevpreviousPacket))
+        related_map_sectors = []
+        if previous_packet.map_id == 7:
+            # When the previous packet is unconfirmed, add the path between prev-prev-packet and prev-packet also.
+            min_timestamp = int(time.time()) - 86400  # 24 hours
+            prev_previous_packet = self.packet_repository.get_latest_confirmed_moving_object_by_station_id(
+                previous_packet.station_id, min_timestamp)
+            if prev_previous_packet.is_existing_object() and prev_previous_packet.marker_counter > 1:
+                # We found a confirmed prev-prev packet.
+                related_map_sectors.extend(self._get_related_map_sectors(
+                    previous_packet, prev_previous_packet))
 
-        relatedMapSectors.extend(
-            self._getRelatedMapSectors(packet, previousPacket))
-        return relatedMapSectors
+        related_map_sectors.extend(
+            self._get_related_map_sectors(packet, previous_packet))
+        return related_map_sectors
 
-    def _mayPacketHaveRelatedMapSectors(self, packet,  previousPacket):
-        """Returns true if packet may be related to other map sectors then the map sector it's in
+    def _is_packet_likely_to_have_related_map_sectors(self, packet, previous_packet):
+        """
+        Returns true if the packet may be related to other map sectors than the map sector it's in.
 
         Args:
-            packet (Packet):           Packet that we want analyze
-            previousPacket (Packet):   Packet objekt that represents the previous packet for this station
+            packet (Packet): Packet that we want to analyze.
+            previous_packet (Packet): Packet object that represents the previous packet for this station.
 
         Returns:
-            Returns true if packet may be related to other map sectors otherwise false
+            bool: True if the packet may be related to other map sectors, otherwise false.
         """
-        if (packet.isMoving == 1
-                and previousPacket.isMoving == 1
-                and packet.markerId != 1):
-            # We only add related map-sectors to moving stations (that has a marker)
-            if (packet.mapId == 1):
-                # If new packet is not confirmed (mapId 7) we connect it with related map-sectors later
-                if (previousPacket.markerCounter is not None and previousPacket.markerCounter > 1
-                        or packet.markerId == previousPacket.markerId):
-                    # We only add related map-sectors if previous packet has a marker with several connected packet
-                    # A packet with a marker that is not shared with anyone will be converted to a ghost-marker in client
-                    if (previousPacket.mapId == 1
-                            or packet.markerId == previousPacket.markerId):
-                        # If a previous packet has mapId = 7 (unconfirmed position),
-                        # and new packet has another marker,
-                        # then the previous marker is doomed to be a ghost-marker forever
+        if (packet.is_moving == 1 and previous_packet.is_moving == 1 and packet.marker_id != 1):
+            if packet.map_id == 1:
+                if (previous_packet.marker_counter is not None and previous_packet.marker_counter > 1
+                        or packet.marker_id == previous_packet.marker_id):
+                    if previous_packet.map_id == 1 or packet.marker_id == previous_packet.marker_id:
                         return True
         return False
 
-    def _getRelatedMapSectors(self, packet1, packet2):
-        """Get any related map sectors between specified packets
+    def _get_related_map_sectors(self, packet1, packet2):
+        """
+        Get any related map sectors between specified packets.
 
         Note:
             A related map sector is a map-sector that is not the map sector of the current packet nor the previous packet,
             it is all the map-sectors in between the current packet and the previous packet.
 
         Args:
-            packet1 (Packet):           Primary packet object
-            packet2 (Packet):   Prvious packet object
+            packet1 (Packet): Primary packet object.
+            packet2 (Packet): Previous packet object.
 
         Returns:
-            Returns any related map sectors (as an array)
+            list: Any related map sectors (as an array).
         """
-        relatedMapSectors = []
-        distance = calculatedDistance = packet1.getDistance(
-            packet2.latitude, packet2.longitude)
-        if (distance > 500000):
-            # if distance is longer than 500km, we consider this station to be world wide...
-            # but currently we do not use this information since it would affect performance to much
-            # but it is extremly few stations that actually is affected by this (about 0-2 stations)
-            relatedMapSectors.append(99999999)
+        related_map_sectors = []
+        distance = packet1.get_distance(packet2.latitude, packet2.longitude)
+        if distance > 500000:
+            # If the distance is longer than 500km, consider this station to be worldwide.
+            related_map_sectors.append(99999999)
         else:
-            minLat = packet2.latitude
-            maxLat = packet1.latitude
-            minLng = packet2.longitude
-            maxLng = packet1.longitude
+            min_lat, max_lat = sorted([packet1.latitude, packet2.latitude])
+            min_lng, max_lng = sorted([packet1.longitude, packet2.longitude])
 
-            if (maxLat < minLat):
-                minLat = packet1.latitude
-                maxLat = packet2.latitude
-            if (maxLng < minLng):
-                minLng = packet1.longitude
-                maxLng = packet2.longitude
-
-            mapSectorPolicy = MapSectorPolicy()
-            minLng = mapSectorPolicy.getMapSectorLngRepresentation(minLng)
-            minLat = mapSectorPolicy.getMapSectorLatRepresentation(minLat)
-            maxLng = mapSectorPolicy.getMapSectorLngRepresentation(
-                maxLng + 0.5)
-            maxLat = mapSectorPolicy.getMapSectorLatRepresentation(
-                maxLat + 0.2)
-            prevPacketAreaCode = mapSectorPolicy.getMapSector(
-                packet2.latitude, packet2.longitude)
-            newPacketAreaCode = mapSectorPolicy.getMapSector(
-                packet1.latitude, packet1.longitude)
+            map_sector_policy = MapSectorPolicy()
+            min_lng = map_sector_policy.get_map_sector_lng_representation(min_lng)
+            min_lat = map_sector_policy.get_map_sector_lat_representation(min_lat)
+            max_lng = map_sector_policy.get_map_sector_lng_representation(max_lng + 0.5)
+            max_lat = map_sector_policy.get_map_sector_lat_representation(max_lat + 0.2)
+            prev_packet_area_code = map_sector_policy.get_map_sector(packet2.latitude, packet2.longitude)
+            new_packet_area_code = map_sector_policy.get_map_sector(packet1.latitude, packet1.longitude)
 
             # lat interval: 0 - 18000000
             # lng interval: 0 - 00003600
-            # Maybe we can do this smarter? Currently we are adding many map-sectors that is not relevant
-            for lat in range(minLat, maxLat, 20000):
-                for lng in range(minLng, maxLng, 5):
-                    mapSectorAreaCode = lat+lng
-                    if (mapSectorAreaCode != prevPacketAreaCode and mapSectorAreaCode != newPacketAreaCode):
-                        relatedMapSectors.append(mapSectorAreaCode)
-        return relatedMapSectors
+            for lat in range(min_lat, max_lat, 20000):
+                for lng in range(min_lng, max_lng, 5):
+                    map_sector_area_code = lat + lng
+                    if map_sector_area_code not in {prev_packet_area_code, new_packet_area_code}:
+                        related_map_sectors.append(map_sector_area_code)
+        return related_map_sectors

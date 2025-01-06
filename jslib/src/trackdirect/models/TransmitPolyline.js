@@ -11,7 +11,22 @@ trackdirect.models.TransmitPolyline = function (packet, map) {
 
   // Call the parent constructor
   if (typeof google === "object" && typeof google.maps === "object") {
-    google.maps.Polyline.call(this, this._getGoolgePolylineOptions());
+    const googlePolyline = new google.maps.Polyline(
+      this._getGooglePolylineOptions()
+    );
+
+    for (const key of Object.keys(this)) {
+      googlePolyline[key] = this[key];
+    }
+    for (const key of Object.getOwnPropertyNames(
+      Object.getPrototypeOf(this)
+    )) {
+      if (key !== "constructor" && typeof this[key] === "function") {
+        googlePolyline[key] = this[key];
+      }
+    }
+
+    return googlePolyline;
   } else if (typeof L === "object") {
     L.Polyline.call(this, {}, this._getLeafletPolylineOptions());
     this.setLatLngs(this.getCoordinates());
@@ -34,10 +49,10 @@ trackdirect.models.TransmitPolyline.prototype.constructor =
  */
 trackdirect.models.TransmitPolyline.prototype.getPathItem = function (index) {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var path = google.maps.Polyline.prototype.getPath.call(this);
+    let path = google.maps.Polyline.prototype.getPath.call(this);
     return path.getAt(index);
   } else if (typeof L === "object") {
-    var list = this.getLatLngs();
+    let list = this.getLatLngs();
     if (typeof list[index] !== "undefined") {
       return list[index];
     } else {
@@ -52,7 +67,7 @@ trackdirect.models.TransmitPolyline.prototype.getPathItem = function (index) {
  */
 trackdirect.models.TransmitPolyline.prototype.pushPathItem = function (latLng) {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var path = google.maps.Polyline.prototype.getPath.call(this);
+    let path = google.maps.Polyline.prototype.getPath.call(this);
     path.push(latLng);
   } else if (typeof L === "object") {
     this.addLatLng(latLng);
@@ -66,10 +81,10 @@ trackdirect.models.TransmitPolyline.prototype.removePathItem = function (
   index
 ) {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var path = google.maps.Polyline.prototype.getPath.call(this);
+    let path = google.maps.Polyline.prototype.getPath.call(this);
     path.removeAt(index);
   } else if (typeof L === "object") {
-    var list = this.getLatLngs();
+    let list = this.getLatLngs();
     if (typeof list[index] !== "undefined") {
       list.splice(index, 1);
       this.setLatLngs(list);
@@ -82,10 +97,10 @@ trackdirect.models.TransmitPolyline.prototype.removePathItem = function (
  */
 trackdirect.models.TransmitPolyline.prototype.getPathLength = function (index) {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var path = google.maps.Polyline.prototype.getPath.call(this);
+    let path = google.maps.Polyline.prototype.getPath.call(this);
     return path.getLength();
   } else if (typeof L === "object") {
-    var list = this.getLatLngs();
+    let list = this.getLatLngs();
     return list.length;
   }
 };
@@ -108,7 +123,7 @@ trackdirect.models.TransmitPolyline.prototype.getPath = function () {
  */
 trackdirect.models.TransmitPolyline.prototype.getMap = function () {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var map = google.maps.Polyline.prototype.getMap.call(this);
+    let map = google.maps.Polyline.prototype.getMap.call(this);
     if (typeof map !== "undefined") {
       return map;
     }
@@ -134,12 +149,12 @@ trackdirect.models.TransmitPolyline.prototype.show = function () {
     }
   }
 
-  for (var i = 0; i < this._relatedMarkerIdKeys.length; i++) {
-    var relatedMarkerIdKey = this._relatedMarkerIdKeys[i];
+  for (let i = 0; i < this._relatedMarkerIdKeys.length; i++) {
+    let relatedMarkerIdKey = this._relatedMarkerIdKeys[i];
     if (
       this._defaultMap.markerCollection.isExistingMarker(relatedMarkerIdKey)
     ) {
-      var relatedMarker =
+      let relatedMarker =
         this._defaultMap.markerCollection.getMarker(relatedMarkerIdKey);
       relatedMarker.show();
       relatedMarker.showLabel();
@@ -164,13 +179,13 @@ trackdirect.models.TransmitPolyline.prototype.hide = function (
     }
   }
 
-  for (var i = 0; i < this._relatedMarkerIdKeys.length; i++) {
-    var relatedMarkerIdKey = this._relatedMarkerIdKeys[i];
+  for (let i = 0; i < this._relatedMarkerIdKeys.length; i++) {
+    let relatedMarkerIdKey = this._relatedMarkerIdKeys[i];
 
     if (
       this._defaultMap.markerCollection.isExistingMarker(relatedMarkerIdKey)
     ) {
-      var relatedMarker =
+      let relatedMarker =
         this._defaultMap.markerCollection.getMarker(relatedMarkerIdKey);
       if (relatedMarker !== null && relatedMarker.getMap() !== null) {
         relatedMarker.hide(delayInMilliSeconds, true);
@@ -200,14 +215,14 @@ trackdirect.models.TransmitPolyline.prototype.isVisible = function () {
  * Get a suitable google polyline options object
  * @return {object}
  */
-trackdirect.models.TransmitPolyline.prototype._getGoolgePolylineOptions =
+trackdirect.models.TransmitPolyline.prototype._getGooglePolylineOptions =
   function () {
-    var lineCoordinates = this.getCoordinates();
+    let lineCoordinates = this.getCoordinates();
     if (lineCoordinates.length <= 1) {
       lineCoordinates = [];
     }
 
-    var lineSymbol = {
+    let lineSymbol = {
       path: "M 0,-0.1 0,0",
       strokeOpacity: 0.7,
       scale: 3,
@@ -252,7 +267,7 @@ trackdirect.models.TransmitPolyline.prototype._getLeafletPolylineOptions =
 (trackdirect.models.TransmitPolyline.prototype.getCoordinates = function () {
   // First we try to find other position by looking at station markers on map
   // This is better if the receiving stations has moved
-  var lineCoordinates = this.getCoordinatesByStationMarkers();
+  let lineCoordinates = this.getCoordinatesByStationMarkers();
   if (lineCoordinates.length < this._packet.station_location_path.length + 1) {
     lineCoordinates = this.getCoordinatesByPositions();
   }
@@ -264,25 +279,25 @@ trackdirect.models.TransmitPolyline.prototype._getLeafletPolylineOptions =
    */
   (trackdirect.models.TransmitPolyline.prototype.getCoordinatesByStationMarkers =
     function () {
-      var lineCoordinates = [];
-      var startLatLng = this._packet.getLatLngLiteral();
+      let lineCoordinates = [];
+      let startLatLng = this._packet.getLatLngLiteral();
       lineCoordinates.push(startLatLng);
 
-      for (var i = 0; i < this._packet.station_id_path.length; i++) {
-        var stationId = this._packet.station_id_path[i];
-        var stationMarkerIdKey = null;
-        var stationMarker = null;
-        var stationDistance = null;
-        var stationLatLng = null;
+      for (let i = 0; i < this._packet.station_id_path.length; i++) {
+        let stationId = this._packet.station_id_path[i];
+        let stationMarkerIdKey = null;
+        let stationMarker = null;
+        let stationDistance = null;
+        let stationLatLng = null;
 
-        for (var pointMarkerIdKey in this._defaultMap.markerCollection.getStationMarkerIdKeys(
+        for (let pointMarkerIdKey in this._defaultMap.markerCollection.getStationMarkerIdKeys(
           stationId
         )) {
-          var pointMarker =
+          let pointMarker =
             this._defaultMap.markerCollection.getMarker(pointMarkerIdKey);
           if (pointMarker !== null) {
-            var pointLatLng = pointMarker.packet.getLatLngLiteral();
-            var distance = trackdirect.services.distanceCalculator.getDistance(
+            let pointLatLng = pointMarker.packet.getLatLngLiteral();
+            let distance = trackdirect.services.distanceCalculator.getDistance(
               startLatLng,
               pointLatLng
             );
@@ -309,8 +324,8 @@ trackdirect.models.TransmitPolyline.prototype._getLeafletPolylineOptions =
    */
   (trackdirect.models.TransmitPolyline.prototype.getCoordinatesByPositions =
     function () {
-      var lineCoordinates = [];
-      var startLatLng = this._packet.getLatLngLiteral();
+      let lineCoordinates = [];
+      let startLatLng = this._packet.getLatLngLiteral();
       lineCoordinates.push(startLatLng);
 
       if (
@@ -318,7 +333,7 @@ trackdirect.models.TransmitPolyline.prototype._getLeafletPolylineOptions =
         this._packet.station_location_path.length + 1
       ) {
         // If we do not have stations on map we use the lat/lng positions
-        for (var i = 0; i < this._packet.station_location_path.length; i++) {
+        for (let i = 0; i < this._packet.station_location_path.length; i++) {
           if (
             this._packet.station_location_path[i][0] !== null &&
             this._packet.station_location_path[i][1] !== null

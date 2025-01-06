@@ -1,16 +1,16 @@
-from trackdirect.exceptions.TrackDirectGenericError import TrackDirectGenericError
+from server.trackdirect.exceptions.TrackDirectGenericError import TrackDirectGenericError
 
 
 class TrackDirectMissingSenderError(TrackDirectGenericError):
     """Raised when unexpected format of a supported packet format is encountered
     """
 
-    def __init__(self, message, data={}):
+    def __init__(self, message, data=None):
         """The __init__ method.
 
         Args:
             message (str): Exception message
-            data (dict):   Packet data that caused parse error
+            data (dict, optional): Packet data that caused parse error. Defaults to None.
         """
-        super(TrackDirectMissingSenderError, self).__init__(message)
-        self.packet = data
+        super().__init__(message)
+        self.packet = data if data is not None else {}

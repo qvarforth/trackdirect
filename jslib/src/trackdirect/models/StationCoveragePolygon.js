@@ -47,7 +47,7 @@ trackdirect.models.StationCoveragePolygon.prototype.setData = function (data, pe
   this._heatmapCoordinates = this._getCoordinates(data);
 
   if (this._showPolygon) {
-    var maxRange = this._getCoveragePolygonMaxRange(data, percentile);
+    let maxRange = this._getCoveragePolygonMaxRange(data, percentile);
     if (maxRange <= 0) {
       this._showPolygon = false;
     } else {
@@ -200,9 +200,9 @@ trackdirect.models.StationCoveragePolygon.prototype._googleMapsInit =
       this._heatmapCoordinates !== null &&
       this._heatmapCoordinates.length > 0
     ) {
-      var data = [];
-      for (var i = 0; i < this._heatmapCoordinates.length; i++) {
-        data.push({ location: this._heatmapCoordinates[i], weight: 1 });
+      let data = [];
+      for (let i = 0; i < this._heatmapCoordinates.length; i++) {
+        data.push({location: this._heatmapCoordinates[i], weight: 1});
       }
 
       this._heatmap = new google.maps.visualization.HeatmapLayer({
@@ -251,8 +251,8 @@ trackdirect.models.StationCoveragePolygon.prototype._leafletInit = function () {
     this._heatmapCoordinates !== null &&
     this._heatmapCoordinates.length > 0
   ) {
-    var data = [];
-    for (var i = 0; i < this._heatmapCoordinates.length; i++) {
+    let data = [];
+    for (let i = 0; i < this._heatmapCoordinates.length; i++) {
       data.push([
         this._heatmapCoordinates[i].lat,
         this._heatmapCoordinates[i].lng,
@@ -275,38 +275,38 @@ trackdirect.models.StationCoveragePolygon.prototype._leafletInit = function () {
  */
 trackdirect.models.StationCoveragePolygon.prototype._getConvexHullCoordinates =
   function (data, maxRange) {
-    var positions = this._getFilteredPositions(data, maxRange);
+    let positions = this._getFilteredPositions(data, maxRange);
     positions.push(this._center);
 
-    var xyPositions = this._convertToXYPos(positions);
-    var convexHullXYPositions = convexhull.makeHull(xyPositions);
+    let xyPositions = this._convertToXYPos(positions);
+    let convexHullXYPositions = convexhull.makeHull(xyPositions);
 
     // Calc padding
-    var latLngPadding =
+    let latLngPadding =
       this._paddingInPercentOfMaxRange * 0.01 * maxRange * 0.000009;
-    var latLngPaddingMin = this._paddingMinInMeters * 0.000009;
+    let latLngPaddingMin = this._paddingMinInMeters * 0.000009;
     if (isNaN(latLngPadding) || latLngPadding < latLngPaddingMin) {
       latLngPadding = latLngPaddingMin;
     }
 
     // Add padding
-    var xyPositionsWithPadding = [];
-    for (var i = 0; i < convexHullXYPositions.length; i++) {
+    let xyPositionsWithPadding = [];
+    for (let i = 0; i < convexHullXYPositions.length; i++) {
       xyPositionsWithPadding.push(convexHullXYPositions[i]);
 
-      for (var angle = 0; angle < 360; angle += 10) {
-        var x =
+      for (let angle = 0; angle < 360; angle += 10) {
+        let x =
           convexHullXYPositions[i]["x"] +
           latLngPadding * Math.cos((angle * Math.PI) / 180);
-        var y =
+        let y =
           convexHullXYPositions[i]["y"] +
           latLngPadding * Math.sin((angle * Math.PI) / 180) * 2;
         if (!isNaN(x) && !isNaN(y)) {
-          xyPositionsWithPadding.push({ x: x, y: y });
+          xyPositionsWithPadding.push({x: x, y: y});
         }
       }
     }
-    var convexHullXYPositionsWithPadding = convexhull.makeHull(
+    let convexHullXYPositionsWithPadding = convexhull.makeHull(
       xyPositionsWithPadding
     );
 
@@ -322,9 +322,9 @@ trackdirect.models.StationCoveragePolygon.prototype._getConvexHullCoordinates =
  */
 trackdirect.models.StationCoveragePolygon.prototype._getFilteredPositions =
   function (data, maxRange) {
-    var result = [];
+    let result = [];
 
-    for (var i = 0; i < data.length; i++) {
+    for (let i = 0; i < data.length; i++) {
       if (typeof maxRange !== "undefined" && data[i].distance > maxRange) {
         continue;
       }
@@ -343,7 +343,7 @@ trackdirect.models.StationCoveragePolygon.prototype._getFilteredPositions =
  */
 trackdirect.models.StationCoveragePolygon.prototype._getCoveragePolygonMaxRange =
   function (data, percentile) {
-    var maxRange = this._getDistancePercentile(
+    let maxRange = this._getDistancePercentile(
       data,
       percentile,
       this._upperMaxRangeInMeters
@@ -364,8 +364,8 @@ trackdirect.models.StationCoveragePolygon.prototype._getCoveragePolygonMaxRange 
  */
 trackdirect.models.StationCoveragePolygon.prototype._getDistancePercentile =
   function (data, percentile, upperMaxRange) {
-    var values = [];
-    for (var i = 0; i < data.length; i++) {
+    let values = [];
+    for (let i = 0; i < data.length; i++) {
       if (data[i].distance + 0 < upperMaxRange) {
         values.push(data[i].distance);
       }
@@ -375,8 +375,8 @@ trackdirect.models.StationCoveragePolygon.prototype._getDistancePercentile =
       return a - b;
     });
 
-    var index = (percentile / 100) * values.length;
-    var result;
+    let index = (percentile / 100) * values.length;
+    let result;
     if (Math.floor(index) == index) {
       result = (values[index - 1] + values[index]) / 2;
     } else {
@@ -394,8 +394,8 @@ trackdirect.models.StationCoveragePolygon.prototype._getDistancePercentile =
  */
 trackdirect.models.StationCoveragePolygon.prototype._getNumberOfValues =
   function (data, maxRange) {
-    var counter = 0;
-    for (var i = 0; i < data.length; i++) {
+    let counter = 0;
+    for (let i = 0; i < data.length; i++) {
       if (data[i].distance > maxRange) {
         continue;
       }
@@ -414,9 +414,9 @@ trackdirect.models.StationCoveragePolygon.prototype._getNumberOfValues =
 trackdirect.models.StationCoveragePolygon.prototype._convertToXYPos = function (
   positions
 ) {
-  var result = [];
-  for (var i = 0; i < positions.length; i++) {
-    result.push({ x: positions[i].lat, y: positions[i].lng });
+  let result = [];
+  for (let i = 0; i < positions.length; i++) {
+    result.push({x: positions[i].lat, y: positions[i].lng});
   }
   return result;
 };
@@ -428,9 +428,9 @@ trackdirect.models.StationCoveragePolygon.prototype._convertToXYPos = function (
  */
 trackdirect.models.StationCoveragePolygon.prototype._convertToLatLngPos =
   function (positions) {
-    var result = [];
-    for (var i = 0; i < positions.length; i++) {
-      result.push({ lat: positions[i].x, lng: positions[i].y });
+    let result = [];
+    for (let i = 0; i < positions.length; i++) {
+      result.push({lat: positions[i].x, lng: positions[i].y});
     }
     return result;
   };
@@ -443,16 +443,17 @@ trackdirect.models.StationCoveragePolygon.prototype._convertToLatLngPos =
 trackdirect.models.StationCoveragePolygon.prototype._getCoordinates = function (
   data
 ) {
-  var result = [];
+  let result = [];
 
-  for (var j = 0; j < data.length; j++) {
+  for (let j = 0; j < data.length; j++) {
+    let position;
     if (typeof google === "object" && typeof google.maps === "object") {
-      var position = new google.maps.LatLng(
+      position = new google.maps.LatLng(
         parseFloat(data[j]["latitude"]),
         parseFloat(data[j]["longitude"])
       );
     } else {
-      var position = {
+      position = {
         lat: parseFloat(data[j]["latitude"]),
         lng: parseFloat(data[j]["longitude"]),
       };
@@ -469,8 +470,8 @@ trackdirect.models.StationCoveragePolygon.prototype._getCoordinates = function (
  */
 trackdirect.models.StationCoveragePolygon.prototype._addParametersToData =
   function (data) {
-    for (var j = 0; j < data.length; j++) {
-      var latLngLiteral = {
+    for (let j = 0; j < data.length; j++) {
+      let latLngLiteral = {
         lat: parseFloat(data[j].latitude),
         lng: parseFloat(data[j].longitude),
       };
@@ -490,15 +491,15 @@ trackdirect.models.StationCoveragePolygon.prototype._addParametersToData =
 trackdirect.models.StationCoveragePolygon.prototype._emitTdEventListeners =
   function (event, arg) {
     if (event in this._tdEventListeners) {
-      for (var i = 0; i < this._tdEventListeners[event].length; i++) {
+      for (let i = 0; i < this._tdEventListeners[event].length; i++) {
         this._tdEventListeners[event][i](arg);
       }
     }
 
     if (event in this._tdEventListenersOnce) {
-      var eventListenersOnce = this._tdEventListenersOnce[event].splice(0);
+      let eventListenersOnce = this._tdEventListenersOnce[event].splice(0);
       this._tdEventListenersOnce[event] = [];
-      for (var i = 0; i < eventListenersOnce.length; i++) {
+      for (let i = 0; i < eventListenersOnce.length; i++) {
         eventListenersOnce[i](arg);
       }
     }

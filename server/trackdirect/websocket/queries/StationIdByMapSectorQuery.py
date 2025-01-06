@@ -1,77 +1,71 @@
 import datetime, time, calendar
-from trackdirect.database.DatabaseObjectFinder import DatabaseObjectFinder
+from server.trackdirect.database.DatabaseObjectFinder import DatabaseObjectFinder
 
 
-class StationIdByMapSectorQuery() :
-    """A query class used to find station ids in a map sector
-    """
+class StationIdByMapSectorQuery:
+    """A query class used to find station ids in a map sector."""
 
-    def __init__(self, db) :
+    def __init__(self, db):
         """The __init__ method.
 
         Args:
             db (psycopg2.Connection): Database connection
         """
         self.db = db
-        self.dbObjectFinder = DatabaseObjectFinder(db)
+        self.db_object_finder = DatabaseObjectFinder(db)
 
-    def getStationIdListByMapSector(self, mapSector, startPacketTimestamp, endPacketTimestamp) :
-        """Returns a list station ids  based on the specified map sector and time interval
+    def get_station_id_list_by_map_sector(self, map_sector, start_packet_timestamp, end_packet_timestamp):
+        """Returns a list of station ids based on the specified map sector and time interval.
 
         Args:
-            mapSector (int):                    Map sector integer
-            startPacketTimestamp (int):         Min unix timestamp
-            endPacketTimestamp (int):           Max unix timestamp
+            map_sector (int): Map sector integer
+            start_packet_timestamp (int): Min unix timestamp
+            end_packet_timestamp (int): Max unix timestamp
 
         Returns:
-            array
+            list: List of station ids
         """
         result = {}
-        selectCursor = self.db.cursor()
 
-        # Create list of packet tables to look in
-        # After testing I have realized that this query is faster if you query one child table at the time
+        if end_packet_timestamp is None:
+            end_packet_timestamp = int(time.time())
+        end_date_time = datetime.datetime.utcfromtimestamp(int(end_packet_timestamp))
+        end_date_time = end_date_time.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
+        end_timestamp = calendar.timegm(end_date_time.timetuple())
 
-        if (endPacketTimestamp is None):
-            endPacketTimestamp = int(time.time())
-        endDateTime = datetime.datetime.utcfromtimestamp(int(endPacketTimestamp))
-        endDateTime = endDateTime.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
-        endTimestamp = calendar.timegm(endDateTime.timetuple())
-
-        packetTables = []
-        ts = startPacketTimestamp
-        while (ts < endTimestamp) :
-            date = datetime.datetime.utcfromtimestamp(int(ts)).strftime('%Y%m%d')
-            datePacketTable = 'packet' + date
-            if (self.dbObjectFinder.checkTableExists(datePacketTable)) :
-                packetTables.append(datePacketTable)
-            ts = ts + 86400 # 1 day in seconds
+        packet_tables = [
+            f'packet{datetime.datetime.utcfromtimestamp(ts).strftime("%Y%m%d")}'
+            for ts in range(start_packet_timestamp, end_timestamp, 86400)
+            if self.db_object_finder.check_table_exists(f'packet{datetime.datetime.utcfromtimestamp(ts).strftime("%Y%m%d")}')
+        ]
 
         # Go through packet tables and search for stations
-        for packetTable in reversed(packetTables) :
-            sql1 = selectCursor.mogrify("""select distinct station_id id
-                from """ + packetTable + """
-                where map_sector = %s
-                    and timestamp > %s
-                    and timestamp <= %s
-                    and map_id in (1,5,7,9)""", (mapSector, startPacketTimestamp, endPacketTimestamp))
+        with self.db.cursor() as select_cursor:
+            for packet_table in reversed(packet_tables):
+                sql1 = f"""
+                    SELECT DISTINCT station_id AS id
+                    FROM {packet_table}
+                    WHERE map_sector = %s
+                        AND timestamp > %s
+                        AND timestamp <= %s
+                        AND map_id IN (1, 5, 7, 9)
+                """.format(packet_table)
+                select_cursor.execute(sql1, (map_sector, start_packet_timestamp, end_packet_timestamp))
+                for record in select_cursor:
+                    if record is not None:
+                        result[int(record["id"])] = True
 
-            selectCursor.execute(sql1)
-            for record in selectCursor :
-                if (record is not None) :
-                    result[int(record["id"])] = True
+                sql2 = f"""
+                    SELECT DISTINCT station_id AS id
+                    FROM {packet_table}
+                    WHERE map_sector = %s
+                        AND position_timestamp <= %s
+                        AND timestamp > %s
+                        AND map_id IN (12)
+                """.format(packet_table)
+                select_cursor.execute(sql2, (map_sector, end_packet_timestamp, start_packet_timestamp))
+                for record in select_cursor:
+                    if record is not None:
+                        result[int(record["id"])] = True
 
-            sql2 = selectCursor.mogrify("""select distinct station_id id
-                from """ + packetTable + """
-                where map_sector = %s
-                    and position_timestamp <= %s
-                    and timestamp > %s
-                    and map_id in (12)""", (mapSector, endPacketTimestamp, startPacketTimestamp))
-
-            selectCursor.execute(sql2)
-            for record in selectCursor :
-                if (record is not None) :
-                    result[int(record["id"])] = True
-
-        selectCursor.close()
         return list(result.keys())

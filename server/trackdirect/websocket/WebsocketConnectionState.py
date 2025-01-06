@@ -1,369 +1,218 @@
 import time
-import trackdirect
 from math import ceil
-from trackdirect.parser.policies.MapSectorPolicy import MapSectorPolicy
 
-class WebsocketConnectionState():
-    """An WebsocketConnectionState instance contains information about the current state of a websocket connection
-    """
+from server.trackdirect.TrackDirectConfig import TrackDirectConfig
+from server.trackdirect.parser.policies.MapSectorPolicy import MapSectorPolicy
 
-    def __init__(self) :
-        """The __init__ method.
-        """
-        self.totalReset()
-        self.latestRequestType = None
-        self.latestRequestTimestamp = 0
-        self.latestRequestId = 0
-        self.latestHandledRequestId = 0
-        self.config = trackdirect.TrackDirectConfig()
-        self.noRealTime = False
+class WebsocketConnectionState:
+    """An instance contains information about the current state of a websocket connection."""
+
+    def __init__(self):
+        """Initialize the WebsocketConnectionState."""
+        self.filter_station_id_dict = {}
+        self.latest_sw_lng = 0
+        self.latest_sw_lat = 0
+        self.latest_ne_lng = 0
+        self.latest_ne_lat = 0
+        self.only_latest_packet_requested = None
+        self.latest_time_travel_request = None
+        self.latest_minutes_request = 60
+        self.max_map_sector_overwrite_packet_timestamp_dict = {}
+        self.max_map_sector_packet_timestamp_dict = {}
+        self.max_all_station_timestamp_dict = {}
+        self.max_complete_station_timestamp_dict = {}
+        self.stations_on_map_dict = {}
+        self.latest_request_type = None
+        self.latest_request_timestamp = 0
+        self.latest_requestId = 0
+        self.latest_handled_request_id = 0
+        self.config = TrackDirectConfig()
+        self.no_real_time = False
         self.disconnected = False
 
+    def is_reset(self):
+        """Returns True if state just has been reset."""
+        return not (self.stations_on_map_dict or
+                    self.max_complete_station_timestamp_dict or
+                    self.max_all_station_timestamp_dict or
+                    self.max_map_sector_packet_timestamp_dict or
+                    self.max_map_sector_overwrite_packet_timestamp_dict)
 
-    def isReset(self) :
-        """Returns true if state just has been reset
+    def reset(self):
+        """Reset information related to what stations have been added to the map."""
+        self.stations_on_map_dict = {}
+        self.max_complete_station_timestamp_dict = {}
+        self.max_all_station_timestamp_dict = {}
+        self.max_map_sector_packet_timestamp_dict = {}
+        self.max_map_sector_overwrite_packet_timestamp_dict = {}
 
-        Returns:
-            Boolean
-        """
-        return (not self.stationsOnMapDict
-            and not self.maxCompleteStationTimestampDict
-            and not self.maxAllStationTimestampDict
-            and not self.maxMapSectorPacketTimestampDict
-            and not self.maxMapSectorOverwritePacketTimestampDict)
-
-
-    def reset(self) :
-        """This function will reset information related to what stations that has been added to map
-        (this is for example used when the number of minutes is changed by the client)
-        """
-        self.stationsOnMapDict = {}
-        self.maxCompleteStationTimestampDict = {}
-        self.maxAllStationTimestampDict = {}
-        self.maxMapSectorPacketTimestampDict = {}
-        self.maxMapSectorOverwritePacketTimestampDict = {}
-
-
-    def totalReset(self) :
-        """This function will reset everything
-        (this is for example used when client seems to be inactive and we just want to stop everything)
-        """
+    def total_reset(self):
+        """Reset everything."""
         self.reset()
-        self.latestMinutesRequest = 60
-        self.latestTimeTravelRequest = None
-        self.onlyLatestPacketRequested = None
-        self.latestNeLat = 0
-        self.latestNeLng = 0
-        self.latestSwLat = 0
-        self.latestSwLng = 0
-        self.filterStationIdDict = {}
+        self.latest_minutes_request = 60
+        self.latest_time_travel_request = None
+        self.only_latest_packet_requested = None
+        self.latest_ne_lat = 0
+        self.latest_ne_lng = 0
+        self.latest_sw_lat = 0
+        self.latest_sw_lng = 0
+        self.filter_station_id_dict = {}
 
+    def is_map_empty(self):
+        """Returns True if map is empty."""
+        return not (self.max_map_sector_packet_timestamp_dict or
+                    self.max_map_sector_overwrite_packet_timestamp_dict or
+                    self.max_complete_station_timestamp_dict or
+                    self.max_all_station_timestamp_dict)
 
-    def isMapEmpty(self) :
-        """Returns true if map is empty
+    def is_stations_on_map(self, station_ids):
+        """Returns True if all specified stations already exist on the map."""
+        return all(stationId in self.stations_on_map_dict for stationId in station_ids)
 
-        Returns:
-            Boolean
-        """
-        if (not self.maxMapSectorPacketTimestampDict
-                and not self.maxMapSectorOverwritePacketTimestampDict
-                and not self.maxCompleteStationTimestampDict
-                and not self.maxAllStationTimestampDict) :
-            return True
-        else :
-            return False
+    def is_station_history_on_map(self, station_id):
+        """Returns True if specified station already has its history on the map."""
+        return station_id in self.max_complete_station_timestamp_dict
 
+    def get_station_latest_timestamp_on_map(self, station_id, only_include_complete=True):
+        """Returns the timestamp of the latest sent packet to client."""
+        if not only_include_complete and station_id in self.max_all_station_timestamp_dict:
+            return self.max_all_station_timestamp_dict[station_id]
+        return self.max_complete_station_timestamp_dict.get(station_id)
 
-    def isStationsOnMap(self, stationIds) :
-        """Returns true if all specified stations allready exists on map
+    def is_valid_latest_position(self):
+        """Returns True if latest requested map bounds are valid."""
+        return not (self.latest_ne_lat == 0 and self.latest_ne_lng == 0 and
+                    self.latest_sw_lat == 0 and self.latest_sw_lng == 0)
 
-        Args:
-            stationIds (int):    The station id's that we are interested in
+    def is_map_sector_known(self, map_sector):
+        """Returns True if we have added any stations with complete history to this map sector."""
+        return map_sector in self.max_map_sector_packet_timestamp_dict
 
-        Returns:
-            boolean
-        """
-        for stationId in stationIds :
-            if (stationId not in self.stationsOnMapDict) :
-                return False
-        return True
+    def get_map_sector_timestamp(self, map_sector):
+        """Returns the latest handled timestamp in specified map sector."""
+        if map_sector in self.max_map_sector_packet_timestamp_dict:
+            return self.max_map_sector_packet_timestamp_dict[map_sector]
+        if self.only_latest_packet_requested and map_sector in self.max_map_sector_overwrite_packet_timestamp_dict:
+            return self.max_map_sector_overwrite_packet_timestamp_dict[map_sector]
+        if self.latest_time_travel_request is not None:
+            return int(self.latest_time_travel_request) - (int(self.latest_minutes_request) * 60)
+        return int(time.time()) - (int(self.latest_minutes_request) * 60)
 
-
-    def isStationHistoryOnMap(self, stationId) :
-        """Returns true if specified station allready has it's history on map
-
-        Args:
-            stationId (int):    The station id that we are interested in
-
-        Returns:
-            boolean
-        """
-        if (stationId not in self.maxCompleteStationTimestampDict) :
-            return False
-        else :
-            return True
-
-
-    def getStationLatestTimestampOnMap(self, stationId, onlyIncludeComplete = True) :
-        """Returns the timestamp of the latest sent packet to client
-
-        Args:
-            stationId (int):             The station id that we are interested in
-            onlyIncludeComplete (bool):  When true we only return timestamp data for complete stations
-
-        Returns:
-            boolean
-        """
-        if (not onlyIncludeComplete and stationId in self.maxAllStationTimestampDict) :
-            return self.maxAllStationTimestampDict[stationId]
-        elif (stationId in self.maxCompleteStationTimestampDict) :
-            return self.maxCompleteStationTimestampDict[stationId]
-        else :
-            return None
-
-
-    def isValidLatestPosition(self) :
-        """Returns true if latest requested map bounds is valid
-
-        Note:
-            If we received 0,0,0,0 as map bounds we should not send anything,
-            not even in filtering mode (filtering mode should send 90,180,-90,-180 when it wants data)
-
-        Returns:
-            Boolean
-        """
-        if (self.latestNeLat == 0
-                and self.latestNeLng == 0
-                and self.latestSwLat == 0
-                and self.latestSwLng == 0) :
-            return False
-        else :
-            return True
-
-
-    def isMapSectorKnown(self, mapSector):
-        """Returns True if we have added any stations with complete history to this map sector
-
-        Args:
-            mapSector (int):  The map sector that we are interested in
-
-        Returns:
-            Boolean
-        """
-        if (mapSector in self.maxMapSectorPacketTimestampDict) :
-            return True
-        else :
-            return False
-
-
-    def getMapSectorTimestamp(self, mapSector) :
-        """Returns the latest handled timestamp in specified map sector (as a Unix timestamp as an integer)
-
-        Args:
-            mapSector (int):  The map sector that we are interested in
-
-        Returns:
-            int
-        """
-        if (mapSector in self.maxMapSectorPacketTimestampDict) :
-            return self.maxMapSectorPacketTimestampDict[mapSector];
-        elif (self.onlyLatestPacketRequested and mapSector in self.maxMapSectorOverwritePacketTimestampDict) :
-            return self.maxMapSectorOverwritePacketTimestampDict[mapSector]
-        elif (self.latestTimeTravelRequest is not None) :
-            return int(self.latestTimeTravelRequest) - (int(self.latestMinutesRequest)*60)
-        else :
-            return int(time.time()) - (int(self.latestMinutesRequest)*60)
-
-
-    def getVisibleMapSectors(self) :
-        """Get the map sectors currently visible
-
-        Returns:
-            Array of map sectors (array of integers)
-        """
-        maxLat = self.latestNeLat
-        maxLng = self.latestNeLng
-        minLat = self.latestSwLat
-        minLng = self.latestSwLng
+    def get_visible_map_sectors(self):
+        """Get the map sectors currently visible."""
+        max_lat = self.latest_ne_lat
+        max_lng = self.latest_ne_lng
+        min_lat = self.latest_sw_lat
+        min_lng = self.latest_sw_lng
 
         result = []
-        if (maxLng < minLng) :
-            result.extend(self.getMapSectorsByInterval(minLat, maxLat, minLng, 180.0));
-            minLng = -180.0;
+        if max_lng < min_lng:
+            result.extend(self.get_map_sectors_by_interval(min_lat, max_lat, min_lng, 180.0))
+            min_lng = -180.0
 
-        result.extend(self.getMapSectorsByInterval(minLat, maxLat, minLng, maxLng))
-
-        # Add the world wide area code
-        # This seems to result in very bad performance....
-        #result.append(99999999)
-
+        result.extend(self.get_map_sectors_by_interval(min_lat, max_lat, min_lng, max_lng))
         return result[::-1]
 
-
-    def getMapSectorsByInterval(self, minLat, maxLat, minLng, maxLng) :
-        """Get the map sectors for specified interval
-
-        Returns:
-            Array of map sectors (array of integers)
-        """
+    def get_map_sectors_by_interval(self, min_lat, max_lat, min_lng, max_lng):
+        """Get the map sectors for specified interval."""
         result = []
-        mapSectorPolicy = MapSectorPolicy()
-        minAreaCode = mapSectorPolicy.getMapSector(minLat,minLng)
-        maxAreaCode = mapSectorPolicy.getMapSector(maxLat,maxLng)
-        if (minAreaCode is not None and maxAreaCode is not None) :
-            lngDiff = int(ceil(maxLng)) - int(ceil(minLng))
-            areaCode = minAreaCode
-            while (areaCode <= maxAreaCode) :
-                if (areaCode % 10 == 5) :
-                    result.append(areaCode)
-                else :
-                    result.append(areaCode)
-                    result.append(areaCode + 5)
+        map_sector_policy = MapSectorPolicy()
+        min_area_code = map_sector_policy.get_map_sector(min_lat, min_lng)
+        max_area_code = map_sector_policy.get_map_sector(max_lat, max_lng)
+        if min_area_code is not None and max_area_code is not None:
+            lng_diff = int(ceil(max_lng)) - int(ceil(min_lng))
+            area_code = min_area_code
+            while area_code <= max_area_code:
+                if area_code % 10 == 5:
+                    result.append(area_code)
+                else:
+                    result.append(area_code)
+                    result.append(area_code + 5)
 
-                for i in range(1, lngDiff+1) :
-                    if (areaCode % 10 == 5) :
-                        result.append(areaCode + (10*i) - 5)
-                        result.append(areaCode + (10*i))
-                    else :
-                        result.append(areaCode + (10*i))
-                        result.append(areaCode + (10*i) + 5)
+                for i in range(1, lng_diff + 1):
+                    if area_code % 10 == 5:
+                        result.append(area_code + (10 * i) - 5)
+                        result.append(area_code + (10 * i))
+                    else:
+                        result.append(area_code + (10 * i))
+                        result.append(area_code + (10 * i) + 5)
 
-                # Lat takes 0.2 jumps
-                areaCode = areaCode + 20000
+                area_code += 20000
 
         return result
 
-
-    def setLatestMinutes(self, minutes, referenceTime) :
-        """Set the latest requested number of minutes, returnes true if something has changed
-
-        Args:
-            minutes (int):           latest requested number of minutes
-            referenceTime (int):     latest requested reference time
-
-        Returns:
-            Boolean
-        """
-        if (minutes is None) :
+    def set_latest_minutes(self, minutes, reference_time):
+        """Set the latest requested number of minutes, returns True if something has changed."""
+        if minutes is None:
             minutes = 60
-        elif (len(self.filterStationIdDict) == 0
-                and int(minutes) > int(self.config.maxDefaultTime)) :
-            # max 24h
-            minutes = int(self.config.maxDefaultTime)
-        elif (len(self.filterStationIdDict) > 0
-                and int(minutes) > int(self.config.maxFilterTime)) :
-            # max 10 days
-            minutes = int(self.config.maxFilterTime)
+        elif len(self.filter_station_id_dict) == 0 and int(minutes) > int(self.config.max_default_time):
+            minutes = int(self.config.max_default_time)
+        elif len(self.filter_station_id_dict) > 0 and int(minutes) > int(self.config.max_filter_time):
+            minutes = int(self.config.max_filter_time)
 
-        if (not self.config.allowTimeTravel
-                and int(minutes) > int(1440)) :
-            # max 24h
+        if not self.config.allow_time_travel and int(minutes) > 1440:
             minutes = 1440
 
-        if referenceTime is not None and referenceTime < 0 :
-            referenceTime = 0
+        if reference_time is not None and reference_time < 0:
+            reference_time = 0
 
         changed = False
-        if (self.config.allowTimeTravel) :
-            if ((self.latestTimeTravelRequest is not None
-                        and referenceTime is not None
-                        and self.latestTimeTravelRequest != referenceTime)
-                    or (self.latestTimeTravelRequest is not None
-                        and referenceTime is None)
-                    or (self.latestTimeTravelRequest is None
-                        and referenceTime is not None)) :
-                self.latestTimeTravelRequest = referenceTime
+        if self.config.allow_time_travel:
+            if ((self.latest_time_travel_request is not None and reference_time is not None and
+                 self.latest_time_travel_request != reference_time) or
+                (self.latest_time_travel_request is not None and reference_time is None) or
+                (self.latest_time_travel_request is None and reference_time is not None)):
+                self.latest_time_travel_request = reference_time
                 self.reset()
                 changed = True
 
-        if (self.latestMinutesRequest is None
-                or self.latestMinutesRequest != minutes) :
-            self.latestMinutesRequest = minutes
+        if self.latest_minutes_request is None or self.latest_minutes_request != minutes:
+            self.latest_minutes_request = minutes
             self.reset()
             changed = True
         return changed
 
+    def set_only_latest_packet_requested(self, only_latest_packet_requested):
+        """Set if only latest packets are requested or not."""
+        self.only_latest_packet_requested = only_latest_packet_requested
 
-    def setOnlyLatestPacketRequested(self, onlyLatestPacketRequested) :
-        """Set if only latest packets is requested or not
+    def set_latest_map_bounds(self, ne_lat, ne_lng, sw_lat, sw_lng):
+        """Set map bounds requested by client."""
+        if ne_lat is None or ne_lng is None or sw_lat is None or sw_lng is None:
+            self.latest_ne_lat = 0
+            self.latest_ne_lng = 0
+            self.latest_sw_lat = 0
+            self.latest_sw_lng = 0
+        else:
+            self.latest_ne_lat = ne_lat
+            self.latest_ne_lng = ne_lng
+            self.latest_sw_lat = sw_lat
+            self.latest_sw_lng = sw_lng
 
-        Args:
-            onlyLatestPacketRequested (Boolean):  Boolean that sys if
+    def set_map_sector_latest_overwrite_time_stamp(self, map_sector, timestamp):
+        """Set a new latest handled timestamp for a map sector (overwritable type of packets)."""
+        if (map_sector not in self.max_map_sector_overwrite_packet_timestamp_dict or
+                self.max_map_sector_overwrite_packet_timestamp_dict[map_sector] < timestamp):
+            self.max_map_sector_overwrite_packet_timestamp_dict[map_sector] = timestamp
 
-        """
-        self.onlyLatestPacketRequested = onlyLatestPacketRequested
+    def set_map_sector_latest_time_stamp(self, map_sector, timestamp):
+        """Set a new latest handled timestamp for a map sector."""
+        if (map_sector not in self.max_map_sector_packet_timestamp_dict or
+                self.max_map_sector_packet_timestamp_dict[map_sector] < timestamp):
+            self.max_map_sector_packet_timestamp_dict[map_sector] = timestamp - 1
 
+    def set_complete_station_latest_timestamp(self, station_id, timestamp):
+        """Set a new latest handled timestamp for a complete station."""
+        if (station_id not in self.max_complete_station_timestamp_dict or
+                self.max_complete_station_timestamp_dict[station_id] < timestamp):
+            self.max_complete_station_timestamp_dict[station_id] = timestamp
 
-    def setLatestMapBounds(self, neLat, neLng, swLat, swLng) :
-        """Set map bounds requested by client
+    def set_station_latest_timestamp(self, station_id, timestamp):
+        """Set a new latest handled timestamp for a station."""
+        if (station_id not in self.max_all_station_timestamp_dict or
+                self.max_all_station_timestamp_dict[station_id] < timestamp):
+            self.max_all_station_timestamp_dict[station_id] = timestamp
 
-        Args:
-            neLat (float): Requested north east latitude
-            neLng (float): Requested north east longitude
-            swLat (float): Requested south west latitude
-            swLng (float): Requested south west longitude
-        """
-        if (neLat is None or neLng is None or swLat is None or swLng is None) :
-            self.latestNeLat = 0
-            self.latestNeLng = 0
-            self.latestSwLat = 0
-            self.latestSwLng = 0
-        else :
-            self.latestNeLat = neLat
-            self.latestNeLng = neLng
-            self.latestSwLat = swLat
-            self.latestSwLng = swLng
-
-
-    def setMapSectorLatestOverwriteTimeStamp(self, mapSector, timestamp) :
-        """Set a new latest handled timestamp for a map sector (in this case the overwritable type of packets)
-
-        Args:
-            mapSector (int):  The map sector that we should add a new timestamp to
-            timestamp (int):  The unix timestamp that should be added
-        """
-        if (mapSector not in self.maxMapSectorOverwritePacketTimestampDict or self.maxMapSectorOverwritePacketTimestampDict[mapSector] < timestamp) :
-            self.maxMapSectorOverwritePacketTimestampDict[mapSector] = timestamp
-
-
-    def setMapSectorLatestTimeStamp(self, mapSector, timestamp) :
-        """Set a new latest handled timestamp for a map sector
-
-        Args:
-            mapSector (int):  The map sector that we should add a new timestamp to
-            timestamp (int):  The unix timestamp that should be added
-        """
-        if (mapSector not in self.maxMapSectorPacketTimestampDict or self.maxMapSectorPacketTimestampDict[mapSector] < timestamp) :
-            # To avoid that we miss packet that was recived later during the same second we mark map-sector to be complete for the previous second.
-            # This may result in that we sent the same apcket twice but client will handle that.
-            self.maxMapSectorPacketTimestampDict[mapSector] = timestamp - 1
-
-
-    def setCompleteStationLatestTimestamp(self, stationId, timestamp) :
-        """Set a new latest handled timestamp for a complete station (a station with all packets added to map)
-
-        Args:
-            stationId (int):  The station that we add want to add a new timestamp for
-            timestamp (int):  The unix timestamp that should be added
-        """
-        if (stationId not in self.maxCompleteStationTimestampDict or self.maxCompleteStationTimestampDict[stationId] < timestamp) :
-            # For stations we do not need to set the previous second since a station is rarly sending several packets the same second
-            self.maxCompleteStationTimestampDict[stationId] = timestamp
-
-
-    def setStationLatestTimestamp(self, stationId, timestamp) :
-        """Set a new latest handled timestamp for station
-
-        Args:
-            stationId (int):  The station that we add want to add a new timestamp for
-            timestamp (int):  The unix timestamp that should be added
-        """
-        if (stationId not in self.maxAllStationTimestampDict or self.maxAllStationTimestampDict[stationId] < timestamp) :
-            # For stations we do not need to set the previous second since a station is rarly sending several packets the same second
-            self.maxAllStationTimestampDict[stationId] = timestamp
-
-
-    def disableRealTime(self) :
-        """Disable real time functionality
-        """
-        self.noRealTime = True
+    def disable_real_time(self):
+        """Disable real-time functionality."""
+        self.no_real_time = True

@@ -1,84 +1,80 @@
-from trackdirect.common.Model import Model
+from server.trackdirect.common.Model import Model
 
 
 class PacketOgn(Model):
-    """PacketOgn represents the OGN data in a APRS packet
-    """
+    """PacketOgn represents the OGN data in an APRS packet."""
 
     def __init__(self, db):
-        """The __init__ method.
+        """Initialize PacketOgn with database connection and attributes.
 
         Args:
             db (psycopg2.Connection): Database connection
         """
-        Model.__init__(self, db)
+        super().__init__(db)
         self.id = None
-        self.packetId = None
-        self.stationId = None
+        self.packet_id = None
+        self.station_id = None
         self.timestamp = None
-        self.ognSenderAddress = None
-        self.ognAddressTypeId = None
-        self.ognAircraftTypeId = None
-        self.ognClimbRate = None
-        self.ognTurnRate = None
-        self.ognSignalToNoiseRatio = None
-        self.ognBitErrorsCorrected = None
-        self.ognFrequencyOffset = None
+        self.ogn_sender_address = None
+        self.ogn_address_type_id = None
+        self.ogn_aircraft_type_id = None
+        self.ogn_climb_rate = None
+        self.ogn_turn_rate = None
+        self.ogn_signal_to_noise_ratio = None
+        self.ogn_bit_errors_corrected = None
+        self.ogn_frequency_offset = None
 
-    def validate(self):
-        """Returns true on success (when object content is valid), otherwise false
+    def validate(self) -> bool:
+        """Validate the object content.
 
         Returns:
-            True on success otherwise False
+            bool: True if object content is valid, otherwise False
         """
-        if (self.stationId <= 0):
+        if self.station_id is None or self.station_id <= 0:
             return False
 
-        if (self.packetId <= 0):
+        if self.packet_id is None or self.packet_id <= 0:
             return False
 
         return True
 
-    def insert(self):
-        """Method to call when we want to save a new object to database
+    def insert(self) -> bool:
+        """Insert the object into the database.
 
-        Since packet will be inserted in batch we never use this method.
+        Since packets are inserted in batch, this method is not used.
 
         Returns:
-            True on success otherwise False
+            bool: Always returns False
         """
         return False
 
-    def update(self):
-        """Method to call when we want to save changes to database
+    def update(self) -> bool:
+        """Update the object in the database.
 
-        Since packet will be updated in batch we never use this method.
+        Since packets are updated in batch, this method is not used.
 
         Returns:
-            True on success otherwise False
+            bool: Always returns False
         """
         return False
 
-    def getDict(self):
-        """Returns the packet OGN as a dict
-
-        Args:
-            None
+    def get_dict(self) -> dict:
+        """Convert the object to a dictionary.
 
         Returns:
-            A packet OGN dict
+            dict: A dictionary representation of the object
         """
-        data = {}
-        data['id'] = self.id
-        data['packet_id'] = self.packetId
-        data['station_id'] = self.stationId
-        data['timestamp'] = self.timestamp
-        data['ogn_sender_address'] = self.ognSenderAddress
-        data['ogn_address_type_id'] = self.ognAddressTypeId
-        data['ogn_aircraft_type_id'] = self.ognAircraftTypeId
-        data['ogn_climb_rate'] = self.ognClimbRate
-        data['ogn_turn_rate'] = self.ognTurnRate
-        data['ogn_signal_to_noise_ratio'] = self.ognSignalToNoiseRatio
-        data['ogn_bit_errors_corrected'] = self.ognBitErrorsCorrected
-        data['ogn_frequency_offset'] = self.ognFrequencyOffset
-        return data
+        return {
+            'id': self.id,
+            'packet_id': self.packet_id,
+            'station_id': self.station_id,
+            'timestamp': self.timestamp,
+            'ogn_sender_address': self.ogn_sender_address,
+            'ogn_address_type_id': self.ogn_address_type_id,
+            'ogn_aircraft_type_id': self.ogn_aircraft_type_id,
+            'ogn_climb_rate': self.ogn_climb_rate,
+            'ogn_turn_rate': self.ogn_turn_rate,
+            'ogn_signal_to_noise_ratio': self.ogn_signal_to_noise_ratio,
+            'ogn_bit_errors_corrected': self.ogn_bit_errors_corrected,
+            'ogn_frequency_offset': self.ogn_frequency_offset
+        }

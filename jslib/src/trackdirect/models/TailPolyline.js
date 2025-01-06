@@ -12,7 +12,23 @@ trackdirect.models.TailPolyline = function (color, map) {
 
   // Call the parent constructor
   if (typeof google === "object" && typeof google.maps === "object") {
-    google.maps.Polyline.call(this, this._getGooglePolylineOptions(color));
+    // Use `new` for Google Maps Polyline
+    const googlePolyline = new google.maps.Polyline(
+      this._getGooglePolylineOptions(color)
+    );
+
+    for (const key of Object.keys(this)) {
+      googlePolyline[key] = this[key];
+    }
+    for (const key of Object.getOwnPropertyNames(
+      Object.getPrototypeOf(this)
+    )) {
+      if (key !== "constructor" && typeof this[key] === "function") {
+        googlePolyline[key] = this[key];
+      }
+    }
+
+    return googlePolyline;
   } else if (typeof L === "object") {
     L.Polyline.call(this, {}, this._getLeafletPolylineOptions(color));
   }
@@ -34,10 +50,10 @@ trackdirect.models.TailPolyline.prototype.constructor =
  */
 trackdirect.models.TailPolyline.prototype.getPathItem = function (index) {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var path = google.maps.Polyline.prototype.getPath.call(this);
+    let path = google.maps.Polyline.prototype.getPath.call(this);
     return path.getAt(index);
   } else if (typeof L === "object") {
-    var list = this.getLatLngs();
+    let list = this.getLatLngs();
     if (typeof list[index] !== "undefined") {
       return list[index];
     } else {
@@ -52,7 +68,7 @@ trackdirect.models.TailPolyline.prototype.getPathItem = function (index) {
  */
 trackdirect.models.TailPolyline.prototype.pushPathItem = function (latLng) {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var path = google.maps.Polyline.prototype.getPath.call(this);
+    let path = google.maps.Polyline.prototype.getPath.call(this);
     path.push(latLng);
   } else if (typeof L === "object") {
     this.addLatLng(latLng);
@@ -64,10 +80,10 @@ trackdirect.models.TailPolyline.prototype.pushPathItem = function (latLng) {
  */
 trackdirect.models.TailPolyline.prototype.removePathItem = function (index) {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var path = google.maps.Polyline.prototype.getPath.call(this);
+    let path = google.maps.Polyline.prototype.getPath.call(this);
     path.removeAt(index);
   } else if (typeof L === "object") {
-    var list = this.getLatLngs();
+    let list = this.getLatLngs();
     if (typeof list[index] !== "undefined") {
       list.splice(index, 1);
       this.setLatLngs(list);
@@ -80,10 +96,10 @@ trackdirect.models.TailPolyline.prototype.removePathItem = function (index) {
  */
 trackdirect.models.TailPolyline.prototype.getPathLength = function (index) {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var path = google.maps.Polyline.prototype.getPath.call(this);
+    let path = google.maps.Polyline.prototype.getPath.call(this);
     return path.getLength();
   } else if (typeof L === "object") {
-    var list = this.getLatLngs();
+    let list = this.getLatLngs();
     return list.length;
   }
 };
@@ -106,7 +122,7 @@ trackdirect.models.TailPolyline.prototype.getPath = function () {
  */
 trackdirect.models.TailPolyline.prototype.getMap = function () {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var map = google.maps.Polyline.prototype.getMap.call(this);
+    let map = google.maps.Polyline.prototype.getMap.call(this);
     if (typeof map !== "undefined") {
       return map;
     }
@@ -177,14 +193,14 @@ trackdirect.models.TailPolyline.prototype.hide = function () {
  */
 trackdirect.models.TailPolyline.prototype.addMarker = function (marker) {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var latLng = new google.maps.LatLng(
+    let latLng = new google.maps.LatLng(
       parseFloat(marker.packet.latitude),
       parseFloat(marker.packet.longitude)
     );
     latLng.marker = marker;
     this.pushPathItem(latLng);
   } else if (typeof L === "object") {
-    var latLng = new L.latLng(
+    let latLng = new L.latLng(
       parseFloat(marker.packet.latitude),
       parseFloat(marker.packet.longitude)
     );
@@ -200,15 +216,15 @@ trackdirect.models.TailPolyline.prototype.addMarker = function (marker) {
 trackdirect.models.TailPolyline.prototype._addInfoWindowListener = function (
   markerIdKey
 ) {
-  var me = this;
+  let me = this;
   if (typeof google === "object" && typeof google.maps === "object") {
     google.maps.event.addListener(this, "click", function (event) {
-      var marker = me._defaultMap.markerCollection.getMarker(markerIdKey);
+      let marker = me._defaultMap.markerCollection.getMarker(markerIdKey);
       me._defaultMap.openPolylineInfoWindow(marker, event.latLng);
     });
   } else if (typeof L === "object") {
     this.on("click", function (event) {
-      var marker = me._defaultMap.markerCollection.getMarker(markerIdKey);
+      let marker = me._defaultMap.markerCollection.getMarker(markerIdKey);
       me._defaultMap.openPolylineInfoWindow(marker, event.latlng);
     });
   }

@@ -8,7 +8,6 @@
  */
 function __autoload_trackdirect($className)
 {
-
     if (file_exists(ROOT . '/includes/' . strtolower($className) . '.class.php')) {
         include_once ROOT . '/includes/' . strtolower($className) . '.class.php';
 

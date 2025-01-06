@@ -1,59 +1,60 @@
-import datetime, time, calendar
-from trackdirect.repositories.PacketRepository import PacketRepository
-from trackdirect.websocket.queries.MissingPacketsQuery import MissingPacketsQuery
+import  time
+from server.trackdirect.repositories.PacketRepository import PacketRepository
+from server.trackdirect.websocket.queries.MissingPacketsQuery import MissingPacketsQuery
 
 
-class MostRecentPacketsQuery() :
-    """This query class returnes the latest packet for moving stations and the latest packet for every uniqe position for stationary stations.
+class MostRecentPacketsQuery:
+    """This query class returns the latest packet for moving stations and the latest packet for every unique position for stationary stations.
 
     Note:
-        If no packet are found we will simulate them
+        If no packets are found, they will be simulated.
     """
 
-    def __init__(self, state, db) :
-        """The __init__ method.
+    def __init__(self, state, db):
+        """Initialize the MostRecentPacketsQuery.
 
         Args:
-            state (WebsocketConnectionState):   The current state for a websocket connection
-            db (psycopg2.Connection):           Database connection
+            state (WebsocketConnectionState): The current state for a websocket connection.
+            db (psycopg2.Connection): Database connection.
         """
         self.state = state
         self.db = db
-        self.packetRepository = PacketRepository(db)
-        self.simulateEmptyStation = False
+        self.packet_repository = PacketRepository(db)
+        self.simulate_empty_station = False
 
+    def enable_simulate_empty_station(self):
+        """Enable simulation even if no packets are available from the station."""
+        self.simulate_empty_station = True
 
-    def enableSimulateEmptyStation(self) :
-        """Enable simulation even if we have no packet from station at all
-        """
-        self.simulateEmptyStation = True
-
-
-    def getPackets(self, stationIds) :
+    def get_packets(self, station_ids):
         """Fetch the most recent packets for the specified stations.
-        Returns the latest packet for moving stations and the latest packet for every uniqe position for stationary stations.
+        Returns the latest packet for moving stations and the latest packet for every unique position for stationary stations.
 
         Args:
-            stationIds (array):   An array of all stations we want packets for
+            station_ids (list): A list of station IDs for which packets are needed.
 
         Returns:
-            array
+            list: A list of packets.
         """
-        if (self.state.latestTimeTravelRequest is not None) :
-            timestamp = int(self.state.latestTimeTravelRequest) - (int(self.state.latestMinutesRequest)*60)
-            packets = self.packetRepository.getMostRecentConfirmedObjectListByStationIdListAndTimeInterval(stationIds, timestamp, self.state.latestTimeTravelRequest)
-        else :
-            timestamp = int(time.time()) - (int(self.state.latestMinutesRequest)*60)
-            packets = self.packetRepository.getMostRecentConfirmedObjectListByStationIdList(stationIds, timestamp)
+        if self.state.latest_time_travel_request is not None:
+            timestamp = int(self.state.latest_time_travel_request) - (int(self.state.latest_minutes_request) * 60)
+            packets = self.packet_repository.get_most_recent_confirmed_object_list_by_station_id_list_and_time_interval(
+                station_ids, timestamp, self.state.latest_time_travel_request
+            )
+        else:
+            timestamp = int(time.time()) - (int(self.state.latest_minutes_request) * 60)
+            packets = self.packet_repository.get_most_recent_confirmed_object_list_by_station_id_list(
+                station_ids, timestamp
+            )
 
-        if (len(packets) < len(stationIds)) :
-            # If we have no recent markers we just send the latest that we have
+        if len(packets) < len(station_ids):
+            # If we have no recent markers, we just send the latest that we have
             query = MissingPacketsQuery(self.state, self.db)
-            if (self.simulateEmptyStation) :
-                query.enableSimulateEmptyStation()
+            if self.simulate_empty_station:
+                query.enable_simulate_empty_station()
 
-            foundMissingPackets = query.getMissingPackets(stationIds, packets)
-            if (foundMissingPackets) :
-                foundMissingPackets.extend(packets)
-                packets = foundMissingPackets
+            missing_packets = query.get_missing_packets(station_ids, packets)
+            if missing_packets:
+                packets.extend(missing_packets)
+
         return packets

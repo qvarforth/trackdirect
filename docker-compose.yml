@@ -1,9 +1,8 @@
-version: "3.9"
 services:
   aprsc:
     build:
       context: .
-      dockerfile: aprsc.dockerfile
+      dockerfile: trackdirect-aprsc.dockerfile
     ports:
       - "10152:10152"
       - "14580:14580"
@@ -31,10 +30,19 @@ services:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
     command: /root/trackdirect/server/scripts/wsserver.sh trackdirect.ini
     ports:
-      - "9000:9000"
+      - "8090:8090"
     depends_on:
       - "db"
       - "aprsc"
+
+  cron:
+    build:
+      context: .
+      dockerfile: trackdirect-cron.dockerfile
+    volumes:
+      - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
+    depends_on:
+      - "db"
 
   web:
     build:
@@ -42,7 +50,7 @@ services:
       dockerfile: trackdirect-apache.dockerfile
     volumes:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
-      - $PWD/heatmaps:/root/trackdirect/htdocs/public/heatmaps
+      - ./htdocs/public:/root/trackdirect/htdocs/public # For development
     ports:
       - "80:80"
     depends_on:
@@ -51,10 +59,13 @@ services:
   db:
     build:
       context: .
-      dockerfile: db.dockerfile
+      dockerfile: trackdirect-db.dockerfile
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: foobar
       POSTGRES_DB: trackdirect
     volumes:
       - $PWD/db:/var/lib/postgresql/data
+    command: -c config_file=/etc/postgresql.conf
+    ports:
+      - "5432:5432"

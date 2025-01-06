@@ -10,11 +10,6 @@
 Options +FollowSymLinks
 RewriteEngine On
 
-# Do not do anything for already existing files and folders
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule .+ - [L]
-
 RewriteCond %{SCRIPT_FILENAME} !-d
 RewriteCond %{SCRIPT_FILENAME} !-f
 RewriteCond %{REQUEST_URI} \.png$

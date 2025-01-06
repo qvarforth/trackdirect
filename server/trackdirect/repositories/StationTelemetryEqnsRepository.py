@@ -1,106 +1,93 @@
-import datetime
 import time
-from trackdirect.common.Repository import Repository
-from trackdirect.objects.StationTelemetryEqns import StationTelemetryEqns
+from server.trackdirect.common.Repository import Repository
+from server.trackdirect.objects.StationTelemetryEqns import StationTelemetryEqns
 
 
 class StationTelemetryEqnsRepository(Repository):
-    """A Repository class for the StationTelemetryEqns class
-    """
+    """A Repository class for the StationTelemetryEqns class."""
 
     def __init__(self, db):
-        """The __init__ method.
+        """Initialize the repository with a database connection.
 
         Args:
             db (psycopg2.Connection): Database connection
         """
-        self.db = db
+        super().__init__(db)
 
-    def getObjectById(self, id):
-        """The getObjectById method is supposed to return an object based on the specified id in database
+    def get_object_by_id(self, id: int) -> StationTelemetryEqns:
+        """Retrieve a StationTelemetryEqns object by its ID from the database.
 
         Args:
-            id (int):  Database row id
+            id (int): Database row ID
 
         Returns:
-            StationTelemetryEqns
+            StationTelemetryEqns: The retrieved object or an empty object if not found
         """
-        selectCursor = self.db.cursor()
-        selectCursor.execute(
-            """select * from station_telemetry_eqns where id = %s""", (id,))
-        record = selectCursor.fetchone()
+        with self.db.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM station_telemetry_eqns WHERE id = %s", (id,)
+            )
+            record = cursor.fetchone()
 
-        dbObject = self.create()
-        if (record is not None):
-            dbObject.id = record["id"]
-            dbObject.stationId = record["station_id"]
-            dbObject.createdTs = record["created_ts"]
-            dbObject.latestTs = record["latest_ts"]
-            dbObject.validToTs = record["valid_to_ts"]
-            dbObject.a1 = record["a1"]
-            dbObject.b1 = record["b1"]
-            dbObject.c1 = record["c1"]
-            dbObject.a2 = record["a2"]
-            dbObject.b2 = record["b2"]
-            dbObject.c2 = record["c2"]
-            dbObject.a3 = record["a3"]
-            dbObject.b3 = record["b3"]
-            dbObject.c3 = record["c3"]
-            dbObject.a4 = record["a4"]
-            dbObject.b4 = record["b4"]
-            dbObject.c4 = record["c4"]
-            dbObject.a5 = record["a5"]
-            dbObject.b5 = record["b5"]
-            dbObject.c5 = record["c5"]
-        else:
-            # do not exists, return empty object
-            pass
+        db_object = self.create()
+        if record:
+            self._populate_object_from_record(db_object, record)
 
-        selectCursor.close()
-        return dbObject
+        return db_object
 
-    def getObjectFromPacketData(self, data):
-        """Create object from raw packet data
+    def get_object_from_packet_data(self, data: dict) -> StationTelemetryEqns:
+        """Create a StationTelemetryEqns object from raw packet data.
 
         Note:
-            stationId will not be set
+            stationId will not be set.
 
         Args:
-            data (dict):  Raw packet data
+            data (dict): Raw packet data
 
         Returns:
-            StationTelemetryEqns
+            StationTelemetryEqns: The created object
         """
-        newObject = self.create()
-        if ("tEQNS" in data):
-            # Remove one second since that will give us a more accurate timestamp
-            newObject.createdTs = int(time.time()) - 1
+        new_object = self.create()
+        if "tEQNS" in data:
+            new_object.created_ts = str(int(time.time()) - 1)
+            self._populate_object_from_data(new_object, data["tEQNS"])
 
-            newObject.a1 = data["tEQNS"][0][0]
-            newObject.b1 = data["tEQNS"][0][1]
-            newObject.c1 = data["tEQNS"][0][2]
+        return new_object
 
-            newObject.a2 = data["tEQNS"][1][0]
-            newObject.b2 = data["tEQNS"][1][1]
-            newObject.c2 = data["tEQNS"][1][2]
-
-            newObject.a3 = data["tEQNS"][2][0]
-            newObject.b3 = data["tEQNS"][2][1]
-            newObject.c3 = data["tEQNS"][2][2]
-
-            newObject.a4 = data["tEQNS"][3][0]
-            newObject.b4 = data["tEQNS"][3][1]
-            newObject.c4 = data["tEQNS"][3][2]
-
-            newObject.a5 = data["tEQNS"][4][0]
-            newObject.b5 = data["tEQNS"][4][1]
-            newObject.c5 = data["tEQNS"][4][2]
-        return newObject
-
-    def create(self):
-        """Creates an empty StationTelemetryEqns object
+    def create(self) -> StationTelemetryEqns:
+        """Create an empty StationTelemetryEqns object.
 
         Returns:
-            StationTelemetryEqns
+            StationTelemetryEqns: The created object
         """
         return StationTelemetryEqns(self.db)
+
+    def _populate_object_from_record(self, obj: StationTelemetryEqns, record: dict):
+        """Populate a StationTelemetryEqns object from a database record.
+
+        Args:
+            obj (StationTelemetryEqns): The object to populate
+            record (dict): The database record
+        """
+        obj.id = record["id"]
+        obj.station_id = record["station_id"]
+        obj.created_ts = record["created_ts"]
+        obj.latest_ts = record["latest_ts"]
+        obj.valid_to_ts = record["valid_to_ts"]
+        obj.a1, obj.b1, obj.c1 = record["a1"], record["b1"], record["c1"]
+        obj.a2, obj.b2, obj.c2 = record["a2"], record["b2"], record["c2"]
+        obj.a3, obj.b3, obj.c3 = record["a3"], record["b3"], record["c3"]
+        obj.a4, obj.b4, obj.c4 = record["a4"], record["b4"], record["c4"]
+        obj.a5, obj.b5, obj.c5 = record["a5"], record["b5"], record["c5"]
+
+    def _populate_object_from_data(self, obj: StationTelemetryEqns, data: list):
+        """Populate a StationTelemetryEqns object from packet data.
+
+        Args:
+            obj (StationTelemetryEqns): The object to populate
+            data (list): The packet data
+        """
+        for i in range(5):
+            setattr(obj, f'a{i+1}', data[i][0])
+            setattr(obj, f'b{i+1}', data[i][1])
+            setattr(obj, f'c{i+1}', data[i][2])

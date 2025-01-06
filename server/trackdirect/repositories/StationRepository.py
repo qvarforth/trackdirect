@@ -1,375 +1,221 @@
-import collections
-import datetime
-import time
-import calendar
-from math import sin, cos, sqrt, atan2, radians, floor, ceil
-
 import logging
-from twisted.python import log
 
-from trackdirect.common.Repository import Repository
-from trackdirect.objects.Station import Station
-from trackdirect.database.DatabaseObjectFinder import DatabaseObjectFinder
-from trackdirect.database.PacketTableCreator import PacketTableCreator
-from trackdirect.exceptions.TrackDirectMissingStationError import TrackDirectMissingStationError
+from server.trackdirect.common.Repository import Repository
+from server.trackdirect.objects.Station import Station
+from server.trackdirect.database.DatabaseObjectFinder import DatabaseObjectFinder
+from server.trackdirect.database.PacketTableCreator import PacketTableCreator
+from server.trackdirect.exceptions.TrackDirectMissingStationError import TrackDirectMissingStationError
 
 
 class StationRepository(Repository):
-    """A Repository class for the Station class
-    """
+    """A Repository class for the Station class."""
 
-    # static class variables
-    stationIdCache = {}
-    stationNameCache = {}
+    # Static class variables
+    station_id_cache = {}
+    station_name_cache = {}
 
     def __init__(self, db):
-        """The __init__ method.
-
-        Args:
-            db (psycopg2.Connection): Database connection
-        """
-        self.db = db
+        """Initialize the StationRepository with a database connection."""
+        super().__init__(db)
         self.logger = logging.getLogger('trackdirect')
-        self.dbObjectFinder = DatabaseObjectFinder(db)
-        self.packetTableCreator = PacketTableCreator(db)
+        self.db_object_finder = DatabaseObjectFinder(db)
+        self.packet_table_creator = PacketTableCreator(db)
 
-    def getObjectById(self, id):
-        """The getObjectById method is supposed to return an object based on the specified id in database
+    def get_object_by_id(self, id):
+        """Return a Station object based on the specified id in the database."""
+        with self.db.cursor() as cursor:
+            cursor.execute("SELECT * FROM station WHERE id = %s", (id,))
+            record = cursor.fetchone()
+            return self.get_object_from_record(record) if record else self.create()
 
-        Args:
-            id (int):  Database row id
+    def get_object_list_by_station_id_list(self, station_id_list):
+        """Return a list of Station objects based on a list of station ids."""
+        with self.db.cursor() as cursor:
+            cursor.execute("SELECT * FROM station WHERE id IN %s", (tuple(station_id_list),))
+            return [self.get_object_from_record(record) for record in cursor if record]
 
-        Returns:
-            Station
-        """
-        selectCursor = self.db.cursor()
-        selectCursor.execute("""select * from station where id = %s""", (id,))
-        record = selectCursor.fetchone()
+    def get_tiny_object_list(self):
+        """Return a list of all station ids and their latest packet timestamps."""
+        with self.db.cursor() as cursor:
+            cursor.execute("SELECT id, latest_packet_timestamp FROM station ORDER BY id")
+            return [self.create_from_id_and_timestamp(record) for record in cursor if record]
 
-        dbObject = self.create()
-        if (record is not None):
-            dbObject = self.getObjectFromRecord(record)
-        else:
-            # station do not exists, return empty object
-            pass
+    def get_object_list(self):
+        """Return a list of all Station objects."""
+        with self.db.cursor() as cursor:
+            cursor.execute("SELECT * FROM station ORDER BY id")
+            return [self.get_object_from_record(record) for record in cursor]
 
-        selectCursor.close()
-        return dbObject
+    def get_object_list_by_name(self, name, station_type_id=None, source_id=None, min_timestamp=0):
+        """Return a list of stations based on the specified name."""
+        if source_id == 3:
+            source_id = 1
 
-    def getObjectListByStationIdList(self, stationIdList):
-        """Returns a list of station objects
+        query = "SELECT * FROM station WHERE name = %s AND latest_confirmed_packet_timestamp > %s"
+        params = [name, min_timestamp]
 
-        Args:
-            stationIdList (int):           Array of station ids
+        if station_type_id is not None:
+            query += " AND station_type_id = %s"
+            params.append(station_type_id)
 
-        Returns:
-            array
-        """
-        selectCursor = self.db.cursor()
-        selectCursor.execute(
-            """select * from station where id in %s""", (tuple(stationIdList), ))
+        if source_id is not None:
+            query += " AND (source_id = %s OR source_id IS NULL)"
+            params.append(source_id)
 
-        result = []
-        for record in selectCursor:
-            if (record is not None):
-                dbObject = self.getObjectFromRecord(record)
-                result.append(dbObject)
+        with self.db.cursor() as cursor:
+            cursor.execute(query, tuple(params))
+            return [self.get_object_from_record(record) for record in cursor]
 
-        selectCursor.close()
-        return result
+    def get_object_by_name(self, name, source_id, station_type_id=1, create_new_if_missing=True):
+        """Return a Station object based on the specified name."""
+        if source_id == 3:
+            source_id = 1
 
-    def getTinyObjectList(self):
-        """Returns a list of all station id's
+        query = "SELECT * FROM station WHERE name = %s"
+        params = [name.strip()]
 
-        Args:
-            None
+        if source_id is not None:
+            query += " AND (source_id IS NULL OR source_id = %s)"
+            params.append(source_id)
 
-        Returns:
-            array
-        """
-        selectCursor = self.db.cursor()
-        selectCursor.execute(
-            """select id, latest_packet_timestamp from station order by id""")
+        query += " ORDER BY id DESC"
 
-        result = []
-        for record in selectCursor:
-            if (record is not None):
-                dbObject = self.create()
-                dbObject.id = int(record["id"])
-                dbObject.latestPacketTimestamp = record["latest_packet_timestamp"]
-                result.append(dbObject)
-        selectCursor.close()
-        return result
+        with self.db.cursor() as cursor:
+            cursor.execute(query, tuple(params))
+            record = cursor.fetchone()
 
-    def getObjectList(self):
-        """Returns a list of all station object's
+        db_object = self.get_object_from_record(record) if record else self.create()
 
-        Args:
-            None
+        if record:
+            if db_object.source_id is None or db_object.source_id != source_id:
+                db_object.source_id = source_id
+                db_object.save()
+            if db_object.station_type_id != station_type_id and station_type_id == 1:
+                db_object.station_type_id = station_type_id
+                db_object.save()
+        elif create_new_if_missing:
+            db_object.name = name
+            db_object.source_id = source_id
+            db_object.station_type_id = station_type_id
+            db_object.save()
 
-        Returns:
-            array
-        """
-        selectCursor = self.db.cursor()
-        selectCursor.execute("""select * from station order by id""")
+        return db_object
 
-        result = []
-        for record in selectCursor:
-            dbObject = self.getObjectFromRecord(record)
-            result.append(dbObject)
-        selectCursor.close()
-        return result
-
-    def getObjectListByName(self, name, stationTypeId=None, sourceId=None, minTimestamp=None):
-        """Returns a list of stations based on the specified name
-
-        Args:
-            name (string):             Name of station
-            stationTypeId (int):       Station type id
-            sourceId (int):            Station source id
-
-        Returns:
-            array
-        """
-        if (sourceId is not None and sourceId == 3):
-            # If source is "APRS DUPLICATE" we use "APRS"
-            sourceId = 1
-
-        if (minTimestamp is None):
-            minTimestamp = 0
-
-        selectCursor = self.db.cursor()
-        if (sourceId is not None and sourceId is not None):
-            selectCursor.execute("""select *
-                from station
-                where station_type_id = %s
-                    and name = %s
-                    and (source_id = %s or source_id is null)
-                    and latest_confirmed_packet_timestamp > %s""", (stationTypeId, name, sourceId, minTimestamp,))
-        elif (sourceId is not None):
-            selectCursor.execute("""select *
-                from station
-                where station_type_id = %s
-                    and name = %s
-                    and latest_confirmed_packet_timestamp > %s""", (stationTypeId, name, minTimestamp,))
-        else:
-            selectCursor.execute("""select *
-                from station
-                where name = %s
-                    and latest_confirmed_packet_timestamp > %s""", (name, minTimestamp,))
-
-        result = []
-        for record in selectCursor:
-            dbObject = self.getObjectFromRecord(record)
-            result.append(dbObject)
-        selectCursor.close()
-        return result
-
-    def getObjectByName(self, name, sourceId, stationTypeId=1, createNewIfMissing=True):
-        """Returns an object based on the specified name of the station
-
-        Args:
-            name (str):                    Name of the station
-            sourceId (int):                Station source id
-            createNewIfMissing (boolean):  Set to true if a new station should be created if no one is found
-
-        Returns:
-            Station
-        """
-        if (sourceId == 3):
-            # If source is "APRS DUPLICATE" we use "APRS"
-            sourceId = 1
-
-        selectCursor = self.db.cursor()
-        if (sourceId is not None):
-            selectCursor.execute(
-                """select * from station where name = %s and (source_id is null or source_id = %s) order by id desc""", (name.strip(), sourceId))
-        else:
-            selectCursor.execute(
-                """select * from station where name = %s order by id desc""", (name.strip()))
-        record = selectCursor.fetchone()
-
-        # Make sure we at least have an empty object...
-        dbObject = self.create()
-        if (record is not None):
-            dbObject = self.getObjectFromRecord(record)
-            if (dbObject.sourceId is None and dbObject.sourceId != sourceId):
-                dbObject.sourceId = sourceId
-                dbObject.save()
-            if (dbObject.stationTypeId != stationTypeId and stationTypeId == 1):
-                dbObject.stationTypeId = stationTypeId
-                dbObject.save()
-
-        elif (createNewIfMissing):
-            # station do not exists, create it
-            dbObject.name = name
-            dbObject.sourceId = sourceId
-            dbObject.stationTypeId = stationTypeId
-            dbObject.save()
-
-        selectCursor.close()
-        return dbObject
-
-    def getObjectListBySearchParameter(self, searchParameter, minTimestamp, limit):
-        """Returns an array of the latest packet objects specified by searchParameter
-
-        Args:
-            searchParameter (str):  String to use when searching for packets (will be compared to station name)
-            minTimestamp (int):     Min unix timestamp
-            limit (int):            Max number of hits
-
-        Returns:
-            Array
-        """
-        searchParameter = searchParameter.strip().replace('%', '\%').replace('*', '%')
-        selectCursor = self.db.cursor()
+    def get_object_list_by_search_parameter(self, search_parameter, min_timestamp, limit):
+        """Return an array of the latest packet objects specified by search_parameter."""
+        search_parameter = search_parameter.strip().replace('%', r"\%").replace('*', '%')
         result = []
 
-        # Search for ogn registration
-        if (self.dbObjectFinder.checkTableExists('ogn_device')):
-            selectCursor.execute("""select * from ogn_device limit 1""")
-            record = selectCursor.fetchone()
-            if (record is not None):
-                selectCursor.execute("""select * from station where latest_confirmed_packet_timestamp is not null and latest_confirmed_packet_timestamp > %s and latest_ogn_sender_address is not null and exists (select 1 from ogn_device where registration ilike %s and device_id = station.latest_ogn_sender_address) limit %s""", (minTimestamp, searchParameter, (limit - len(result)), ))
-                for record in selectCursor:
-                    dbObject = self.getObjectFromRecord(record)
-                    result.append(dbObject)
+        with self.db.cursor() as cursor:
+            if self.db_object_finder.check_table_exists('ogn_device'):
+                cursor.execute("SELECT * FROM ogn_device LIMIT 1")
+                if cursor.fetchone():
+                    cursor.execute(
+                        """SELECT * FROM station WHERE latest_confirmed_packet_timestamp IS NOT NULL 
+                        AND latest_confirmed_packet_timestamp > %s 
+                        AND latest_ogn_sender_address IS NOT NULL 
+                        AND EXISTS (SELECT 1 FROM ogn_device WHERE registration ILIKE %s AND device_id = station.latest_ogn_sender_address) 
+                        LIMIT %s""",
+                        (min_timestamp, search_parameter, limit - len(result))
+                    )
+                    result.extend(self.get_object_from_record(record) for record in cursor)
 
-            # Search for ogn sender address
-            if (len(result) < limit):
-                selectCursor.execute("""select * from station where latest_confirmed_packet_timestamp is not null and latest_confirmed_packet_timestamp > %s and latest_ogn_sender_address ilike %s limit %s""",
-                                     (minTimestamp, searchParameter, (limit - len(result)), ))
-                for record in selectCursor:
-                    dbObject = self.getObjectFromRecord(record)
-                    result.append(dbObject)
+                if len(result) < limit:
+                    cursor.execute(
+                        """SELECT * FROM station WHERE latest_confirmed_packet_timestamp IS NOT NULL 
+                        AND latest_confirmed_packet_timestamp > %s 
+                        AND latest_ogn_sender_address ILIKE %s 
+                        LIMIT %s""",
+                        (min_timestamp, search_parameter, limit - len(result))
+                    )
+                    result.extend(self.get_object_from_record(record) for record in cursor)
 
-        # Search for station name
-        if (len(result) < limit):
-            selectCursor.execute("""select * from station where latest_confirmed_packet_timestamp is not null and latest_confirmed_packet_timestamp > %s and name ilike %s limit %s""",
-                                 (minTimestamp, searchParameter, (limit - len(result)), ))
-            for record in selectCursor:
-                dbObject = self.getObjectFromRecord(record)
-                result.append(dbObject)
+            if len(result) < limit:
+                cursor.execute(
+                    """SELECT * FROM station WHERE latest_confirmed_packet_timestamp IS NOT NULL 
+                    AND latest_confirmed_packet_timestamp > %s 
+                    AND name ILIKE %s 
+                    LIMIT %s""",
+                    (min_timestamp, search_parameter, limit - len(result))
+                )
+                result.extend(self.get_object_from_record(record) for record in cursor)
 
         return result
 
-    def getCachedObjectById(self, stationId):
-        """Get Station based on station id
-
-        Args:
-            stationId (int):     Id of the station
-
-        Returns:
-            Station
-        """
-        if (stationId not in StationRepository.stationIdCache):
-            station = self.getObjectById(stationId)
-            if (station.isExistingObject()):
-                maxNumberOfStations = 100
-                if (len(StationRepository.stationIdCache) > maxNumberOfStations):
-                    # reset cache
-                    StationRepository.stationIdCache = {}
-                StationRepository.stationIdCache[stationId] = station
+    def get_cached_object_by_id(self, station_id):
+        """Get Station based on station id."""
+        if station_id not in StationRepository.station_id_cache:
+            station = self.get_object_by_id(station_id)
+            if station.is_existing_object():
+                self._update_cache(StationRepository.station_id_cache, station_id, station)
                 return station
         else:
-            try:
-                return StationRepository.stationIdCache[stationId]
-            except KeyError as e:
-                station = self.getObjectById(stationId)
-                if (station.isExistingObject()):
-                    return station
-        raise TrackDirectMissingStationError(
-            'No station with specified id found')
+            return StationRepository.station_id_cache.get(station_id)
 
-    def getCachedObjectByName(self, stationName, sourceId):
-        """Get Station based on station name
+        raise TrackDirectMissingStationError('No station with specified id found')
 
-        Args:
-            stationName (string): Station name
-            sourceId (int):       Station source id
+    def get_cached_object_by_name(self, station_name, source_id):
+        """Get Station based on station name."""
+        if source_id == 3:
+            source_id = 1
 
-        Returns:
-            Station
-        """
-        if (sourceId == 3):
-            # If source is "APRS DUPLICATE" we use "APRS"
-            sourceId = 1
-
-        if (sourceId is not None):
-            key = hash(stationName + ';' + str(sourceId))
-        else:
-            key = hash(stationName)
-        if (key not in StationRepository.stationNameCache):
-            station = self.getObjectByName(stationName, sourceId, None, False)
-            if (station.isExistingObject()):
-                maxNumberOfStations = 100
-                if (len(StationRepository.stationNameCache) > maxNumberOfStations):
-                    # reset cache
-                    StationRepository.stationNameCache = {}
-                StationRepository.stationNameCache[key] = station
+        key = hash(f"{station_name};{source_id}" if source_id is not None else station_name)
+        if key not in StationRepository.station_name_cache:
+            station = self.get_object_by_name(station_name, source_id, None, False)
+            if station.is_existing_object():
+                self._update_cache(StationRepository.station_name_cache, key, station)
                 return station
         else:
-            try:
-                return StationRepository.stationNameCache[key]
-            except KeyError as e:
-                station = self.getObjectByName(
-                    stationName, sourceId, None, False)
-                if (station.isExistingObject()):
-                    return station
-        raise TrackDirectMissingStationError(
-            'No station with specified station name found')
+            return StationRepository.station_name_cache.get(key)
 
-    def getObjectFromRecord(self, record):
-        """Returns a station object based on the specified database record dict
+        raise TrackDirectMissingStationError('No station with specified station name found')
 
-        Args:
-            record (dict):  A database record dict from the station database table
+    def get_object_from_record(self, record):
+        """Return a Station object based on the specified database record dict."""
+        db_object = self.create()
+        if record:
+            db_object.id = int(record["id"])
+            db_object.name = record["name"]
+            db_object.latest_sender_id = int(record["latest_sender_id"]) if record["latest_sender_id"] is not None else None
+            db_object.station_type_id = int(record["station_type_id"])
+            db_object.source_id = int(record["source_id"]) if record["source_id"] is not None else None
+            db_object.latest_location_packet_id = record["latest_location_packet_id"]
+            db_object.latest_location_packet_timestamp = record["latest_location_packet_timestamp"]
+            db_object.latest_confirmed_packet_id = record["latest_confirmed_packet_id"]
+            db_object.latest_confirmed_packet_timestamp = record["latest_confirmed_packet_timestamp"]
+            db_object.latest_confirmed_symbol = record["latest_confirmed_symbol"]
+            db_object.latest_confirmed_symbol_table = record["latest_confirmed_symbol_table"]
+            db_object.latest_confirmed_latitude = record["latest_confirmed_latitude"]
+            db_object.latest_confirmed_longitude = record["latest_confirmed_longitude"]
+            db_object.latest_confirmed_marker_id = record["latest_confirmed_marker_id"]
+            db_object.latest_packet_id = record["latest_packet_id"]
+            db_object.latest_packet_timestamp = record["latest_packet_timestamp"]
+            db_object.latest_weather_packet_id = record["latest_weather_packet_id"]
+            db_object.latest_weather_packet_timestamp = record["latest_weather_packet_timestamp"]
+            db_object.latest_telemetry_packet_id = record["latest_telemetry_packet_id"]
+            db_object.latest_telemetry_packet_timestamp = record["latest_telemetry_packet_timestamp"]
+            db_object.latest_ogn_packet_id = record["latest_ogn_packet_id"]
+            db_object.latest_ogn_packet_timestamp = record["latest_ogn_packet_timestamp"]
+            db_object.latest_ogn_sender_address = record["latest_ogn_sender_address"]
+            db_object.latest_ogn_aircraft_type_id = record["latest_ogn_aircraft_type_id"]
+            db_object.latest_ogn_address_type_id = record["latest_ogn_address_type_id"]
 
-        Returns:
-            Station
-        """
-        dbObject = self.create()
-        if (record is not None):
-            dbObject.id = int(record["id"])
-            dbObject.name = record["name"]
-            if (record["latest_sender_id"] is not None):
-                dbObject.latestSenderId = int(record["latest_sender_id"])
-            dbObject.stationTypeId = int(record["station_type_id"])
-            if (record["source_id"] is not None):
-                dbObject.sourceId = int(record["source_id"])
-
-            dbObject.latestLocationPacketId = record["latest_location_packet_id"]
-            dbObject.latestLocationPacketTimestamp = record["latest_location_packet_timestamp"]
-
-            dbObject.latestConfirmedPacketId = record["latest_confirmed_packet_id"]
-            dbObject.latestConfirmedPacketTimestamp = record["latest_confirmed_packet_timestamp"]
-            dbObject.latestConfirmedSymbol = record["latest_confirmed_symbol"]
-            dbObject.latestConfirmedSymbolTable = record["latest_confirmed_symbol_table"]
-            dbObject.latestConfirmedLatitude = record["latest_confirmed_latitude"]
-            dbObject.latestConfirmedLongitude = record["latest_confirmed_longitude"]
-            dbObject.latestConfirmedMarkerId = record["latest_confirmed_marker_id"]
-
-            dbObject.latestPacketId = record["latest_packet_id"]
-            dbObject.latestPacketTimestamp = record["latest_packet_timestamp"]
-
-            dbObject.latestWeatherPacketId = record["latest_weather_packet_id"]
-            dbObject.latestWeatherPacketTimestamp = record["latest_weather_packet_timestamp"]
-
-            dbObject.latestTelemetryPacketId = record["latest_telemetry_packet_id"]
-            dbObject.latestTelemetryPacketTimestamp = record["latest_telemetry_packet_timestamp"]
-
-            dbObject.latestOgnPacketId = record["latest_ogn_packet_id"]
-            dbObject.latestOgnPacketTimestamp = record["latest_ogn_packet_timestamp"]
-            dbObject.latestOgnSenderAddress = record["latest_ogn_sender_address"]
-            dbObject.latestOgnAircraftTypeId = record["latest_ogn_aircraft_type_id"]
-            dbObject.latestOgnAddressTypeId = record["latest_ogn_address_type_id"]
-
-        return dbObject
+        return db_object
 
     def create(self):
-        """Creates an empty Station object
-
-        Returns:
-            Station
-        """
+        """Create an empty Station object."""
         return Station(self.db)
+
+    def create_from_id_and_timestamp(self, record):
+        """Create a Station object from id and latest packet timestamp."""
+        db_object = self.create()
+        db_object.id = int(record["id"])
+        db_object.latest_packet_timestamp = record["latest_packet_timestamp"]
+        return db_object
+
+    def _update_cache(self, cache, key, station):
+        """Update the cache with a new station object."""
+        max_number_of_stations = 100
+        if len(cache) > max_number_of_stations:
+            cache.clear()
+        cache[key] = station

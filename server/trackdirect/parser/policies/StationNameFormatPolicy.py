@@ -1,12 +1,11 @@
-class StationNameFormatPolicy():
+class StationNameFormatPolicy:
     """The StationNameFormatPolicy class handles logic related to station name format
     """
 
-    def __init__(self):
-        """The __init__ method.
-        """
+    STATUS_CHARACTERS = ['*', '!', '_', '\'', '"', '`']
 
-    def getCorrectFormat(self, name):
+    @staticmethod
+    def get_correct_format(name):
         """ Returns the specified name in correct format
         (without any status characters)
 
@@ -23,4 +22,6 @@ class StationNameFormatPolicy():
         Returns:
             string
         """
-        return name.replace('*', '').replace('!', '').replace('_', '').replace('\'', '').replace('"', '').replace('`', '').strip()
+        for char in StationNameFormatPolicy.STATUS_CHARACTERS:
+            name = name.replace(char, '')
+        return name.strip()

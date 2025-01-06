@@ -6,70 +6,70 @@ import re
 
 
 class AprsISConnection(aprslib.IS):
-    """Handles communication with the APRS-IS server
-    """
+    """Handles communication with the APRS-IS server."""
 
     def __init__(self, callsign, passwd="-1", host="rotate.aprs.net", port=10152):
-        """The __init__ method.
+        """
+        Initialize the APRS-IS connection.
 
         Args:
-            callsign (string):               APRS-IS callsign
-            passwd (string):                 APRS-IS password
-            host (string):                   APRS-IS Server hostname
-            port (int):                      APRS-IS Server port
+            callsign (str): APRS-IS callsign.
+            passwd (str): APRS-IS password.
+            host (str): APRS-IS Server hostname.
+            port (int): APRS-IS Server port.
         """
-        aprslib.IS.__init__(self, callsign, passwd, host, port)
-
+        super().__init__(callsign, passwd, host, port)
         self.logger = logging.getLogger("aprslib.IS")
-        self.frequencyLimit = None
-        self.stationHashTimestamps = collections.OrderedDict()
-        self.sourceId = 1
+        self.frequency_limit = None
+        self.station_hash_timestamps = collections.OrderedDict()
+        self.source_id = 1
 
-    def setFrequencyLimit(self, frequencyLimit):
-        """Set frequency limit
+    def set_frequency_limit(self, frequency_limit):
+        """
+        Set frequency limit.
 
         Args:
-            frequencyLimit (int):  Hard frequency limit (in seconds)
+            frequency_limit (int): Hard frequency limit (in seconds).
         """
-        self.frequencyLimit = frequencyLimit
+        self.frequency_limit = frequency_limit
 
-    def getFrequencyLimit(self):
-        """Get frequency limit
-
-        Return:
-            int
+    def get_frequency_limit(self):
         """
-        return self.frequencyLimit
+        Get frequency limit.
 
-    def setSourceId(self, sourceId):
-        """Set what source packet is from (APRS, CWOP ...)
+        Returns:
+            int: The frequency limit.
+        """
+        return self.frequency_limit
+
+    def set_source_id(self, source_id):
+        """
+        Set the source ID for the packet (APRS, CWOP, etc.).
 
         Args:
-            sourceId (int):  Id that corresponds to id in source-table
+            source_id (int): ID that corresponds to ID in the source table.
         """
-        self.sourceId = sourceId
+        self.source_id = source_id
 
-    def filteredConsumer(self, callback, blocking=True, raw=False):
-        """The filtered consume method
+    def filtered_consumer(self, callback, blocking=True, raw=False):
+        """
+        Consume packets with filtering.
 
         Args:
-            callback (boolean):    Method to call with result
-            blocking (boolean):    Set to true if consume should be blocking
-            raw (boolean):         Set to true if result should be raw
+            callback (callable): Method to call with the result.
+            blocking (bool): Set to True if consume should be blocking.
+            raw (bool): Set to True if result should be raw.
         """
-        def filterCallback(line):
+        def filter_callback(line):
             try:
-                # decode first then replace
-                line = line.decode()
-                line = line.replace('\x00', '')
-            except UnicodeError as e:
-                # string is not UTF-8
+                line = line.decode().replace('\x00', '')
+            except UnicodeError:
                 return
 
             if line.startswith('dup'):
                 line = line[4:].strip()
 
-            if (self._isSendingToFast(line)):
+            if self._is_sending_too_fast(line):
                 return
 
             if raw:
@@ -77,64 +77,59 @@ class AprsISConnection(aprslib.IS):
             else:
                 callback(self._parse(line))
 
-        self.consumer(filterCallback, blocking, False, True)
+        self.consumer(filter_callback, blocking, False, True)
 
-    def _isSendingToFast(self, line):
-        """Simple check that returns True if sending frequency limit is to fast
+    def _is_sending_too_fast(self, line):
+        """
+        Check if sending frequency limit is too fast.
 
         Args:
-            line (string):         Packet string
+            line (str): Packet string.
 
         Returns:
-            True if sending frequency limit is to fast
+            bool: True if sending frequency limit is too fast, False otherwise.
         """
-        if (self.frequencyLimit is not None):
+        if self.frequency_limit is not None:
             try:
-                (name, other) = line.split('>', 1)
-            except:
+                name, other = line.split('>', 1)
+                head, body = other.split(':', 1)
+            except ValueError:
                 return False
 
-            # Divide into body and head
-            try:
-                (head, body) = other.split(':', 1)
-            except:
+            if not body:
                 return False
 
-            if len(body) == 0:
-                return False
-
-            packetType = body[0]
+            packet_type = body[0]
             body = body[1:]
 
-            # Try to find turn rate and reduce frequency limit if high turn rate
-            frequencyLimitToApply = int(self.frequencyLimit)
-            if (self.sourceId == 5) :
-                match = re.search("(\+|\-)(\d\.\d)rot ", line)
-                try:
-                    turnRate = abs(float(match.group(2)))
-                    if (turnRate > 0) :
-                        frequencyLimitToApply = int(frequencyLimitToApply / (1+turnRate))
-                except:
-                    pass
+            frequency_limit_to_apply = int(self.frequency_limit)
+            if self.source_id == 5:
+                match = re.search(r"(\+|\-)(\d\.\d)rot ", line)
+                if match:
+                    try:
+                        turn_rate = abs(float(match.group(2)))
+                        if turn_rate > 0:
+                            frequency_limit_to_apply = int(frequency_limit_to_apply / (1 + turn_rate))
+                    except ValueError:
+                        pass
 
-            latestTimestampOnMap = 0
-            if (name + packetType in self.stationHashTimestamps):
-                latestTimestampOnMap = self.stationHashTimestamps[name + packetType]
+            latest_timestamp_on_map = self.station_hash_timestamps.get(name + packet_type, 0)
+            current_time = int(time.time()) - 1
 
-                if (((int(time.time()) - 1) - frequencyLimitToApply) < latestTimestampOnMap):
-                    # This sender is sending faster than config limit
-                    return True
-            self.stationHashTimestamps[name + packetType] = int(time.time()) - 1
-            self._cacheMaintenance()
+            if (current_time - frequency_limit_to_apply) < latest_timestamp_on_map:
+                return True
+
+            self.station_hash_timestamps[name + packet_type] = current_time
+            self._cache_maintenance()
+
         return False
 
-    def _cacheMaintenance(self):
-        """Make sure cache does not contain to many packets
-        """
-        frequencyLimitToApply = int(self.frequencyLimit)
-        maxNumberOfPackets =  frequencyLimitToApply * 1000 # We assume that we never have more than 1000 packets per second
-        if (len(self.stationHashTimestamps) > maxNumberOfPackets):
-            try:
-                self.stationHashTimestamps.popitem(last=False)
-            except (KeyError, StopIteration) as e:
-                pass
+    def _cache_maintenance(self):
+        """Ensure cache does not contain too many packets."""
+        if self.frequency_limit is not None:
+            max_packets = int(self.frequency_limit) * 1000
+            while len(self.station_hash_timestamps) > max_packets:
+                try:
+                    self.station_hash_timestamps.popitem(last=False)
+                except KeyError:
+                    break

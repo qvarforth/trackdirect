@@ -26,8 +26,7 @@ trackdirect.services.callbackExecutor = {
    * @return {trackdirect.services.callbackExecutor}
    */
   add: function (thisObj, callback, argsArray) {
-    var callBackString = callback.toString() + ":" + argsArray.toString();
-    this._lastAddedUniqueCallback = callBackString;
+    this._lastAddedUniqueCallback = callback.toString() + ":" + argsArray.toString();
 
     this._normalPriorityQueue.push(function () {
       callback.apply(thisObj, argsArray);
@@ -46,7 +45,7 @@ trackdirect.services.callbackExecutor = {
    * @return {trackdirect.services.callbackExecutor}
    */
   addIfUnique: function (thisObj, callback, argsArray) {
-    var callBackString = callback.toString() + ":" + argsArray.toString();
+    let callBackString = callback.toString() + ":" + argsArray.toString();
     if (this._lastAddedUniqueCallback == callBackString) {
       return this;
     }
@@ -110,12 +109,12 @@ trackdirect.services.callbackExecutor = {
    * Execute the first call in queue when ready
    */
   _next: function () {
-    var secondsSinceLastSleep = Date.now() - this._lastSleepTimestamp;
+    let secondsSinceLastSleep = Date.now() - this._lastSleepTimestamp;
     if (secondsSinceLastSleep > this.settings.minTimeBeforeSleep) {
       // Sleep 1ms after some ms, to avoid browser freeze
       // We also count recursive calls since last sleep to avoid the error: Maximum call stack size exceeded
       this._lastSleepTimestamp = Date.now();
-      var me = this;
+      let me = this;
       setTimeout(function () {
         me._dequeue();
       }, 1);
@@ -128,7 +127,7 @@ trackdirect.services.callbackExecutor = {
    * Execute the first call in queue
    */
   _dequeue: function () {
-    var shift = this._highPriorityQueue.shift();
+    let shift = this._highPriorityQueue.shift();
     if (shift) {
       this._running = true;
       shift();

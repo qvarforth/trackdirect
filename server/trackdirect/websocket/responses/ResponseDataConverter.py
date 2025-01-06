@@ -1,377 +1,332 @@
 import logging
-from twisted.python import log
-
-from math import floor, ceil
-import datetime, time
-
-import psycopg2, psycopg2.extras
-
-from trackdirect.repositories.PacketRepository import PacketRepository
-from trackdirect.repositories.StationRepository import StationRepository
-from trackdirect.repositories.PacketWeatherRepository import PacketWeatherRepository
-from trackdirect.repositories.PacketOgnRepository import PacketOgnRepository
-from trackdirect.repositories.OgnDeviceRepository import OgnDeviceRepository
-
-from trackdirect.database.DatabaseObjectFinder import DatabaseObjectFinder
-from trackdirect.database.DatabaseConnection import DatabaseConnection
-
-from trackdirect.websocket.queries.MostRecentPacketsQuery import MostRecentPacketsQuery
-from trackdirect.websocket.queries.MissingPacketsQuery import MissingPacketsQuery
+import datetime
+from server.trackdirect.repositories.PacketRepository import PacketRepository
+from server.trackdirect.repositories.StationRepository import StationRepository
+from server.trackdirect.repositories.PacketWeatherRepository import PacketWeatherRepository
+from server.trackdirect.repositories.PacketOgnRepository import PacketOgnRepository
+from server.trackdirect.repositories.OgnDeviceRepository import OgnDeviceRepository
+from server.trackdirect.database.DatabaseObjectFinder import DatabaseObjectFinder
+from server.trackdirect.websocket.queries.MostRecentPacketsQuery import MostRecentPacketsQuery
 
 
-class ResponseDataConverter():
-    """An ResponseDataConverter instance is used to create response content data based on packet objects
-    """
-
+class ResponseDataConverter:
+    """An instance of ResponseDataConverter is used to create response content data based on packet objects."""
 
     def __init__(self, state, db):
-        """The __init__ method.
+        """Initialize the ResponseDataConverter.
 
         Args:
-            state (WebsocketConnectionState):
-            db (psycopg2.Connection):            Database connection (with autocommit)
+            state (WebsocketConnectionState): The current state for a websocket connection.
+            db (psycopg2.Connection): Database connection (with autocommit).
         """
         self.state = state
         self.logger = logging.getLogger('trackdirect')
-
         self.db = db
-        self.packetRepository = PacketRepository(db)
-        self.stationRepository = StationRepository(db)
-        self.packetWeatherRepository = PacketWeatherRepository(db)
-        self.dbObjectFinder = DatabaseObjectFinder(db)
-        self.packetOgnRepository = PacketOgnRepository(db)
-        self.ognDeviceRepository = OgnDeviceRepository(db)
+        self.packet_repository = PacketRepository(db)
+        self.station_repository = StationRepository(db)
+        self.packet_weather_repository = PacketWeatherRepository(db)
+        self.db_object_finder = DatabaseObjectFinder(db)
+        self.packet_ogn_repository = PacketOgnRepository(db)
+        self.ogn_device_repository = OgnDeviceRepository(db)
 
-
-    def getResponseData(self, packets, mapSectorList = None, flags = [], iterationCounter = 0) :
-        """Create response data based on specified packets
-
-        Args:
-            packets (array):                    An array of the Packet's that should be converted to packet dict responses
-            mapSectorList (array):              An array of the current handled map sectors
-            flags (array):                      An array with additional flags (like "realtime", "latest")
-            iterationCounter (int)              This functionality will call itself to find related packets, this argument is used to remember the number of iterations
-
-        Returns:
-            An array of packet dicts
-        """
-        responseData = []
-        for index, packet in enumerate(packets) :
-            packetDict = packet.getDict(True)
-            packetDict['packet_order_id'] = self._getPacketOrderId(packets, index, flags)
-
-            self._updateState(packet, mapSectorList, flags)
-            self._addOverwriteStatus(packetDict)
-            if (("latest" not in flags and "realtime" not in flags) or self.state.isStationHistoryOnMap(packet.stationId)) :
-                if (packetDict['packet_order_id'] == 1) :
-                    self._addStationWeatherData(packetDict)
-                    self._addStationTelemetryData(packetDict)
-                    if (packet.sourceId == 5) :
-                        self._addStationOgnData(packetDict)
-                if (packet.sourceId == 5) :
-                    self._addStationOgnDeviceData(packetDict)
-                self._addPacketPhgRng(packetDict)
-
-            if ("realtime" not in flags) :
-                self._addStationIdPath(packetDict)
-
-            self._setFlags(packetDict, flags)
-            responseData.append(packetDict)
-        return self._extendResponseWithMorePackets(responseData, flags, iterationCounter)
-
-
-    def _getPacketOrderId(self, packets, index, flags) :
-        """Returns the order id of the packet at specified index
+    def get_response_data(self, packets, map_sector_list=None, flags=None, iteration_counter=0):
+        """Create response data based on specified packets.
 
         Args:
-            packets (array):     An array of the Packet's that should be converted to packet dict responses
-            index (int):         Index of the packet that we want an order id for
-            flags (array):       An array with additional flags (like "realtime", "latest")
+            packets (list): An array of the Packet's that should be converted to packet dict responses.
+            map_sector_list (list, optional): An array of the current handled map sectors.
+            flags (list, optional): An array with additional flags (like "realtime", "latest").
+            iteration_counter (int): This functionality will call itself to find related packets, this argument is used to remember the number of iterations.
 
         Returns:
-            int
+            list: An array of packet dicts.
         """
-        if ("realtime" in flags) :
+        if flags is None:
+            flags = []
+
+        response_data = []
+        for index, packet in enumerate(packets):
+            packet_dict = packet.get_dict(True)
+            packet_dict['packet_order_id'] = self._get_packet_order_id(packets, index, flags)
+
+            self._update_state(packet, map_sector_list, flags)
+            self._add_overwrite_status(packet_dict)
+            if ("latest" not in flags and "realtime" not in flags) or self.state.is_station_history_on_map(packet.station_id):
+                if packet_dict['packet_order_id'] == 1:
+                    self._add_station_weather_data(packet_dict)
+                    self._add_station_telemetry_data(packet_dict)
+                    if packet.source_id == 5:
+                        self._add_station_ogn_data(packet_dict)
+                if packet.source_id == 5:
+                    self._add_station_ogn_device_data(packet_dict)
+                self._add_packet_phg_rng(packet_dict)
+
+            if "realtime" not in flags:
+                self._add_station_id_path(packet_dict)
+
+            self._set_flags(packet_dict, flags)
+            response_data.append(packet_dict)
+        return self._extend_response_with_more_packets(response_data, flags, iteration_counter)
+
+    def _get_packet_order_id(self, packets, index, flags):
+        """Returns the order id of the packet at specified index.
+
+        Args:
+            packets (list): An array of the Packet's that should be converted to packet dict responses.
+            index (int): Index of the packet that we want an order id for.
+            flags (list): An array with additional flags (like "realtime", "latest").
+
+        Returns:
+            int: The order id of the packet.
+        """
+        if "realtime" in flags:
             return 1
-        elif (len(packets) -1 == index):
-            # This is the last packet of all
-            return 1 # Last packet in response for this marker
-        elif (packets[index].markerId != packets[index + 1].markerId) :
-            # This is the last packet for this marker
-            return 1 # Last packet in response for this marker
-        elif (index == 0 or packets[index].markerId != packets[index - 1].markerId) :
-            # This is the first packet for this marker
-            return 3 # First packet in response for this marker
-        else :
-            return 2 # Middle packet in response for this marker
+        elif len(packets) - 1 == index:
+            return 1  # Last packet in response for this marker
+        elif packets[index].marker_id != packets[index + 1].marker_id:
+            return 1  # Last packet in response for this marker
+        elif index == 0 or packets[index].marker_id != packets[index - 1].marker_id:
+            return 3  # First packet in response for this marker
+        else:
+            return 2  # Middle packet in response for this marker
 
-
-    def _updateState(self, packet, mapSectorList, flags) :
-        """Update connection state based on packet on the way to client
+    def _update_state(self, packet, map_sector_list, flags):
+        """Update connection state based on packet on the way to client.
 
         Args:
-            packet (Packet):                     The packet that is on the way to client
-            mapSectorList (array):               An array of the current handled map sectors
-            flags (array):                       An array with additional flags (like "realtime", "latest")
+            packet (Packet): The packet that is on the way to client.
+            map_sector_list (list): An array of the current handled map sectors.
+            flags (list): An array with additional flags (like "realtime", "latest").
         """
-        self.state.setStationLatestTimestamp(packet.stationId, packet.timestamp)
+        self.state.set_station_latest_timestamp(packet.station_id, packet.timestamp)
 
-        if (packet.stationId not in self.state.stationsOnMapDict) :
-            # Station should be added to stationsOnMapDict even if only latest packet is added
-            self.state.stationsOnMapDict[packet.stationId] = True
+        if packet.station_id not in self.state.stations_on_map_dict:
+            self.state.stations_on_map_dict[packet.station_id] = True
 
-        # self.state.setCompleteStationLatestTimestamp
-        # Note that we depend on that the real-time aprs-is sender make sure to send previous missing packets when a new is sent
-        if (self.state.isStationHistoryOnMap(packet.stationId)) :
-            self.state.setCompleteStationLatestTimestamp(packet.stationId, packet.timestamp)
-        elif ("latest" not in flags and "realtime" not in flags and "related" not in flags) :
-            self.state.setCompleteStationLatestTimestamp(packet.stationId, packet.timestamp)
-        elif ("related" in flags and packet.packetTailTimestamp == packet.timestamp) :
-            self.state.setCompleteStationLatestTimestamp(packet.stationId, packet.timestamp)
+        if self.state.is_station_history_on_map(packet.station_id):
+            self.state.set_complete_station_latest_timestamp(packet.station_id, packet.timestamp)
+        elif "latest" not in flags and "realtime" not in flags and "related" not in flags:
+            self.state.set_complete_station_latest_timestamp(packet.station_id, packet.timestamp)
+        elif "related" in flags and packet.packet_tail_timestamp == packet.timestamp:
+            self.state.set_complete_station_latest_timestamp(packet.station_id, packet.timestamp)
 
-        if (mapSectorList and packet.mapSector is not None and packet.mapSector in mapSectorList) :
+        if map_sector_list and packet.map_sector is not None and packet.map_sector in map_sector_list:
             if "latest" not in flags:
-                self.state.setMapSectorLatestTimeStamp(packet.mapSector, packet.timestamp)
-            else :
-                self.state.setMapSectorLatestOverwriteTimeStamp(packet.mapSector, packet.timestamp)
+                self.state.set_map_sector_latest_time_stamp(packet.map_sector, packet.timestamp)
+            else:
+                self.state.set_map_sector_latest_overwrite_time_stamp(packet.map_sector, packet.timestamp)
 
-
-    def _setFlags(self, packetDict, flags) :
-        """Set additional flags that will tell client a bit more about the packet
+    def _set_flags(self, packet_dict, flags):
+        """Set additional flags that will tell client a bit more about the packet.
 
         Args:
-            packetDict (dict):   The packet to which we should modify
-            flags (array):       An array with additional flags (like "realtime", "latest")
+            packet_dict (dict): The packet to which we should modify.
+            flags (list): An array with additional flags (like "realtime", "latest").
         """
-        if ("realtime" in flags) :
-            packetDict["db"] = 0
-            packetDict["realtime"] = 1
-        else :
-            packetDict["db"] = 1
-            packetDict["realtime"] = 0
+        packet_dict["db"] = 0 if "realtime" in flags else 1
+        packet_dict["realtime"] = 1 if "realtime" in flags else 0
 
-    def _addOverwriteStatus(self, packetDict) :
-        """Set packet overwrite status
+    def _add_overwrite_status(self, packet_dict):
+        """Set packet overwrite status.
 
         Args:
-            packetDict (dict):                  The packet to which we should modify
+            packet_dict (dict): The packet to which we should modify.
         """
-        packetDict['overwrite'] = 0
+        packet_dict['overwrite'] = 0
 
-        # We assume that this method is called after the "complete station on map"-state has been updated
-        if (not self.state.isStationHistoryOnMap(packetDict["station_id"])) :
-            packetDict['overwrite'] = 1
+        if not self.state.is_station_history_on_map(packet_dict["station_id"]):
+            packet_dict['overwrite'] = 1
 
-
-    def _addPacketPhgRng(self, packetDict) :
-        """Add previous reported phg and rng to the specified packet
+    def _add_packet_phg_rng(self, packet_dict):
+        """Add previous reported phg and rng to the specified packet.
 
         Args:
-            packetDict (dict):  The packet to which we should modify
+            packet_dict (dict): The packet to which we should modify.
         """
-        if ('phg' in packetDict and 'rng' in packetDict) :
-            if (packetDict['phg'] is None and packetDict['latest_phg_timestamp'] is not None and packetDict['latest_phg_timestamp'] < packetDict['timestamp']) :
-                relatedPacket = self.packetRepository.getObjectByStationIdAndTimestamp(packetDict['station_id'], packetDict['latest_phg_timestamp'])
-                if (relatedPacket.phg is not None and relatedPacket.markerId == packetDict['marker_id']) :
-                    packetDict['phg'] = relatedPacket.phg
+        if 'phg' in packet_dict and 'rng' in packet_dict:
+            if packet_dict['phg'] is None and packet_dict['latest_phg_timestamp'] is not None and packet_dict['latest_phg_timestamp'] < packet_dict['timestamp']:
+                related_packet = self.packet_repository.get_object_by_station_id_and_timestamp(packet_dict['station_id'], packet_dict['latest_phg_timestamp'])
+                if related_packet.phg is not None and related_packet.marker_id == packet_dict['marker_id']:
+                    packet_dict['phg'] = related_packet.phg
 
-            if (packetDict['rng'] is None and packetDict['latest_rng_timestamp'] is not None and packetDict['latest_rng_timestamp'] < packetDict['timestamp']) :
-                relatedPacket = self.packetRepository.getObjectByStationIdAndTimestamp(packetDict['station_id'], packetDict['latest_rng_timestamp'])
-                if (relatedPacket.rng is not None and relatedPacket.markerId == packetDict['marker_id']) :
-                    packetDict['rng'] = relatedPacket.rng
+            if packet_dict['rng'] is None and packet_dict['latest_rng_timestamp'] is not None and packet_dict['latest_rng_timestamp'] < packet_dict['timestamp']:
+                related_packet = self.packet_repository.get_object_by_station_id_and_timestamp(packet_dict['station_id'], packet_dict['latest_rng_timestamp'])
+                if related_packet.rng is not None and related_packet.marker_id == packet_dict['marker_id']:
+                    packet_dict['rng'] = related_packet.rng
 
-
-    def _addStationOgnData(self, packetDict) :
-        """Add OGN data to packet
+    def _add_station_ogn_data(self, packet_dict):
+        """Add OGN data to packet.
 
         Args:
-            packetDict (dict):  The packet to which we should add the related data
+            packet_dict (dict): The packet to which we should add the related data.
         """
-        if ('ogn' not in packetDict or packetDict['ogn'] is None) :
-            station = self.stationRepository.getObjectById(packetDict['station_id'])
-            ts = int(packetDict['timestamp']) - (24*60*60)
-            if (station.latestOgnPacketTimestamp is not None
-                    and station.latestOgnPacketTimestamp > ts) :
-                packetDict['latest_ogn_packet_timestamp'] = station.latestOgnPacketTimestamp
+        if 'ogn' not in packet_dict or packet_dict['ogn'] is None:
+            station = self.station_repository.get_object_by_id(packet_dict['station_id'])
+            ts = int(packet_dict['timestamp']) - (24 * 60 * 60)
+            if station.latest_ogn_packet_timestamp is not None and station.latest_ogn_packet_timestamp > ts:
+                packet_dict['latest_ogn_packet_timestamp'] = station.latest_ogn_packet_timestamp
 
-                relatedPacketDict = None
-                if (station.latestOgnPacketId == packetDict['id']) :
-                    relatedPacketDict = packetDict
-                else :
-                    relatedPacket = self.packetRepository.getObjectByIdAndTimestamp(station.latestOgnPacketId, station.latestOgnPacketTimestamp)
-                    if (relatedPacket.isExistingObject()) :
-                        relatedPacketDict = relatedPacket.getDict()
+                related_packet_dict = None
+                if station.latest_ogn_packet_id == packet_dict['id']:
+                    related_packet_dict = packet_dict
+                else:
+                    related_packet = self.packet_repository.get_object_by_id_and_timestamp(station.latest_ogn_packet_id, station.latest_ogn_packet_timestamp)
+                    if related_packet.is_existing_object():
+                        related_packet_dict = related_packet.get_dict()
 
-                if (relatedPacketDict is not None) :
-                    if (relatedPacketDict['marker_id'] is not None and relatedPacketDict['marker_id'] == packetDict['marker_id']) :
-                        packetOgn = self.packetOgnRepository.getObjectByPacketIdAndTimestamp(station.latestOgnPacketId, station.latestOgnPacketTimestamp)
-                        if (packetOgn.isExistingObject()) :
-                            packetDict['ogn'] = packetOgn.getDict()
+                if related_packet_dict is not None:
+                    if related_packet_dict['marker_id'] is not None and related_packet_dict['marker_id'] == packet_dict['marker_id']:
+                        packet_ogn = self.packet_ogn_repository.get_object_by_packet_id_and_timestamp(station.latest_ogn_packet_id, station.latest_ogn_packet_timestamp)
+                        if packet_ogn.is_existing_object():
+                            packet_dict['ogn'] = packet_ogn.get_dict()
 
-
-    def _addStationOgnDeviceData(self, packetDict) :
-        """Add OGN device data to packet
+    def _add_station_ogn_device_data(self, packet_dict):
+        """Add OGN device data to packet.
 
         Args:
-            packetDict (dict):  The packet to which we should add the related data
+            packet_dict (dict): The packet to which we should add the related data.
         """
-        station = self.stationRepository.getObjectById(packetDict['station_id'])
-        if (station.latestOgnSenderAddress is not None) :
-            ognDevice = self.ognDeviceRepository.getObjectByDeviceId(station.latestOgnSenderAddress)
-            if (ognDevice.isExistingObject()) :
-                packetDict['ogn_device'] = ognDevice.getDict()
+        station = self.station_repository.get_object_by_id(packet_dict['station_id'])
+        if station.latest_ogn_sender_address is not None:
+            ogn_device = self.ogn_device_repository.get_object_by_device_id(station.latest_ogn_sender_address)
+            if ogn_device.is_existing_object():
+                packet_dict['ogn_device'] = ogn_device.get_dict()
 
-
-    def _addStationWeatherData(self, packetDict) :
-        """Add weather data to packet
+    def _add_station_weather_data(self, packet_dict):
+        """Add weather data to packet.
 
         Args:
-            packetDict (dict):  The packet to which we should add the related data
+            packet_dict (dict): The packet to which we should add the related data.
         """
-        if ('weather' not in packetDict or packetDict['weather'] is None) :
-            station = self.stationRepository.getObjectById(packetDict['station_id'])
-            ts = int(packetDict['timestamp']) - (24*60*60)
-            if (station.latestWeatherPacketTimestamp is not None
-                    and station.latestWeatherPacketTimestamp > ts) :
-                packetDict['latest_weather_packet_timestamp'] = station.latestWeatherPacketTimestamp
+        if 'weather' not in packet_dict or packet_dict['weather'] is None:
+            station = self.station_repository.get_object_by_id(packet_dict['station_id'])
+            ts = int(packet_dict['timestamp']) - (24 * 60 * 60)
+            if station.latest_weather_packet_timestamp is not None and station.latest_weather_packet_timestamp > ts:
+                packet_dict['latest_weather_packet_timestamp'] = station.latest_weather_packet_timestamp
 
-                relatedPacketDict = None
-                if (station.latestWeatherPacketId == packetDict['id']) :
-                    relatedPacketDict = packetDict
-                else :
-                    relatedPacket = self.packetRepository.getObjectByIdAndTimestamp(station.latestWeatherPacketId, station.latestWeatherPacketTimestamp)
-                    if (relatedPacket.isExistingObject()) :
-                        relatedPacketDict = relatedPacket.getDict()
+                related_packet_dict = None
+                if station.latest_weather_packet_id == packet_dict['id']:
+                    related_packet_dict = packet_dict
+                else:
+                    related_packet = self.packet_repository.get_object_by_id_and_timestamp(station.latest_weather_packet_id, station.latest_weather_packet_timestamp)
+                    if related_packet.is_existing_object():
+                        related_packet_dict = related_packet.get_dict()
 
-                if (relatedPacketDict is not None) :
-                    if (relatedPacketDict['marker_id'] is not None and relatedPacketDict['marker_id'] == packetDict['marker_id']) :
-                        packetWeather = self.packetWeatherRepository.getObjectByPacketIdAndTimestamp(station.latestWeatherPacketId, station.latestWeatherPacketTimestamp)
-                        if (packetWeather.isExistingObject()) :
-                            packetDict['weather'] = packetWeather.getDict()
+                if related_packet_dict is not None:
+                    if related_packet_dict['marker_id'] is not None and related_packet_dict['marker_id'] == packet_dict['marker_id']:
+                        packet_weather = self.packet_weather_repository.get_object_by_packet_id_and_timestamp(station.latest_weather_packet_id, station.latest_weather_packet_timestamp)
+                        if packet_weather.is_existing_object():
+                            packet_dict['weather'] = packet_weather.get_dict()
 
-
-    def _addStationTelemetryData(self, packetDict) :
-        """Add telemetry data to packet
+    def _add_station_telemetry_data(self, packet_dict):
+        """Add telemetry data to packet.
 
         Args:
-            packetDict (dict):  The packet to which we should add the related data
+            packet_dict (dict): The packet to which we should add the related data.
         """
-        if ('telemetry' not in packetDict or packetDict['telemetry'] is None) :
-            station = self.stationRepository.getObjectById(packetDict['station_id'])
-            ts = int(packetDict['timestamp']) - (24*60*60)
-            if (station.latestTelemetryPacketTimestamp is not None
-                    and station.latestTelemetryPacketTimestamp > ts) :
-                packetDict['latest_telemetry_packet_timestamp'] = station.latestTelemetryPacketTimestamp
+        if 'telemetry' not in packet_dict or packet_dict['telemetry'] is None:
+            station = self.station_repository.get_object_by_id(packet_dict['station_id'])
+            ts = int(packet_dict['timestamp']) - (24 * 60 * 60)
+            if station.latest_telemetry_packet_timestamp is not None and station.latest_telemetry_packet_timestamp > ts:
+                packet_dict['latest_telemetry_packet_timestamp'] = station.latest_telemetry_packet_timestamp
 
-
-    def _addStationIdPath(self, packetDict) :
-        """Add the station id path to the specified packet
+    def _add_station_id_path(self, packet_dict):
+        """Add the station id path to the specified packet.
 
         Args:
-            packetDict (dict):  The packet to which we should add the related station id path
+            packet_dict (dict): The packet to which we should add the related station id path.
         """
-        stationIdPath = []
-        stationNamePath = []
-        stationLocationPath = []
+        station_id_path = []
+        station_name_path = []
+        station_location_path = []
 
-        if (packetDict['raw_path'] is not None and "TCPIP*" not in packetDict['raw_path'] and "TCPXX*" not in packetDict['raw_path']) :
-            packetDate = datetime.datetime.utcfromtimestamp(int(packetDict['timestamp'])).strftime('%Y%m%d')
-            datePacketTable = 'packet' + packetDate
-            datePacketPathTable = datePacketTable + '_path'
+        if packet_dict['raw_path'] is not None and "TCPIP*" not in packet_dict['raw_path'] and "TCPXX*" not in packet_dict['raw_path']:
+            packet_date = datetime.datetime.utcfromtimestamp(int(packet_dict['timestamp'])).strftime('%Y%m%d')
+            date_packet_table = 'packet' + packet_date
+            date_packet_path_table = date_packet_table + '_path'
 
-            if (self.dbObjectFinder.checkTableExists(datePacketPathTable)) :
-                selectCursor = self.db.cursor()
-                sql = """select station_id, station.name station_name, latitude, longitude from """ + datePacketPathTable + """, station where station.id = station_id and packet_id = %s order by number""" % (packetDict['id'])
-                selectCursor.execute(sql)
+            if self.db_object_finder.check_table_exists(date_packet_path_table):
+                with self.db.cursor() as select_cursor:
+                    sql = """SELECT station_id, station.name station_name, latitude, longitude 
+                             FROM {} 
+                             JOIN station ON station.id = station_id 
+                             WHERE packet_id = %s 
+                             ORDER BY number""".format(date_packet_path_table)
+                    select_cursor.execute(sql, (packet_dict['id'],))
 
-                for record in selectCursor :
-                    stationIdPath.append(record[0])
-                    stationNamePath.append(record[1])
-                    stationLocationPath.append([record[2], record[3]])
-                selectCursor.close()
-        packetDict['station_id_path'] = stationIdPath
-        packetDict['station_name_path'] = stationNamePath
-        packetDict['station_location_path'] = stationLocationPath
+                    for record in select_cursor:
+                        station_id_path.append(record[0])
+                        station_name_path.append(record[1])
+                        station_location_path.append([record[2], record[3]])
 
+        packet_dict['station_id_path'] = station_id_path
+        packet_dict['station_name_path'] = station_name_path
+        packet_dict['station_location_path'] = station_location_path
 
-    def getDictListFromPacketList(self, packets) :
-        """Returns a packet dict list from a packet list
+    def get_dict_list_from_packet_list(self, packets):
+        """Returns a packet dict list from a packet list.
 
         Args:
-            packets (array):  Array of Packet instances
+            packets (list): Array of Packet instances.
 
         Returns:
-            A array och packet dicts
+            list: An array of packet dicts.
         """
-        packetDicts = []
-        for packet in packets :
-            packetDicts.append(packet.getDict())
-        return packetDicts
+        return [packet.get_dict() for packet in packets]
 
-
-    def _extendResponseWithMorePackets(self, packetDicts, flags, iterationCounter) :
-        """Extend the specified array with related packets
+    def _extend_response_with_more_packets(self, packet_dicts, flags, iteration_counter):
+        """Extend the specified array with related packets.
 
         Args:
-            packetDicts (array):     An array of the packet response dicts
-            flags (array):           An array with additional flags (like "realtime", "latest")
-            iterationCounter (int):  This functionality will call itself to find related packets, this argument is used to remember the number of iterations
+            packet_dicts (list): An array of the packet response dicts.
+            flags (list): An array with additional flags (like "realtime", "latest").
+            iteration_counter (int): This functionality will call itself to find related packets, this argument is used to remember the number of iterations.
 
         Returns:
-            The modified packet array
+            list: The modified packet array.
         """
-        allPacketDicts = []
-        hasSeveralSendersForOneStation = False
+        all_packet_dicts = []
 
-        # Add related packets (stations that the original packets depend on)
-        if (packetDicts) :
-            relatedStationIds = {}
-            for index, packetDict in enumerate(packetDicts) :
-                if (packetDict['is_moving'] == 1 or packetDict['packet_order_id'] == 1) :
-                    # Only fetch related stations for the last stationary packet (in some cases query will return older packets)
-                    if (packetDict['station_id_path']) :
-                        # Also add latest packets from stations that has been involved in sending any packets in array "packets"
-                        for stationId in packetDict['station_id_path'] :
-                            if (stationId not in self.state.stationsOnMapDict) :
-                                relatedStationIds[stationId] = True
+        if packet_dicts:
+            related_station_ids = {}
+            for packet_dict in packet_dicts:
+                if packet_dict['is_moving'] == 1 or packet_dict['packet_order_id'] == 1:
+                    if packet_dict['station_id_path']:
+                        for station_id in packet_dict['station_id_path']:
+                            if station_id not in self.state.stations_on_map_dict:
+                                related_station_ids[station_id] = True
 
-            for index, packetDict in enumerate(packetDicts) :
-                if (packetDict['station_id'] in relatedStationIds) :
-                    del relatedStationIds[packetDict['station_id']]
+            for packet_dict in packet_dicts:
+                if packet_dict['station_id'] in related_station_ids:
+                    del related_station_ids[packet_dict['station_id']]
 
-            if (relatedStationIds) :
-                relatedStationPackets = self._getRelatedStationPacketsByStationIds(list(relatedStationIds.keys()))
+            if related_station_ids:
+                related_station_packets = self._get_related_station_packets_by_station_ids(list(related_station_ids.keys()))
 
-                # To avoid infinit loop we mark all related stations as added to map even we we failed doing it
-                for relatedStationId in list(relatedStationIds.keys()):
-                    if (relatedStationId not in self.state.stationsOnMapDict) :
-                        self.state.stationsOnMapDict[relatedStationId] = True
+                for related_station_id in related_station_ids.keys():
+                    if related_station_id not in self.state.stations_on_map_dict:
+                        self.state.stations_on_map_dict[related_station_id] = True
 
-                if (relatedStationPackets) :
-                    if ("latest" in flags) :
-                        relatedStationPacketDicts = self.getResponseData(relatedStationPackets, None, ["latest", "related"], iterationCounter + 1)
-                    else :
-                        relatedStationPacketDicts = self.getResponseData(relatedStationPackets, None, ["related"], iterationCounter + 1)
-                    allPacketDicts.extend(relatedStationPacketDicts)
+                if related_station_packets:
+                    related_station_packet_dicts = self.get_response_data(
+                        related_station_packets, None, ["latest", "related"] if "latest" in flags else ["related"], iteration_counter + 1
+                    )
+                    all_packet_dicts.extend(related_station_packet_dicts)
 
-        # Add original packets
-        allPacketDicts.extend(packetDicts)
+        all_packet_dicts.extend(packet_dicts)
+        return all_packet_dicts
 
-        #return allPacketDicts.sort(key=lambda x: x['id'], reverse=False)
-        return allPacketDicts
-
-    def _getRelatedStationPacketsByStationIds(self, relatedStationIdList) :
-        """Returns a list of the latest packet for the specified stations, this method should be used to find packets for a packet's related stations
+    def _get_related_station_packets_by_station_ids(self, related_station_id_list):
+        """Returns a list of the latest packet for the specified stations.
 
         Args:
-            relatedStationIdList (array):  Array of related station id's
+            related_station_id_list (list): Array of related station id's.
 
         Returns:
-            An array of the latest packet for the specified stations
+            list: An array of the latest packet for the specified stations.
         """
-        if (relatedStationIdList) :
+        if related_station_id_list:
             query = MostRecentPacketsQuery(self.state, self.db)
-            query.enableSimulateEmptyStation()
-            return query.getPackets(relatedStationIdList)
+            query.enable_simulate_empty_station()
+            return query.get_packets(related_station_id_list)
         return []
-

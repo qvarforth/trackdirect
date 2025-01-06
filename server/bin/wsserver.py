@@ -1,41 +1,62 @@
 from autobahn.twisted.websocket import WebSocketServerFactory
 from autobahn.twisted.resource import WebSocketResource
 from autobahn.websocket.compress import PerMessageDeflateOffer, PerMessageDeflateOfferAccept
-import trackdirect
+from server.trackdirect.TrackDirectConfig import TrackDirectConfig
+from server.trackdirect.TrackDirectWebsocketServer import TrackDirectWebsocketServer
+from server.trackdirect.TrackDirectWebSocketServerFactory import TrackDirectWebSocketServerFactory
 import argparse
 import psutil
 import sys
 import os.path
-import logging
 import logging.handlers
 from twisted.internet import reactor
 from twisted.web.server import Site
 from twisted.web.static import File
 from socket import AF_INET
 
+LOG_FILE_MAX_BYTES = 1000000
+LOG_FILE_BACKUP_COUNT = 10
 
-def master(options, trackDirectLogger):
-    """
-    Start of the master process.
-    """
-    config = trackdirect.TrackDirectConfig()
-    config.populate(options.config)
 
-    workerPid = os.getpid()
-    p = psutil.Process(workerPid)
+def setup_logger(name, log_file, level=logging.INFO):
+    """Setup logger with file and console handlers."""
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    file_handler = logging.handlers.RotatingFileHandler(
+        filename=os.path.expanduser(log_file), mode='a',
+        maxBytes=LOG_FILE_MAX_BYTES, backupCount=LOG_FILE_BACKUP_COUNT)
+    file_handler.setFormatter(formatter)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    logger.setLevel(level)
+
+    return logger
+
+
+def master(options, config_file, track_direct_logger):
+    """Start of the master process."""
+    worker_pid = os.getpid()
+    p = psutil.Process(worker_pid)
     p.cpu_affinity([0])
-    trackDirectLogger.warning("Starting master with PID " + str(workerPid) + " (on CPU id(s): " + ','.join(map(str, p.cpu_affinity())) + ")")
+    track_direct_logger.info(
+        f"Starting master with PID {worker_pid} (on CPU id(s): {','.join(map(str, p.cpu_affinity()))})")
 
     try:
-        factory = WebSocketServerFactory()
-        factory.protocol = trackdirect.TrackDirectWebsocketServer
+        factory = TrackDirectWebSocketServerFactory(config_file)
+        factory.protocol = TrackDirectWebsocketServer
 
         resource = WebSocketResource(factory)
         root = File(".")
         root.putChild(b"ws", resource)
         site = Site(root)
 
-        port = reactor.listenTCP(config.websocketPort, site)
+        config = TrackDirectConfig()
+        port = reactor.listenTCP(config.websocket_port, site)
 
         for i in range(1, options.workers):
             args = [sys.executable, "-u", __file__]
@@ -48,50 +69,43 @@ def master(options, trackDirectLogger):
                 env=os.environ)
 
         options.fd = port.fileno()
-        listen(options, trackDirectLogger)
+        listen(options, config_file)
 
     except Exception as e:
-        trackDirectLogger.error(e, exc_info=1)
+        track_direct_logger.error(f"Error in master process: {e}", exc_info=True)
 
 
-def worker(options, trackDirectLogger):
-    """
-    Start background worker process.
-    """
-    config = trackdirect.TrackDirectConfig()
-    config.populate(options.config)
-
+def worker(options, config_file, track_direct_logger):
+    """Start background worker process."""
     try:
-        workerPid = os.getpid()
-        p = psutil.Process(workerPid)
+        worker_pid = os.getpid()
+        p = psutil.Process(worker_pid)
         p.cpu_affinity([options.cpuid])
 
-        trackDirectLogger.warning("Starting worker with PID " + str(workerPid) + " (on CPU id(s): " + ','.join(map(str, p.cpu_affinity())) + ")")
+        track_direct_logger.info(
+            f"Starting worker with PID {worker_pid} (on CPU id(s): {','.join(map(str, p.cpu_affinity()))})")
 
-        listen(options, trackDirectLogger)
+        listen(options, config_file)
 
     except Exception as e:
-        trackDirectLogger.error(e, exc_info=1)
+        track_direct_logger.error(f"Error in worker process: {e}", exc_info=True)
 
 
-def listen(options, trackDirectLogger) :
-    """
-    Start to listen on websocket requests.
-    """
-    config = trackdirect.TrackDirectConfig()
-    config.populate(options.config)
-
-    factory = WebSocketServerFactory(
-        "ws://" + config.websocketHostname + ":" + str(config.websocketPort),
-        externalPort = config.websocketExternalPort)
-    factory.protocol = trackdirect.TrackDirectWebsocketServer
+def listen(options, config_file):
+    """Start to listen on websocket requests."""
+    config = TrackDirectConfig()
+    factory = TrackDirectWebSocketServerFactory(
+        config_file,
+        f"ws://{config.websocket_hostname}:{config.websocket_port}",
+        externalPort=config.websocket_external_port)
+    factory.protocol = TrackDirectWebsocketServer
 
     # Enable WebSocket extension "permessage-deflate".
-    # Function to accept offers from the client ..
     def accept(offers):
         for offer in offers:
             if isinstance(offer, PerMessageDeflateOffer):
                 return PerMessageDeflateOfferAccept(offer)
+
     factory.setProtocolOptions(perMessageCompressionAccept=accept)
 
     reactor.suggestThreadPoolSize(25)
@@ -105,9 +119,8 @@ def listen(options, trackDirectLogger) :
 if __name__ == '__main__':
     DEFAULT_WORKERS = psutil.cpu_count()
 
-    parser = argparse.ArgumentParser(
-        description='Track Direct WebSocket Server')
-    parser.add_argument('--config', dest='config', type=str, default=None,
+    parser = argparse.ArgumentParser(description='Track Direct WebSocket Server')
+    parser.add_argument('--config', dest='config_file', type=str, default=None,
                         help='The Track Direct config file, e.g. trackdirect.ini')
     parser.add_argument('--workers', dest='workers', type=int, default=DEFAULT_WORKERS,
                         help='Number of workers to spawn - should fit the number of (physical) CPU cores.')
@@ -117,35 +130,13 @@ if __name__ == '__main__':
                         help='If given, this is a worker which will use provided CPU core to set its affinity.')
 
     options = parser.parse_args()
-    config = trackdirect.TrackDirectConfig()
-    config.populate(options.config)
+    config = TrackDirectConfig()
+    config.populate(options.config_file)
 
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    fh = logging.handlers.RotatingFileHandler(filename=os.path.expanduser(
-        config.errorLog), mode='a', maxBytes=1000000, backupCount=10)
-    fh.setFormatter(formatter)
-
-    consoleHandler = logging.StreamHandler()
-    consoleHandler.setFormatter(formatter)
-
-    trackDirectLogger = logging.getLogger('trackdirect')
-    trackDirectLogger.addHandler(fh)
-    trackDirectLogger.addHandler(consoleHandler)
-    trackDirectLogger.setLevel(logging.INFO)
-
-    fh2 = logging.handlers.RotatingFileHandler(filename=os.path.expanduser(
-        config.errorLog), mode='a', maxBytes=1000000, backupCount=10)
-    # aprslib is logging non important "socket error on ..." using ERROR-level
-    fh2.setFormatter(formatter)
-
-    aprslibLogger = logging.getLogger('aprslib.IS')
-    aprslibLogger.addHandler(fh2)
-    aprslibLogger.addHandler(consoleHandler)
-    aprslibLogger.setLevel(logging.INFO)
+    track_direct_logger = setup_logger('trackdirect', config.error_log)
+    #aprslib_logger = setup_logger('aprslib.IS', config.error_log)
 
     if options.fd is not None:
-        worker(options, trackDirectLogger)
+        worker(options, options.config_file, track_direct_logger)
     else:
-        master(options, trackDirectLogger)
+        master(options, options.config_file, track_direct_logger)

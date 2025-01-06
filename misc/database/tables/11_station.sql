@@ -7,11 +7,6 @@ create table station (
 
     "latest_location_packet_id" bigint null,
     "latest_location_packet_timestamp" bigint null,
-    "latest_location_marker_id" bigint null,
-    "latest_location_symbol" text null,
-    "latest_location_symbol_table" text null,
-    "latest_location_latitude" double precision null,
-    "latest_location_longitude" double precision null,
 
     "latest_confirmed_packet_id" bigint null,
     "latest_confirmed_packet_timestamp" bigint null,

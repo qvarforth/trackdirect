@@ -24,7 +24,7 @@ var trackdirect = {
   _eventListeners: {},
   _eventListenersOnce: {},
 
-  _cordinatesContainerElementId: null,
+  _coordinatesContainerElementId: null,
   _statusContainerElementId: "td-status-text",
   _mapElementId: null,
 
@@ -53,13 +53,13 @@ var trackdirect = {
     this._mapElementId = mapElementId;
 
     if ($("#" + mapElementId).length <= 0) {
-      // map element does not exists, nothing to do...
+      // map element does not exist, nothing to do...
       console.log("ERROR: Specified map element missing");
       return;
     }
 
     if (typeof google === "object" && typeof google.maps === "object") {
-      // Google maps is slow with to many labels
+      // Google Maps is slow with to many labels
       this.settings.defaultMinZoomForMarkerLabel = 12;
       this.settings.minZoomForMarkerLabel = 12;
     }
@@ -1030,9 +1030,9 @@ var trackdirect = {
    * @param {object} options
    */
   _parseOptions: function (options) {
-    if (typeof options["cordinatesContainerElementId"] !== undefined) {
-      this._cordinatesContainerElementId =
-        options["cordinatesContainerElementId"];
+    if (typeof options["coordinatesContainerElementId"] !== undefined) {
+      this._coordinatesContainerElementId =
+        options["coordinatesContainerElementId"];
     }
     if (typeof options["statusContainerElementId"] !== undefined) {
       this._statusContainerElementId = options["statusContainerElementId"];
@@ -1234,7 +1234,7 @@ var trackdirect = {
     var tdMapOptions = {
       zoom: this._getMapInitZoom(),
       maptype: this._getMapInitMapType(),
-      cordinatesContainer: this._cordinatesContainerElementId,
+      coordinatesContainer: this._coordinatesContainerElementId,
       defaultLatitude: this._defaultLatitude,
       defaultLongitude: this._defaultLongitude,
       initCenter: center,

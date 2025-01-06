@@ -1,65 +1,70 @@
-
-from trackdirect.common.Model import Model
-
+from server.trackdirect.common.Model import Model
+import psycopg2
 
 class OgnHiddenStation(Model):
-    """OgnDevice represents a pre registered device in the ogn ddb
-    """
+    """OgnHiddenStation represents a pre-registered device in the ogn ddb."""
 
     def __init__(self, db):
-        """The __init__ method.
+        """
+        Initialize the OgnHiddenStation object.
 
         Args:
-            db (psycopg2.Connection): Database connection
+            db (psycopg2.Connection): Database connection.
         """
-        Model.__init__(self, db)
+        super().__init__(db)
+        self.hashedName: str | None = None
 
-        self.id = None
-        self.hashedName = None
-
-    def getStationName(self):
-        """Returns the unidentifiable station name used for the current hashed name
+    def get_station_name(self) -> str | None:
+        """
+        Returns the unidentifiable station name used for the current hashed name.
 
         Returns:
-            string
+            str: The station name if the object exists, otherwise None.
         """
-        if (self.isExistingObject()):
+        if self.is_existing_object():
             return 'UNKNOWN' + str(self.id)
-        else:
-            return None
+        return None
 
-    def validate(self):
-        """Returns true on success (when object content is valid), otherwise false
+    def validate(self) -> bool:
+        """
+        Validate the object content.
 
         Returns:
-            True on success otherwise False
+            bool: True if the object content is valid, otherwise False.
         """
         return True
 
-    def insert(self):
-        """Method to call when we want to save a new object to database
-
-        Since packet will be inserted in batch we never use this method.
-
-        Returns:
-            True on success otherwise False
+    def insert(self) -> bool:
         """
-        if (not self.isExistingObject()):
-            insertCursor = self.db.cursor()
-            insertCursor.execute(
-                """insert into ogn_hidden_station(hashed_name) values(%s) RETURNING id""", (str(
-                    self.hashedName).strip(),)
-            )
-            self.id = insertCursor.fetchone()[0]
-            insertCursor.close()
-            return True
-        else:
-            return False
+        Insert a new object into the database.
 
-    def update(self):
-        """Method to call when we want to save changes to database
+        Since packets will be inserted in batch, this method is not used.
 
         Returns:
-            True on success otherwise False
+            bool: True on success, otherwise False.
+        """
+        if not self.is_existing_object():
+            try:
+                cursor = self.db.cursor()
+                cursor.execute(
+                    """INSERT INTO ogn_hidden_station(hashed_name) VALUES(%s) RETURNING id""",
+                    (str(self.hashedName).strip(),)
+                )
+                self.id = cursor.fetchone()[0]
+                self.db.commit()
+                cursor.close()
+                return True
+            except psycopg2.Error as e:
+                self.db.rollback()
+                print(f"Database error: {e}")
+                return False
+        return False
+
+    def update(self) -> bool:
+        """
+        Update the object in the database.
+
+        Returns:
+            bool: True on success, otherwise False.
         """
         return False

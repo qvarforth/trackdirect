@@ -16,7 +16,22 @@ trackdirect.models.DirectionPolyline = function (marker, map) {
 
   // Call the parent constructor
   if (typeof google === "object" && typeof google.maps === "object") {
-    google.maps.Polyline.call(this, this._getGooglePolylineOptions());
+    const googlePolyline = new google.maps.Polyline(
+      this._getGooglePolylineOptions()
+    );
+
+    for (const key of Object.keys(this)) {
+      googlePolyline[key] = this[key];
+    }
+    for (const key of Object.getOwnPropertyNames(
+      Object.getPrototypeOf(this)
+    )) {
+      if (key !== "constructor" && typeof this[key] === "function") {
+        googlePolyline[key] = this[key];
+      }
+    }
+
+    return googlePolyline;
   } else if (typeof L === "object") {
     L.Polyline.call(this, {}, this._getLeafletPolylineOptions());
     this.setLatLngs([
@@ -56,7 +71,7 @@ trackdirect.models.DirectionPolyline.prototype.setPathItems = function (
  */
 trackdirect.models.DirectionPolyline.prototype.getMap = function () {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var map = google.maps.Polyline.prototype.getMap.call(this);
+    let map = google.maps.Polyline.prototype.getMap.call(this);
     if (typeof map !== "undefined") {
       return map;
     }
@@ -72,7 +87,7 @@ trackdirect.models.DirectionPolyline.prototype.getMap = function () {
  * Show polyline on default map
  */
 trackdirect.models.DirectionPolyline.prototype.show = function () {
-  var timeInSeconds = this._getAgeInSeconds();
+  let timeInSeconds = this._getAgeInSeconds();
 
   if (
     this.stopped === false &&
@@ -124,18 +139,18 @@ trackdirect.models.DirectionPolyline.prototype.stop = function () {
  */
 trackdirect.models.DirectionPolyline.prototype._getGooglePolylineOptions =
   function () {
-    var lineCoordinates = [
+    let lineCoordinates = [
       this._getFirstCoordinate(),
       this._getExpectedCoordinate(),
     ];
 
-    var lineSymbol = {
+    let lineSymbol = {
       path: google.maps.SymbolPath.FORWARD_OPEN_ARROW,
       strokeOpacity: 1,
       scale: 0.65,
     };
 
-    var options = {
+    let options = {
       path: lineCoordinates,
       strokeOpacity: 0,
       strokeColor: trackdirect.services.stationColorCalculator.getColor(
@@ -186,9 +201,9 @@ trackdirect.models.DirectionPolyline.prototype._getFirstCoordinate =
  */
 trackdirect.models.DirectionPolyline.prototype._getExpectedCoordinate =
   function () {
-    var timeInSeconds = this._getAgeInSeconds();
-    var distance = (this.speed / 3.6) * timeInSeconds;
-    var startPosition = this._getFirstCoordinate();
+    let timeInSeconds = this._getAgeInSeconds();
+    let distance = (this.speed / 3.6) * timeInSeconds;
+    let startPosition = this._getFirstCoordinate();
     if (startPosition != null) {
       return trackdirect.services.distanceCalculator.getPositionByDistance(
         startPosition,
@@ -203,15 +218,15 @@ trackdirect.models.DirectionPolyline.prototype._getExpectedCoordinate =
  * Animate direction polyline
  */
 trackdirect.models.DirectionPolyline.prototype.recalculate = function () {
-  var interval = 1000;
-  var me = this;
+  let interval = 1000;
+  let me = this;
   this.timerId = window.setInterval(function () {
     if (!me._marker.isVisible() || me.stopped || !me._marker.showAsMarker) {
       me.hide();
       clearInterval(me.timerId);
       return;
     }
-    var timeInSeconds = me._getAgeInSeconds();
+    let timeInSeconds = me._getAgeInSeconds();
     if (timeInSeconds > 900) {
       // After 15 minutes we stop drawing directionPolyline
       me.stop();
@@ -219,8 +234,8 @@ trackdirect.models.DirectionPolyline.prototype.recalculate = function () {
         clearInterval(me.timerId);
       }
     } else {
-      var firstPosition = me._getFirstCoordinate();
-      var newPosition = me._getExpectedCoordinate();
+      let firstPosition = me._getFirstCoordinate();
+      let newPosition = me._getExpectedCoordinate();
       if (firstPosition != null && newPosition != null) {
         me.setPathItems([firstPosition, newPosition]);
       }
@@ -232,8 +247,8 @@ trackdirect.models.DirectionPolyline.prototype.recalculate = function () {
  * Returnes the marker age in seconds
  */
 trackdirect.models.DirectionPolyline.prototype._getAgeInSeconds = function () {
-  var timeInSeconds = 0;
-  var startTimestamp = this._defaultMap.state.getClientTimestamp(
+  let timeInSeconds = 0;
+  let startTimestamp = this._defaultMap.state.getClientTimestamp(
     this.startTimestamp
   );
 

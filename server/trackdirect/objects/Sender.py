@@ -1,4 +1,4 @@
-from trackdirect.common.Model import Model
+from server.trackdirect.common.Model import Model
 
 
 class Sender(Model):
@@ -6,53 +6,46 @@ class Sender(Model):
     """
 
     def __init__(self, db):
-        """The __init__ method.
+        """Initialize the Sender object.
 
         Args:
             db (psycopg2.Connection): Database connection
         """
-        Model.__init__(self, db)
+        super().__init__(db)
+        self.name: str | None = None
 
-        self.id = None
-        self.name = None
-
-    def validate(self):
-        """Returns true on success (when object content is valid), otherwise false
+    def validate(self) -> bool:
+        """Validate the Sender object.
 
         Returns:
-            True on success otherwise False
+            bool: True if the object content is valid, otherwise False
         """
-        if (self.name == ''):
-            return False
+        return bool(self.name and self.name.strip())
 
-        return True
+    def insert(self) -> bool:
+        """Insert a new Sender object into the database.
 
-    def insert(self):
-        """Method to call when we want to save a new object to database
-
-        Since packet will be inserted in batch we never use this method.
+        Since packets will be inserted in batch, this method is not typically used.
 
         Returns:
-            True on success otherwise False
+            bool: True on success, otherwise False
         """
-        if (not self.isExistingObject()):
-            insertCursor = self.db.cursor()
-            insertCursor.execute(
-                """insert into sender(name) values(%s) RETURNING id""", (self.name.strip(
-                ),)
-            )
-            self.id = insertCursor.fetchone()[0]
-            insertCursor.close()
+        if not self.is_existing_object():
+            with self.db.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO sender(name) VALUES(%s) RETURNING id""",
+                    (self.name.strip(),)
+                )
+                self.id = cursor.fetchone()[0]
             return True
-        else:
-            return False
+        return False
 
-    def update(self):
-        """Method to call when we want to save changes to database
+    def update(self) -> bool:
+        """Update the Sender object in the database.
 
-        Since packet will be updated in batch we never use this method.
+        Since packets will be updated in batch, this method is not typically used.
 
         Returns:
-            True on success otherwise False
+            bool: True on success, otherwise False
         """
         return False

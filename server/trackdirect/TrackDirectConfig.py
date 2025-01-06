@@ -1,190 +1,185 @@
 import os
 import os.path
-import configparser
-
-from trackdirect.common.Singleton import Singleton
+from configparser import ConfigParser
+from configparser import NoSectionError
+from configparser import NoOptionError
+from common.Singleton import Singleton
 
 
 class TrackDirectConfig(Singleton):
     """Track Direct Config class
     """
 
-    def __init__(self):
-        """The __init__ method.
-        """
-        self.collector = {}
-
-    def populate(self, configFile):
-        """The __init__ method.
+    def populate(self, config_file = ""):
+        """Populate the configuration from a file.
 
         Args:
-            configFile (string):  Config file name
+            config_file (string): Config file name
         """
-        configParser = configparser.SafeConfigParser()
-        if (configFile.startswith('/')):
-            configParser.read(os.path.expanduser(configFile))
+        config_parser = ConfigParser()
+        if config_file.startswith('/'):
+            config_parser.read(os.path.expanduser(config_file))
         else:
-            configParser.read(os.path.expanduser(
-                '~/trackdirect/config/' + configFile))
+            config_parser.read(os.path.expanduser(
+                '~/trackdirect/config/' + config_file))
 
         # Database
-        self.dbHostname = configParser.get('database', 'host').strip('"')
-        self.dbName = configParser.get('database', 'database').strip('"')
+        self.db_hostname = config_parser.get('database', 'host').strip('"')
+        self.db_name = config_parser.get('database', 'database').strip('"')
         try:
-            self.dbUsername = configParser.get(
-                'database', 'username').strip('"')
-        except (configparser.NoSectionError, configparser.NoOptionError):
-            self.dbUsername = os.getlogin()
-        self.dbPassword = configParser.get('database', 'password').strip('"')
-        self.dbPort = int(configParser.get('database', 'port').strip('"'))
-        self.daysToSavePositionData = int(configParser.get(
+            self.db_username = config_parser.get('database', 'username').strip('"')
+        except (NoSectionError, NoOptionError):
+            self.db_username = 'root'
+        self.db_password = config_parser.get('database', 'password').strip('"')
+        self.db_port = int(config_parser.get('database', 'port').strip('"'))
+        self.days_to_save_position_data = int(config_parser.get(
             'database', 'days_to_save_position_data').strip('"'))
-        self.daysToSaveStationData = int(configParser.get(
+        self.days_to_save_station_data = int(config_parser.get(
             'database', 'days_to_save_station_data').strip('"'))
-        self.daysToSaveWeatherData = int(configParser.get(
+        self.days_to_save_weather_data = int(config_parser.get(
             'database', 'days_to_save_weather_data').strip('"'))
-        self.daysToSaveTelemetryData = int(configParser.get(
+        self.days_to_save_telemetry_data = int(config_parser.get(
             'database', 'days_to_save_telemetry_data').strip('"'))
 
-        self.saveOgnStationsWithMissingIdentity = False
+        self.save_ogn_stations_with_missing_identity = False
         try:
-            saveOgnStationsWithMissingIdentity = configParser.get(
+            save_ogn_stations_with_missing_identity = config_parser.get(
                 'database', 'save_ogn_stations_with_missing_identity').strip('"')
-            if (saveOgnStationsWithMissingIdentity == "1"):
-                self.saveOgnStationsWithMissingIdentity = True
-        except (configparser.NoSectionError, configparser.NoOptionError):
+            if save_ogn_stations_with_missing_identity == "1":
+                self.save_ogn_stations_with_missing_identity = True
+        except (NoSectionError, NoOptionError):
             pass
 
         # Websocket server
-        self.websocketHostname = configParser.get(
+        self.websocket_hostname = config_parser.get(
             'websocket_server', 'host').strip('"')
-        self.websocketPort = int(configParser.get(
+        self.websocket_port = int(config_parser.get(
             'websocket_server', 'port').strip('"'))
 
-        self.websocketExternalPort = self.websocketPort
-        try :
-            self.websocketExternalPort = int(configParser.get(
+        self.websocket_external_port = self.websocket_port
+        try:
+            self.websocket_external_port = int(config_parser.get(
                 'websocket_server', 'external_port').strip('"'))
-        except (configparser.NoSectionError, configparser.NoOptionError):
+        except (NoSectionError, NoOptionError):
             pass
 
-        self.errorLog = configParser.get(
+        self.error_log = config_parser.get(
             'websocket_server', 'error_log').strip('"')
-        self.websocketFrequencyLimit = configParser.get(
+        self.websocket_frequency_limit = config_parser.get(
             'websocket_server', 'frequency_limit').strip('"')
 
-        self.maxDefaultTime = int(configParser.get(
+        self.max_default_time = int(config_parser.get(
             'websocket_server', 'max_default_time').strip('"'))
-        self.maxFilterTime = int(configParser.get(
+        self.max_filter_time = int(config_parser.get(
             'websocket_server', 'max_filter_time').strip('"'))
-        self.maxClientIdleTime = int(configParser.get(
+        self.max_client_idle_time = int(config_parser.get(
             'websocket_server', 'max_client_idle_time').strip('"'))
-        self.maxQueuedRealtimePackets = int(configParser.get(
+        self.max_queued_realtime_packets = int(config_parser.get(
             'websocket_server', 'max_queued_realtime_packets').strip('"'))
 
-        allowTimeTravel = configParser.get(
+        allow_time_travel = config_parser.get(
             'websocket_server', 'allow_time_travel').strip('"')
-        self.allowTimeTravel = False
-        if (allowTimeTravel == "1"):
-            self.allowTimeTravel = True
+        self.allow_time_travel = False
+        if allow_time_travel == "1":
+            self.allow_time_travel = True
 
         # Websocket server APRS connection (we support 2 different sources, more can be added...)
         try:
-            self.websocketAprsHost1 = configParser.get(
+            self.websocket_aprs_host1 = config_parser.get(
                 'websocket_server', 'aprs_host1').strip('"')
-            self.websocketAprsPort1 = configParser.get(
+            self.websocket_aprs_port1 = config_parser.get(
                 'websocket_server', 'aprs_port1').strip('"')
-            self.websocketAprsSourceId1 = int(configParser.get(
+            self.websocket_aprs_source_id1 = int(config_parser.get(
                 'websocket_server', 'aprs_source_id1').strip('"'))
-        except (configparser.NoSectionError, configparser.NoOptionError):
-            self.websocketAprsSourceId1 = None
-            self.websocketAprsHost1 = None
-            self.websocketAprsPort1 = None
+        except (NoSectionError, NoOptionError):
+            self.websocket_aprs_source_id1 = None
+            self.websocket_aprs_host1 = None
+            self.websocket_aprs_port1 = None
 
         try:
-            self.websocketAprsHost2 = configParser.get(
+            self.websocket_aprs_host2 = config_parser.get(
                 'websocket_server', 'aprs_host2').strip('"')
-            self.websocketAprsPort2 = configParser.get(
+            self.websocket_aprs_port2 = config_parser.get(
                 'websocket_server', 'aprs_port2').strip('"')
-            self.websocketAprsSourceId2 = int(configParser.get(
+            self.websocket_aprs_source_id2 = int(config_parser.get(
                 'websocket_server', 'aprs_source_id2').strip('"'))
-        except (configparser.NoSectionError, configparser.NoOptionError):
-            self.websocketAprsSourceId2 = None
-            self.websocketAprsHost2 = None
-            self.websocketAprsPort2 = None
+        except (NoSectionError, NoOptionError):
+            self.websocket_aprs_source_id2 = None
+            self.websocket_aprs_host2 = None
+            self.websocket_aprs_port2 = None
 
-        if (self.websocketAprsSourceId1 == 5 or self.websocketAprsSourceId2 == 5) :
+        if self.websocket_aprs_source_id1 == 5 or self.websocket_aprs_source_id2 == 5:
             # At least one source is of type OGN, disable display of older data
-            self.allowTimeTravel = False
-            if (self.maxDefaultTime > 1440) :
-                self.maxDefaultTime = 1440
-            if (self.maxFilterTime > 1440) :
-                self.maxDefaultTime = 1440
+            self.allow_time_travel = False
+            if self.max_default_time > 1440:
+                self.max_default_time = 1440
+            if self.max_filter_time > 1440:
+                self.max_filter_time = 1440
 
         # Collectors
-        for collectorNumber in range(0, 5):
-            self.collector[collectorNumber] = {}
+        self.collector = {}
+        for collector_number in range(0, 5):
+            self.collector[collector_number] = {}
             try:
-                self.collector[collectorNumber]['source_id'] = int(configParser.get(
-                    'collector' + str(collectorNumber), 'source_id').strip('"'))
-                self.collector[collectorNumber]['host'] = configParser.get(
-                    'collector' + str(collectorNumber), 'host').strip('"')
-                self.collector[collectorNumber]['port_full'] = int(configParser.get(
-                    'collector' + str(collectorNumber), 'port_full').strip('"'))
-                self.collector[collectorNumber]['port_filtered'] = int(configParser.get(
-                    'collector' + str(collectorNumber), 'port_filtered').strip('"'))
+                self.collector[collector_number]['source_id'] = int(config_parser.get(
+                    'collector' + str(collector_number), 'source_id').strip('"'))
+                self.collector[collector_number]['host'] = config_parser.get(
+                    'collector' + str(collector_number), 'host').strip('"')
+                self.collector[collector_number]['port_full'] = int(config_parser.get(
+                    'collector' + str(collector_number), 'port_full').strip('"'))
+                self.collector[collector_number]['port_filtered'] = int(config_parser.get(
+                    'collector' + str(collector_number), 'port_filtered').strip('"'))
 
-                self.collector[collectorNumber]['callsign'] = configParser.get(
-                    'collector' + str(collectorNumber), 'callsign').strip('"')
-                self.collector[collectorNumber]['passcode'] = configParser.get(
-                    'collector' + str(collectorNumber), 'passcode').strip('"')
+                self.collector[collector_number]['callsign'] = config_parser.get(
+                    'collector' + str(collector_number), 'callsign').strip('"')
+                self.collector[collector_number]['passcode'] = config_parser.get(
+                    'collector' + str(collector_number), 'passcode').strip('"')
 
-                self.collector[collectorNumber]['numbers_in_batch'] = configParser.get(
-                    'collector' + str(collectorNumber), 'numbers_in_batch').strip('"')
+                self.collector[collector_number]['numbers_in_batch'] = config_parser.get(
+                    'collector' + str(collector_number), 'numbers_in_batch').strip('"')
                 try:
-                    self.collector[collectorNumber]['frequency_limit'] = int(configParser.get(
-                        'collector' + str(collectorNumber), 'frequency_limit').strip('"'))
-                except (configparser.NoSectionError, configparser.NoOptionError):
-                    self.collector[collectorNumber]['frequency_limit'] = 0
-
-                try:
-                    saveFastPackets = configParser.get(
-                        'collector' + str(collectorNumber), 'save_fast_packets').strip('"')
-                    self.collector[collectorNumber]['save_fast_packets'] = bool(
-                        int(saveFastPackets))
-                except (configparser.NoSectionError, configparser.NoOptionError):
-                    self.collector[collectorNumber]['save_fast_packets'] = False
+                    self.collector[collector_number]['frequency_limit'] = int(config_parser.get(
+                        'collector' + str(collector_number), 'frequency_limit').strip('"'))
+                except (NoSectionError, NoOptionError):
+                    self.collector[collector_number]['frequency_limit'] = 0
 
                 try:
-                    detectDuplicates = configParser.get(
-                        'collector' + str(collectorNumber), 'detect_duplicates').strip('"')
-                    self.collector[collectorNumber]['detect_duplicates'] = bool(
-                        int(detectDuplicates))
-                except (configparser.NoSectionError, configparser.NoOptionError):
-                    self.collector[collectorNumber]['detect_duplicates'] = False
+                    save_fast_packets = config_parser.get(
+                        'collector' + str(collector_number), 'save_fast_packets').strip('"')
+                    self.collector[collector_number]['save_fast_packets'] = bool(
+                        int(save_fast_packets))
+                except (NoSectionError, NoOptionError):
+                    self.collector[collector_number]['save_fast_packets'] = False
 
-                self.collector[collectorNumber]['error_log'] = configParser.get(
-                    'collector' + str(collectorNumber), 'error_log').strip('"')
+                try:
+                    detect_duplicates = config_parser.get(
+                        'collector' + str(collector_number), 'detect_duplicates').strip('"')
+                    self.collector[collector_number]['detect_duplicates'] = bool(
+                        int(detect_duplicates))
+                except (NoSectionError, NoOptionError):
+                    self.collector[collector_number]['detect_duplicates'] = False
 
-                if (self.websocketAprsSourceId1 == 5 or self.websocketAprsSourceId2 == 5) :
-                    # source is of type OGN, make sure we do not save to many packets (will cause to high load on db)
-                    if (self.collector[collectorNumber]['frequency_limit'] < 10) :
-                        self.collector[collectorNumber]['frequency_limit'] = 10
-                    self.collector[collectorNumber]['save_fast_packets'] = False
+                self.collector[collector_number]['error_log'] = config_parser.get(
+                    'collector' + str(collector_number), 'error_log').strip('"')
 
+                if self.websocket_aprs_source_id1 == 5 or self.websocket_aprs_source_id2 == 5:
+                    # source is of type OGN, make sure we do not save too many packets (will cause too high load on db)
+                    if self.collector[collector_number]['frequency_limit'] < 10:
+                        self.collector[collector_number]['frequency_limit'] = 10
+                    self.collector[collector_number]['save_fast_packets'] = False
 
-            except (configparser.NoSectionError, configparser.NoOptionError):
-                self.collector[collectorNumber]['source_id'] = None
-                self.collector[collectorNumber]['host'] = None
-                self.collector[collectorNumber]['port_full'] = None
-                self.collector[collectorNumber]['port_filtered'] = None
+            except (NoSectionError, NoOptionError):
+                self.collector[collector_number]['source_id'] = None
+                self.collector[collector_number]['host'] = None
+                self.collector[collector_number]['port_full'] = None
+                self.collector[collector_number]['port_filtered'] = None
 
-                self.collector[collectorNumber]['callsign'] = None
-                self.collector[collectorNumber]['passcode'] = None
+                self.collector[collector_number]['callsign'] = None
+                self.collector[collector_number]['passcode'] = None
 
-                self.collector[collectorNumber]['numbers_in_batch'] = "20"
-                self.collector[collectorNumber]['frequency_limit'] = "0"
-                self.collector[collectorNumber]['save_fast_packets'] = True
-                self.collector[collectorNumber]['detect_duplicates'] = False
+                self.collector[collector_number]['numbers_in_batch'] = "20"
+                self.collector[collector_number]['frequency_limit'] = "0"
+                self.collector[collector_number]['save_fast_packets'] = True
+                self.collector[collector_number]['detect_duplicates'] = False
 
-                self.collector[collectorNumber]['error_log'] = None
+                self.collector[collector_number]['error_log'] = None

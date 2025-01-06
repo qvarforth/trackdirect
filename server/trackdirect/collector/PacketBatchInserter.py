@@ -1,194 +1,163 @@
 import logging
 import psycopg2
 import psycopg2.extras
-
-from trackdirect.collector.StationLatestPacketModifier import StationLatestPacketModifier
-from trackdirect.collector.PacketMapIdModifier import PacketMapIdModifier
-
-from trackdirect.database.PacketTableCreator import PacketTableCreator
-from trackdirect.database.PacketPathTableCreator import PacketPathTableCreator
-from trackdirect.database.PacketWeatherTableCreator import PacketWeatherTableCreator
-from trackdirect.database.PacketTelemetryTableCreator import PacketTelemetryTableCreator
-from trackdirect.database.PacketOgnTableCreator import PacketOgnTableCreator
+from server.trackdirect.collector.StationLatestPacketModifier import StationLatestPacketModifier
+from server.trackdirect.collector.PacketMapIdModifier import PacketMapIdModifier
+from server.trackdirect.database.PacketTableCreator import PacketTableCreator
+from server.trackdirect.database.PacketPathTableCreator import PacketPathTableCreator
+from server.trackdirect.database.PacketWeatherTableCreator import PacketWeatherTableCreator
+from server.trackdirect.database.PacketTelemetryTableCreator import PacketTelemetryTableCreator
+from server.trackdirect.database.PacketOgnTableCreator import PacketOgnTableCreator
 
 
-class PacketBatchInserter():
-    """PacketBatchInserter is used to add a list of packets to the database
-    """
+class PacketBatchInserter:
+    """PacketBatchInserter is used to add a list of packets to the database"""
 
-    def __init__(self, db, dbNoAutoCommit):
-        """The __init__ method.
-
+    def __init__(self, db, db_no_auto_commit):
+        """
         Args:
-            db (psycopg2.Connection):              Database connection (with autocommit)
-            dbNoAutoCommit (psycopg2.Connection):  Database connection (without autocommit)
+            db (psycopg2.Connection): Database connection (with autocommit)
+            db_no_auto_commit (psycopg2.Connection): Database connection (without autocommit)
         """
         self.db = db
-        self.dbNoAutoCommit = dbNoAutoCommit
+        self.db_no_auto_commit = db_no_auto_commit
         self.logger = logging.getLogger(__name__)
 
-        self.packetIdList = []
-        self.weatherPacketIdList = []
-        self.ognPacketIdList = []
-        self.telemetryPacketIdList = []
-        self.pathPacketIdList = []
-        self.positionPacketIdList = []
-        self.confirmedPositionPacketIdList = []
+        self.packet_id_list = []
+        self.weather_packet_id_list = []
+        self.ogn_packet_id_list = []
+        self.telemetry_packet_id_list = []
+        self.path_packet_id_list = []
+        self.position_packet_id_list = []
+        self.confirmed_position_packet_id_list = []
 
-    def insert(self, packets, sourceId):
-        """Insert this packets into database
+    def insert(self, packets):
+        """
+        Insert these packets into database
 
         Args:
-            packets (array):  Packets to insert
-            sourceId (int):   Id that corresponds to id in source-table
+            packets (list): Packets to insert
         """
-        cur = self.dbNoAutoCommit.cursor()
+        cur = self.db_no_auto_commit.cursor()
         try:
-            # Make sure needed tables exists before starting the main database transaction
-            self._makeSureTablesExists(packets)
+            self._make_sure_tables_exist(packets)
+            self._insert_telemetry_definitions(packets)
 
-            # insert telemetry data
-            self._insertTelemetryDefinitions(packets)
+            PacketMapIdModifier(cur, PacketTableCreator(self.db)).execute(packets)
 
-            # Update mapId on previous packets
-            packetTableCreator = PacketTableCreator(self.db)
-            packetMapIdModifier = PacketMapIdModifier(cur, packetTableCreator)
-            packetMapIdModifier.execute(packets)
+            self._insert_into_packet_tables(packets, cur)
 
-            # insert into packet (and packet_path ...)
-            self._insertIntoPacketTables(packets, cur)
-
-            self.dbNoAutoCommit.commit()
-            cur.close()
+            self.db_no_auto_commit.commit()
         except psycopg2.InterfaceError as e:
-            # Connection to database is lost, better just exit
-            self.dbNoAutoCommit.rollback()
-            cur.close()
+            self.db_no_auto_commit.rollback()
             raise e
         except Exception as e:
-            # Something went wrong
-            self.logger.error(e, exc_info=1)
-            self.dbNoAutoCommit.rollback()
+            self.logger.error(e, exc_info=True)
+            self.db_no_auto_commit.rollback()
+        finally:
             cur.close()
-            return
-        self._performPostInsertActions(packets)
 
-    def _makeSureTablesExists(self, packets):
-        """Make sures all tables needed to insert specified packets exists
+        self._perform_post_insert_actions(packets)
 
-        Args:
-            packets (array):  Packets to insert
+    def _make_sure_tables_exist(self, packets):
         """
-        timestamp = packets[0].timestamp  # All packets is known to be on the same date
-
-        packetTableCreator = PacketTableCreator(self.db)
-        packetTable = packetTableCreator.getPacketTable(timestamp)
-
-        packetPathTableCreator = PacketPathTableCreator(self.db)
-        packetPathTable = packetPathTableCreator.getPacketPathTable(timestamp)
-
-        packetWeatherTableCreator = PacketWeatherTableCreator(self.db)
-        packetWeatherTable = packetWeatherTableCreator.getPacketWeatherTable(
-            timestamp)
-
-        packetTelemetryTableCreator = PacketTelemetryTableCreator(self.db)
-        packetTelemetryTable = packetTelemetryTableCreator.getPacketTelemetryTable(
-            timestamp)
-
-        packetOgnTableCreator = PacketOgnTableCreator(self.db)
-        packetOgnTable = packetOgnTableCreator.getPacketOgnTable(timestamp)
-
-    def _performPostInsertActions(self, packets):
-        """Perform post insert updates like updating station latest packet and related
+        Make sure all tables needed to insert specified packets exist
 
         Args:
-            packets (array):  Packets to insert
+            packets (list): Packets to insert
         """
         timestamp = packets[0].timestamp
-        latestPacketModifier = StationLatestPacketModifier(self.db)
-        latestPacketModifier.updateStationLatestPacket(
-            self.packetIdList, timestamp)
-        latestPacketModifier.updateStationLatestTelemetryPacket(
-            self.telemetryPacketIdList, timestamp)
-        latestPacketModifier.updateStationLatestWeatherPacket(
-            self.weatherPacketIdList, timestamp)
-        latestPacketModifier.updateStationLatestOgnPacket(
-            self.ognPacketIdList, timestamp)
-        latestPacketModifier.updateStationLatestLocationPacket(
-            self.positionPacketIdList, timestamp)
-        latestPacketModifier.updateStationLatestConfirmedPacket(
-            self.confirmedPositionPacketIdList, timestamp)
 
-    def _insertIntoPacketTables(self, packets, cur):
-        """Insert packets into the correct packet tables
+        PacketTableCreator(self.db).get_table(timestamp)
+        PacketPathTableCreator(self.db).get_table(timestamp)
+        PacketWeatherTableCreator(self.db).get_packet_weather_table(timestamp)
+        PacketTelemetryTableCreator(self.db).get_table(timestamp)
+        PacketOgnTableCreator(self.db).get_table(timestamp)
 
-        Args:
-            packets (array):   Packets to insert
-            cur (cursor):      Database curser to use
+    def _perform_post_insert_actions(self, packets):
         """
-        self._insertIntoPacketTable(packets, cur)
-        self._insertIntoPacketPathTable(packets, cur)
-        self._insertIntoPacketWeatherTable(packets, cur)
-        self._insertIntoPacketOgnTable(packets, cur)
-        self._insertIntoPacketTelemetryTable(packets, cur)
-
-    def _insertIntoPacketTable(self, packets, cur):
-        """Insert packets into the correct packet table
+        Perform post insert updates like updating station latest packet and related
 
         Args:
-            packets (array):   Packets to insert
-            cur (cursor):      Database curser to use
+            packets (list): Packets to insert
         """
         timestamp = packets[0].timestamp
-        packetTableCreator = PacketTableCreator(self.db)
-        packetTable = packetTableCreator.getPacketTable(timestamp)
+        latest_packet_modifier = StationLatestPacketModifier(self.db)
+        latest_packet_modifier.update_station_latest_packet(self.packet_id_list, timestamp)
+        latest_packet_modifier.update_station_latest_telemetry_packet(self.telemetry_packet_id_list, timestamp)
+        latest_packet_modifier.update_station_latest_weather_packet(self.weather_packet_id_list, timestamp)
+        latest_packet_modifier.update_station_latest_ogn_packet(self.ogn_packet_id_list, timestamp)
+        latest_packet_modifier.update_station_latest_location_packet(self.position_packet_id_list, timestamp)
+        latest_packet_modifier.update_station_latest_confirmed_packet(self.confirmed_position_packet_id_list, timestamp)
 
-        datePacketTuples = []
+    def _insert_into_packet_tables(self, packets, cur):
+        """
+        Insert packets into the correct packet tables
+
+        Args:
+            packets (list): Packets to insert
+            cur (cursor): Database cursor to use
+        """
+        self._insert_into_packet_table(packets, cur)
+        self._insert_into_packet_path_table(packets, cur)
+        self._insert_into_packet_weather_table(packets, cur)
+        self._insert_into_packet_ogn_table(packets, cur)
+        self._insert_into_packet_telemetry_table(packets, cur)
+
+    def _insert_into_packet_table(self, packets, cur):
+        """
+        Insert packets into the correct packet table
+
+        Args:
+            packets (list): Packets to insert
+            cur (cursor): Database cursor to use
+        """
+        timestamp = packets[0].timestamp
+        packet_table_creator = PacketTableCreator(self.db)
+        packet_table = packet_table_creator.get_table(timestamp)
+
+        date_packet_tuples = []
         for packet in packets:
-
-            datePacketTuples.append((packet.stationId,
-                                     packet.senderId,
-                                     packet.mapId,
-                                     packet.sourceId,
-                                     packet.packetTypeId,
+            date_packet_tuples.append((packet.station_id,
+                                     packet.sender_id,
+                                     packet.map_id,
+                                     packet.source_id,
+                                     packet.packet_type_id,
                                      packet.latitude,
                                      packet.longitude,
                                      packet.posambiguity,
                                      packet.symbol,
-                                     packet.symbolTable,
-                                     packet.mapSector,
-                                     packet.relatedMapSectors,
-                                     packet.markerId,
-                                     packet.markerCounter,
+                                     packet.symbol_table,
+                                     packet.map_sector,
+                                     packet.related_map_sectors,
+                                     packet.marker_id,
+                                     packet.marker_counter,
                                      packet.speed,
                                      packet.course,
                                      packet.altitude,
                                      packet.rng,
                                      packet.phg,
-                                     packet.latestPhgTimestamp,
-                                     packet.latestRngTimestamp,
+                                     packet.latest_phg_timestamp,
+                                     packet.latest_rng_timestamp,
                                      packet.timestamp,
-                                     packet.packetTailTimestamp,
-                                     packet.isMoving,
-                                     packet.reportedTimestamp,
-                                     packet.positionTimestamp,
+                                     packet.packet_tail_timestamp,
+                                     packet.is_moving,
+                                     packet.reported_timestamp,
+                                     packet.position_timestamp,
                                      packet.comment,
-                                     packet.rawPath,
+                                     packet.raw_path,
                                      packet.raw))
 
         try:
-            # insert into packetYYYYMMDD
-            argString = b','.join(cur.mogrify(
-                "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in datePacketTuples)
-            sql = "insert into " + packetTable + "(station_id, sender_id, map_id, source_id, packet_type_id, latitude, longitude, posambiguity, symbol, symbol_table, map_sector, related_map_sectors, marker_id, marker_counter, speed, course, altitude, rng, phg, latest_phg_timestamp, latest_rng_timestamp, timestamp, packet_tail_timestamp, is_moving, reported_timestamp, position_timestamp, comment, raw_path, raw) values " + argString.decode() + " RETURNING id"
+            arg_string = b','.join(cur.mogrify(
+                "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                x) for x in date_packet_tuples)
+            sql = f"INSERT INTO {packet_table} (station_id, sender_id, map_id, source_id, packet_type_id, latitude, longitude, posambiguity, symbol, symbol_table, map_sector, related_map_sectors, marker_id, marker_counter, speed, course, altitude, rng, phg, latest_phg_timestamp, latest_rng_timestamp, timestamp, packet_tail_timestamp, is_moving, reported_timestamp, position_timestamp, comment, raw_path, raw) VALUES {arg_string.decode()} RETURNING id"
             cur.execute(sql)
         except psycopg2.InterfaceError as e:
-            # Connection to database is lost, better just exit
             raise e
         except Exception as e:
-            # Something went wrong, log error so we can fix problem
-            self.logger.error(e, exc_info=1)
-            self.logger.error(sql)
+            self.logger.error(e, exc_info=True)
             return
 
         i = 0
@@ -196,171 +165,154 @@ class PacketBatchInserter():
             if packets[i]:
                 packets[i].id = record["id"]
 
-                if packets[i].mapId in [1]:
-                    self.confirmedPositionPacketIdList.append(record["id"])
-                elif packets[i].mapId in [1, 5, 7, 9]:
-                    self.positionPacketIdList.append(record["id"])
+                if packets[i].map_id in [1]:
+                    self.confirmed_position_packet_id_list.append(record["id"])
+                elif packets[i].map_id in [1, 5, 7, 9]:
+                    self.position_packet_id_list.append(record["id"])
                 else:
                     # We only need to add the packet to the packetIdList if not in the positionPacketIdList or confirmedPositionPacketIdList array's
-                    self.packetIdList.append(record["id"])
+                    self.packet_id_list.append(record["id"])
             i += 1
 
-    def _insertIntoPacketPathTable(self, packets, cur):
-        """Insert packets into the correct packet path table
+    def _insert_into_packet_path_table(self, packets, cur):
+        """
+        Insert packets into the correct packet path table
 
         Args:
-            packets (array):   Packets to insert
-            cur (cursor):      Database curser to use
+            packets (list): Packets to insert
+            cur (cursor): Database cursor to use
         """
         timestamp = packets[0].timestamp
-        packetPathTableCreator = PacketPathTableCreator(self.db)
-        packetPathTable = packetPathTableCreator.getPacketPathTable(timestamp)
+        packet_path_table_creator = PacketPathTableCreator(self.db)
+        packet_path_table = packet_path_table_creator.get_table(timestamp)
 
-        i = 0
-        pathTuples = []
+        path_tuples = []
         for packet in packets:
-            if (packet.stationIdPath):
-                self.pathPacketIdList.append(packet.id)
+            if packet.station_id_path:
+                self.path_packet_id_list.append(packet.id)
                 number = 0
-                for stationId in packet.stationIdPath:
-                    if (packet.stationLocationPath
-                            and packet.stationLocationPath[number]):
-                        latitude = packet.stationLocationPath[number][0]
-                        longitude = packet.stationLocationPath[number][1]
-                        distance = packet.getTransmitDistance()
+                for station_id in packet.station_id_path:
+                    if (packet.station_location_path
+                            and packet.station_location_path[number]):
+                        latitude = packet.station_location_path[number][0]
+                        longitude = packet.station_location_path[number][1]
+                        distance = packet.get_transmit_distance()
 
-                        pathTuples.append(
-                            (packet.id, stationId, latitude, longitude, packet.timestamp, distance, number, packet.stationId, packet.latitude, packet.longitude))
+                        path_tuples.append(
+                            (packet.id, station_id, latitude, longitude, packet.timestamp, distance, number,
+                             packet.station_id, packet.latitude, packet.longitude))
                         number += 1
-            i += 1
 
-        # insert into packetYYYYMMDD_path
-        if pathTuples:
+        if path_tuples:
             try:
-                argString = b','.join(cur.mogrify(
-                    "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in pathTuples)
-                cur.execute("insert into " + packetPathTable +
-                            "(packet_id, station_id, latitude, longitude, timestamp, distance, number, sending_station_id, sending_latitude, sending_longitude) values " + argString.decode())
+                arg_string = b','.join(cur.mogrify(
+                    "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in path_tuples)
+                cur.execute(f"INSERT INTO {packet_path_table} (packet_id, station_id, latitude, longitude, timestamp, distance, number, sending_station_id, sending_latitude, sending_longitude) VALUES {arg_string.decode()}")
             except psycopg2.InterfaceError as e:
-                # Connection to database is lost, better just exit
                 raise e
             except Exception as e:
-                # Something went wrong, log error so we can fix problem
-                self.logger.error(e, exc_info=1)
-                self.logger.error(argString)
+                self.logger.error(e, exc_info=True)
 
-    def _insertIntoPacketWeatherTable(self, packets, cur):
-        """Insert packets into the correct packet weather table
+    def _insert_into_packet_weather_table(self, packets, cur):
+        """
+        Insert packets into the correct packet weather table
 
         Args:
-            packets (array):   Packets to insert
-            cur (cursor):      Database curser to use
+            packets (list): Packets to insert
+            cur (cursor): Database cursor to use
         """
         timestamp = packets[0].timestamp
-        packetWeatherTableCreator = PacketWeatherTableCreator(self.db)
-        packetWeatherTable = packetWeatherTableCreator.getPacketWeatherTable(
-            timestamp)
+        packet_weather_table_creator = PacketWeatherTableCreator(self.db)
+        packet_weather_table = packet_weather_table_creator.get_packet_weather_table(timestamp)
 
-        i = 0
-        weatherTuples = []
+        weather_tuples = []
         for packet in packets:
-            if (packet.weather):
-                self.weatherPacketIdList.append(packet.id)
-                weatherTuples.append((packet.id,
-                                      packet.stationId,
+            if packet.weather:
+                self.weather_packet_id_list.append(packet.id)
+                weather_tuples.append((packet.id,
+                                      packet.station_id,
                                       packet.timestamp,
                                       packet.weather.humidity,
                                       packet.weather.pressure,
                                       packet.weather.rain1h,
                                       packet.weather.rain24h,
-                                      packet.weather.rainSinceMidnight,
+                                      packet.weather.rain_since_midnight,
                                       packet.weather.temperature,
-                                      packet.weather.windDirection,
-                                      packet.weather.windGust,
-                                      packet.weather.windSpeed,
+                                      packet.weather.wind_direction,
+                                      packet.weather.wind_gust,
+                                      packet.weather.wind_speed,
                                       packet.weather.luminosity,
                                       packet.weather.snow,
-                                      packet.weather.wxRawTimestamp))
-            i += 1
+                                      packet.weather.wx_raw_timestamp))
 
-        # insert into packetYYYYMMDD_weather
-        if weatherTuples:
+        if weather_tuples:
             try:
-                argString = b','.join(cur.mogrify(
-                    "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in weatherTuples)
-                cur.execute("insert into " + packetWeatherTable +
-                            "(packet_id, station_id, timestamp, humidity, pressure, rain_1h, rain_24h, rain_since_midnight, temperature, wind_direction, wind_gust, wind_speed, luminosity, snow, wx_raw_timestamp) values " + argString.decode())
+                arg_string = b','.join(cur.mogrify(
+                    "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in weather_tuples)
+                cur.execute(f"INSERT INTO {packet_weather_table} (packet_id, station_id, timestamp, humidity, pressure, rain_1h, rain_24h, rain_since_midnight, temperature, wind_direction, wind_gust, wind_speed, luminosity, snow, wx_raw_timestamp) VALUES {arg_string.decode()}")
             except psycopg2.InterfaceError as e:
-                # Connection to database is lost, better just exit
                 raise e
             except Exception as e:
-                # Something went wrong, log error so we can fix problem
-                self.logger.error(e, exc_info=1)
-                self.logger.error(argString)
+                self.logger.error(e, exc_info=True)
 
-    def _insertIntoPacketOgnTable(self, packets, cur):
-        """Insert packets into the correct packet OGN table
+
+    def _insert_into_packet_ogn_table(self, packets, cur):
+        """
+        Insert packets into the correct packet OGN table
 
         Args:
-            packets (array):   Packets to insert
-            cur (cursor):      Database curser to use
+            packets (list): Packets to insert
+            cur (cursor): Database cursor to use
         """
         timestamp = packets[0].timestamp
-        packetOgnTableCreator = PacketOgnTableCreator(self.db)
-        packetOgnTable = packetOgnTableCreator.getPacketOgnTable(timestamp)
+        packet_ogn_table_creator = PacketOgnTableCreator(self.db)
+        packet_ogn_table = packet_ogn_table_creator.get_table(timestamp)
 
-        i = 0
-        ognTuples = []
+        ogn_tuples = []
         for packet in packets:
-            if (packet.ogn):
-                self.ognPacketIdList.append(packet.id)
-                ognTuples.append((packet.id,
-                                  packet.stationId,
+            if packet.ogn:
+                self.ogn_packet_id_list.append(packet.id)
+                ogn_tuples.append((packet.id,
+                                  packet.station_id,
                                   packet.timestamp,
-                                  packet.ogn.ognSenderAddress,
-                                  packet.ogn.ognAddressTypeId,
-                                  packet.ogn.ognAircraftTypeId,
-                                  packet.ogn.ognClimbRate,
-                                  packet.ogn.ognTurnRate,
-                                  packet.ogn.ognSignalToNoiseRatio,
-                                  packet.ogn.ognBitErrorsCorrected,
-                                  packet.ogn.ognFrequencyOffset))
+                                  packet.ogn.ogn_sender_address,
+                                  packet.ogn.ogn_address_type_id,
+                                  packet.ogn.ogn_aircraft_type_id,
+                                  packet.ogn.ogn_climb_rate,
+                                  packet.ogn.ogn_turn_rate,
+                                  packet.ogn.ogn_signal_to_noise_ratio,
+                                  packet.ogn.ogn_bit_errors_corrected,
+                                  packet.ogn.ogn_frequency_offset))
 
-            i += 1
-        # insert into packetYYYYMMDD_ogn
-        if ognTuples:
+        if ogn_tuples:
             try:
-                argString = b','.join(cur.mogrify(
-                    "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in ognTuples)
-                cur.execute("insert into " + packetOgnTable + "(packet_id, station_id, timestamp, ogn_sender_address, ogn_address_type_id, ogn_aircraft_type_id, ogn_climb_rate, ogn_turn_rate, ogn_signal_to_noise_ratio, ogn_bit_errors_corrected, ogn_frequency_offset) values " + argString.decode())
+                arg_string = b','.join(cur.mogrify(
+                    "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in ogn_tuples)
+                cur.execute(f"INSERT INTO {packet_ogn_table} (packet_id, station_id, timestamp, ogn_sender_address, ogn_address_type_id, ogn_aircraft_type_id, ogn_climb_rate, ogn_turn_rate, ogn_signal_to_noise_ratio, ogn_bit_errors_corrected, ogn_frequency_offset) VALUES {arg_string.decode()}")
             except psycopg2.InterfaceError as e:
-                # Connection to database is lost, better just exit
                 raise e
             except Exception as e:
-                # Something went wrong, log error so we can fix problem
-                self.logger.error(e, exc_info=1)
-                self.logger.error(argString)
+                self.logger.error(e, exc_info=True)
 
-    def _insertIntoPacketTelemetryTable(self, packets, cur):
-        """Insert packets into the correct packet telemetry table
+    def _insert_into_packet_telemetry_table(self, packets, cur):
+        """
+        Insert packets into the correct packet telemetry table
 
         Args:
-            packets (array):   Packets to insert
-            cur (cursor):      Database curser to use
+            packets (list): Packets to insert
+            cur (cursor): Database cursor to use
         """
         timestamp = packets[0].timestamp
-        packetTelemetryTableCreator = PacketTelemetryTableCreator(self.db)
-        packetTelemetryTable = packetTelemetryTableCreator.getPacketTelemetryTable(
-            timestamp)
+        packet_telemetry_table_creator = PacketTelemetryTableCreator(self.db)
+        packet_telemetry_table = packet_telemetry_table_creator.get_table(timestamp)
 
-        i = 0
-        telemetryTuples = []
+        telemetry_tuples = []
         for packet in packets:
-            if (packet.telemetry):
-                self.telemetryPacketIdList.append(packet.id)
-                if (not packet.telemetry.isDuplicate()):
-                    telemetryTuples.append((packet.id,
-                                            packet.stationId,
+            if packet.telemetry:
+                self.telemetry_packet_id_list.append(packet.id)
+                if not packet.telemetry.is_duplicate():
+                    telemetry_tuples.append((packet.id,
+                                            packet.station_id,
                                             packet.timestamp,
                                             packet.telemetry.val1,
                                             packet.telemetry.val2,
@@ -369,57 +321,45 @@ class PacketBatchInserter():
                                             packet.telemetry.val5,
                                             packet.telemetry.bits,
                                             packet.telemetry.seq))
-            i += 1
 
-        # insert into packetYYYYMMDD_telemetry
-        if telemetryTuples:
+        if telemetry_tuples:
             try:
-                argString = b','.join(cur.mogrify(
-                    "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in telemetryTuples)
-                cur.execute("insert into " + packetTelemetryTable +
-                            "(packet_id, station_id, timestamp, val1, val2, val3, val4, val5, bits, seq) values " + argString.decode() + " returning id")
+                arg_string = b','.join(cur.mogrify(
+                    "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", x) for x in telemetry_tuples)
+                cur.execute(
+                    f"INSERT INTO {packet_telemetry_table} (packet_id, station_id, timestamp, val1, val2, val3, val4, val5, bits, seq) VALUES {arg_string.decode()} RETURNING id")
             except psycopg2.InterfaceError as e:
-                # Connection to database is lost, better just exit
                 raise e
             except Exception as e:
-                # Something went wrong, log error so we can fix problem
-                self.logger.error(e, exc_info=1)
+                self.logger.error(e, exc_info=True)
 
-            packetTelemetryIds = []
-            record = cur.fetchone()
-            while record:
-                packetTelemetryIds.append(record['id'])
-                record = cur.fetchone()
+            packet_telemetry_ids = [record['id'] for record in cur.fetchall()]
 
             try:
-                cur.execute("""update """ + packetTelemetryTable + """ packet_telemetry set
-                        station_telemetry_param_id = (select id from station_telemetry_param where station_id = packet_telemetry.station_id and valid_to_ts is null),
-                        station_telemetry_unit_id = (select id from station_telemetry_unit where station_id = packet_telemetry.station_id and valid_to_ts is null),
-                        station_telemetry_eqns_id = (select id from station_telemetry_eqns where station_id = packet_telemetry.station_id and valid_to_ts is null),
-                        station_telemetry_bits_id = (select id from station_telemetry_bits where station_id = packet_telemetry.station_id and valid_to_ts is null)
-                    where id in %s""", (tuple(packetTelemetryIds), ))
+                cur.execute(f"""UPDATE {packet_telemetry_table} packet_telemetry SET
+                                        station_telemetry_param_id = (SELECT id FROM station_telemetry_param WHERE station_id = packet_telemetry.station_id AND valid_to_ts IS NULL),
+                                        station_telemetry_unit_id = (SELECT id FROM station_telemetry_unit WHERE station_id = packet_telemetry.station_id AND valid_to_ts IS NULL),
+                                        station_telemetry_eqns_id = (SELECT id FROM station_telemetry_eqns WHERE station_id = packet_telemetry.station_id AND valid_to_ts IS NULL),
+                                        station_telemetry_bits_id = (SELECT id FROM station_telemetry_bits WHERE station_id = packet_telemetry.station_id AND valid_to_ts IS NULL)
+                                    WHERE id IN %s""", (tuple(packet_telemetry_ids),))
             except psycopg2.InterfaceError as e:
-                # Connection to database is lost, better just exit
                 raise e
             except Exception as e:
-                # Something went wrong, log error so we can fix problem
-                self.logger.error(e, exc_info=1)
+                self.logger.error(e, exc_info=True)
 
-    def _insertTelemetryDefinitions(self, packets):
-        """Insert telemetry definitions (PARAM, UNIT, EQNS, BITS) if any exists in current packets
+    def _insert_telemetry_definitions(self, packets):
+        """
+        Insert telemetry definitions (PARAM, UNIT, EQNS, BITS) if any exist in current packets
 
         Args:
-            packets (array):  Packets to insert
+            packets (list): Packets to insert
         """
         for packet in packets:
-            if (packet.stationTelemetryBits):
-                packet.stationTelemetryBits.save()
-
-            if (packet.stationTelemetryEqns):
-                packet.stationTelemetryEqns.save()
-
-            if (packet.stationTelemetryParam):
-                packet.stationTelemetryParam.save()
-
-            if (packet.stationTelemetryUnit):
-                packet.stationTelemetryUnit.save()
+            if packet.station_telemetry_bits:
+                packet.station_telemetry_bits.save()
+            if packet.station_telemetry_eqns:
+                packet.station_telemetry_eqns.save()
+            if packet.station_telemetry_param:
+                packet.station_telemetry_param.save()
+            if packet.station_telemetry_unit:
+                packet.station_telemetry_unit.save()

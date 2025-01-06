@@ -37,23 +37,24 @@ trackdirect.models.TransmitAnimation.prototype.hide = function () {
  * Show packet send animation
  */
 trackdirect.models.TransmitAnimation.prototype.init = function () {
-  var newLatLng = this._marker.packet.getLatLngLiteral();
+  let newLatLng = this._marker.packet.getLatLngLiteral();
   this._marker.transmitPolyLine = new trackdirect.models.TransmitPolyline(
     this._marker.packet,
     this._map
   );
   this.iconMarkers = [];
-  for (var i = 1; i <= 3; i++) {
-    var icon = this._getIcon(i);
+  for (let i = 1; i <= 3; i++) {
+    let icon = this._getIcon(i);
+    let iconMarker;
     if (typeof google === "object" && typeof google.maps === "object") {
-      var iconMarker = new google.maps.Marker({
+      iconMarker = new google.maps.Marker({
         position: newLatLng,
         zIndex: this._map.state.currentMarkerZindex,
         icon: icon,
         opacity: 0.6,
       });
     } else if (typeof L === "object") {
-      var iconMarker = new L.Marker(newLatLng, {
+      iconMarker = new L.Marker(newLatLng, {
         zIndexOffset: this._map.state.currentMarkerZindex,
         icon: icon,
         opacity: 0.6,
@@ -69,8 +70,9 @@ trackdirect.models.TransmitAnimation.prototype.init = function () {
  * @return {object}
  */
 trackdirect.models.TransmitAnimation.prototype._getIcon = function (index) {
+  let icon;
   if (typeof google === "object" && typeof google.maps === "object") {
-    var icon = {
+    icon = {
       url:
         trackdirect.settings.baseUrl +
         trackdirect.settings.imagesBaseDir +
@@ -82,7 +84,7 @@ trackdirect.models.TransmitAnimation.prototype._getIcon = function (index) {
       anchor: new google.maps.Point(30, 30),
     };
   } else if (typeof L === "object") {
-    var icon = L.icon({
+    icon = L.icon({
       iconUrl:
         trackdirect.settings.baseUrl +
         trackdirect.settings.imagesBaseDir +
@@ -102,7 +104,7 @@ trackdirect.models.TransmitAnimation.prototype._getIcon = function (index) {
  * @param {array} iconMarkers
  */
 trackdirect.models.TransmitAnimation.prototype._startAnimation = function () {
-  var me = this;
+  let me = this;
   me._showIconMarker(1);
 
   window.setTimeout(function () {

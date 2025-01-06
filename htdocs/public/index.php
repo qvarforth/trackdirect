@@ -36,8 +36,8 @@
             <script src="https://cdnjs.cloudflare.com/ajax/libs/OverlappingMarkerSpiderfier/1.0.3/oms.min.js" integrity="sha512-/3oZy+rGpR6XGen3u37AEGv+inHpohYcJupz421+PcvNWHq2ujx0s1QcVYEiSHVt/SkHPHOlMFn5WDBb/YbE+g==" crossorigin="anonymous"></script>
 
         <?php elseif ($mapapi == 'leaflet' || $mapapi == 'leaflet-vector'): ?>
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.css" integrity="sha512-1xoFisiGdy9nvho8EgXuXvnpR5GAMSjFwp40gSRE3NwdUdIMIKuPa7bqoUhLD0O/5tPNhteAsE5XyyMi5reQVA==" crossorigin="anonymous" />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.js" integrity="sha512-SeiQaaDh73yrb56sTW/RgVdi/mMqNeM2oBwubFHagc5BkixSpP1fvqF47mKzPGWYSSy4RwbBunrJBQ4Co8fRWA==" crossorigin="anonymous"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
             <?php if ($mapapi == 'leaflet-vector'): ?>
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mapbox-gl/1.13.1/mapbox-gl.min.css" />
@@ -58,7 +58,6 @@
         <link rel="stylesheet" href="/css/main.css">
 
         <script>
-            // Start everything!!!
             $(document).ready(function() {
                 google.charts.load('current', {'packages':['corechart', 'timeline']});
 
@@ -67,7 +66,6 @@
                 options['useImperialUnit'] = <?php echo (isImperialUnitUser() ? 'true': 'false'); ?>;
                 options['coverageDataUrl'] = '/data/coverage.php';
                 options['coveragePercentile'] = <?php echo (getWebsiteConfig('coverage_percentile') ?? "95"); ?>;
-                options['defaultTimeLength'] = 60; // In minutes
 
                 var md = new MobileDetect(window.navigator.userAgent);
                 if (md.mobile() !== null) {
@@ -87,12 +85,19 @@
                 options['filters']['sidlist'] = "<?php echo $_GET['sidlist'] ?? '' ?>";     // Station id list to filter on (colon separated)
                 options['filters']['snamelist'] = "<?php echo $_GET['snamelist'] ?? '' ?>"; // Station name list to filter on (colon separated)
 
-                // Tell jslib which html element to use to show connection status and mouse cordinates
+                // Tell jslib which html element to use to show connection status and mouse coordinates
                 options['statusContainerElementId'] = 'status-container';
-                options['cordinatesContainerElementId'] = 'cordinates-container';
+                options['coordinatesContainerElementId'] = 'coordinate-container';
 
-                // Use this setting so enlarge some symbols (for example airplanes when using OGN as data source)
-                //options['symbolsToScale'] = [[88,47],[94,null]];
+                <?php if (isSourceIdUsed(5)) : ?>
+                    // Adapt settings for OGN data
+                    options['symbolsToScale'] = [[88,47],[94,null]];
+                    options['defaultMinZoomForMarkerTail'] = 11;
+                    options['defaultMinZoomForMarkers'] = 9;
+                    options['defaultTimeLength'] = 10;
+                <?php else : ?>
+                    options['defaultTimeLength'] = 60; // In minutes
+                <?php endif; ?>
 
                 // Set this setting to false if you want to stop animations
                 options['animate'] = true;
@@ -132,15 +137,15 @@
                         options['supportedMapTypes']['satellite'] = "<?php echo getWebsiteConfig('leaflet_raster_tile_satellite'); ?>";
                     <?php endif; ?>
 
-                    // host is used to create url to /heatmaps and /images
-                    options['host'] = "<?php echo $_SERVER['HTTP_HOST']; ?>";
+                    // host is used to create url to /heatmaps and /images (leave empty to use same host as website)
+                    options['host'] = "";
 
                     var supportsWebSockets = 'WebSocket' in window || 'MozWebSocket' in window;
-		    if (supportsWebSockets) {
+		            if (supportsWebSockets) {
                        <?php if (getWebsiteConfig('websocket_url') != null) : ?>
                            var wsServerUrl = "<?php echo getWebsiteConfig('websocket_url'); ?>";
                         <?php else : ?>
-                            var wsServerUrl = 'ws://<?php echo $_SERVER['HTTP_HOST']; ?>:9000/ws';
+                            var wsServerUrl = 'ws://<?php echo $_SERVER['SERVER_NAME']; ?>:8090/ws';
                         <?php endif; ?>
                         var mapElementId = 'map-container';
 
@@ -148,13 +153,20 @@
                     } else {
                         alert('This service require HTML 5 features to be able to feed you APRS data in real-time. Please upgrade your browser.');
                     }
+
+                    $('#station-search').keypress(function (e) {
+                        if (e.which == 13) {
+                            var q = $('#station-search').val();
+                            loadView('/views/search.php?imperialUnits=<?php echo $_GET['imperialUnits'] ?? '0'; ?>&q=' + q + '&seconds=0');
+                        }
+                    });
                 });
             });
         </script>
     </head>
     <body>
         <div class="topnav" id="tdTopnav">
-            <a  style="background-color: #af7a4c; color: white;"
+            <a  style="color: white; padding: 7px 10px 8px 10px;"
                 href=""
                 onclick="
                     if (location.protocol != 'https:') {
@@ -175,7 +187,7 @@
                     }
                     return false;"
                 title="Go to my current position">
-                My position
+                <img src="images/mylocation.png" width="25px" height="25px" style="width: 25px; padding: 0px;">
             </a>
 
             <div class="dropdown">
@@ -183,9 +195,20 @@
                     <i class="fa fa-caret-down"></i>
                 </button>
                 <div class="dropdown-content" id="tdTopnavTimelength">
+                    <?php if (isSourceIdUsed(5)) : ?>
+                    <a href="javascript:void(0);" id="tdTopnavTimelengthDefault" onclick="trackdirect.setTimeLength(10); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">10 minutes</a>
+                    <? else : ?>
                     <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(10); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">10 minutes</a>
+                    <?php endif; ?>
+
                     <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(30); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">30 minutes</a>
+
+                    <?php if (isSourceIdUsed(5)) : ?>
+                    <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(60); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">1 hour</a>
+                    <?php else : ?>
                     <a href="javascript:void(0);" id="tdTopnavTimelengthDefault" onclick="trackdirect.setTimeLength(60); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">1 hour</a>
+                    <?php endif; ?>
+
                     <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(180); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">3 hours</a>
                     <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(360); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox">6 hours</a>
                     <a href="javascript:void(0);" onclick="trackdirect.setTimeLength(720); $('#tdTopnavTimelength>a').removeClass('dropdown-content-checkbox-active'); $(this).addClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox dropdown-content-checkbox-only-filtering dropdown-content-checkbox-hidden">12 hours</a>
@@ -200,11 +223,11 @@
                 </button>
                 <div class="dropdown-content">
                     <?php if (getWebsiteConfig('google_key') != null) : ?>
-                        <a href="/?mapapi=google" title="Switch to Google Maps" <?= ($mapapi=="google"?"class='dropdown-content-checkbox dropdown-content-checkbox-active'":"class='dropdown-content-checkbox'") ?>>Google Maps API</a>
+                        <a href="/?mapapi=google" title="Switch to Google Maps" <?= ($mapapi=="google"?"class='dropdown-content-checkbox dropdown-content-checkbox-active'":"class='dropdown-content-checkbox'") ?> >Google Maps API</a>
                     <?php endif; ?>
-                    <a href="/?mapapi=leaflet" title="Switch to Leaflet with raster tiles" <?= ($mapapi=="leaflet"?"class='dropdown-content-checkbox  dropdown-content-checkbox-active'":"class='dropdown-content-checkbox'") ?>>Leaflet - Raster Tiles</a>
+                    <a href="/?mapapi=leaflet" title="Switch to Leaflet with raster tiles" <?= ($mapapi=="leaflet"?"class='dropdown-content-checkbox  dropdown-content-checkbox-active'":"class='dropdown-content-checkbox'") ?> >Leaflet - Raster Tiles</a>
                     <?php if (getWebsiteConfig('maptiler_key') != null) : ?>
-                        <a href="/?mapapi=leaflet-vector" title="Switch to Leaflet with vector tiles" <?= ($mapapi=="leaflet-vector"?"class='dropdown-content-checkbox dropdown-content-checkbox-active'":"class='dropdown-content-checkbox'") ?>>Leaflet - Vector Tiles</a>
+                        <a href="/?mapapi=leaflet-vector" title="Switch to Leaflet with vector tiles" <?= ($mapapi=="leaflet-vector"?"class='dropdown-content-checkbox dropdown-content-checkbox-active'":"class='dropdown-content-checkbox'") ?> >Leaflet - Vector Tiles</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -228,16 +251,22 @@
                 <button class="dropbtn">Settings
                     <i class="fa fa-caret-down"></i>
                 </button>
-		<div class="dropdown-content" id="tdTopnavSettings">
+		        <div class="dropdown-content" id="tdTopnavSettings">
                     <a href="javascript:void(0);" onclick="trackdirect.toggleImperialUnits(); $(this).toggleClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox <?php echo (isImperialUnitUser()?'dropdown-content-checkbox-active':''); ?>" title="Switch to imperial units">Use imperial units</a>
                     <a href="javascript:void(0);" onclick="trackdirect.toggleStationaryPositions(); $(this).toggleClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox" title="Hide stations that is not moving">Hide not moving stations</a>
 
-                    <!--
+                    <?php if (isSourceIdUsed(1)) : ?>
                     <a href="javascript:void(0);" onclick="trackdirect.toggleInternetPositions(); $(this).toggleClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox" title="Hide stations that sends packet using TCP/UDP">Hide Internet stations</a>
+                    <?php endif; ?>
+
+                    <?php if (isSourceIdUsed(2)) : ?>
                     <a href="javascript:void(0);" onclick="trackdirect.toggleCwopPositions(); $(this).toggleClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox" title="Hide CWOP weather stations">Hide CWOP stations</a>
+                    <?php endif; ?>
+
+                    <?php if (isSourceIdUsed(5)) : ?>
                     <a href="javascript:void(0);" onclick="trackdirect.toggleOgflymPositions(); $(this).toggleClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox" title="Hide model airplanes (OGFLYM)">Hide model airplanes (OGFLYM)</a>
                     <a href="javascript:void(0);" onclick="trackdirect.toggleUnknownPositions(); $(this).toggleClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox" title="Hide unknown aircrafts">Hide unknown aircrafts</a>
-                    -->
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -248,36 +277,41 @@
                 <div class="dropdown-content">
 
                     <a href="/views/search.php"
-			class="tdlink"
+                        class="tdlink"
                         onclick="$(this).attr('href', '/views/search.php?imperialUnits=' + (trackdirect.isImperialUnits()?'1':'0'))"
                         title="Search for a station/vehicle here!">
                         Station search
                     </a>
 
                     <a href="/views/latest.php"
-			class="tdlink"
+			            class="tdlink"
                         onclick="$(this).attr('href', '/views/latest.php?imperialUnits=' + (trackdirect.isImperialUnits()?'1':'0'))"
                         title="List latest heard stations!">
                         Latest heard
                     </a>
 
+                    <?php if (isAllowedToShowOlderData()) : ?>
                     <a href="javascript:void(0);"
                         onclick="$('#modal-timetravel').show();"
                         title="Select date and time to show what the map looked like then">
                         Travel in time
                     </a>
+                    <?php endif; ?>
 
+
+                    <?php if (isSourceIdUsed(1)) : ?>
                     <a class="triple-notselected" href="#" onclick="trackdirect.togglePHGCircles(); return false;" title="Show PHG cirlces, first click will show half PGH circles and second click will show full PHG circles.">
                         Toggle PHG circles
+                    </a>
+                    <?php endif; ?>
+
+                    <a href="/views/about.php" class="tdlink" title="More about this website">
+                        About
                     </a>
                 </div>
             </div>
 
-            <a href="/views/about.php"
-                class="tdlink"
-                title="More about this website!">
-                About
-            </a>
+            <input type="text" id="station-search" placeholder="Search..">
 
             <a href="javascript:void(0);" class="icon" onclick="toggleTopNav()">&#9776;</a>
         </div>
@@ -285,18 +319,13 @@
         <div id="map-container"></div>
 
         <div id="right-container">
-            <div id="right-container-info">
-                <div id="status-container"></div>
-                <div id="cordinates-container"></div>
-            </div>
-
             <div id="right-container-filtered">
-                <div id="right-container-filtered-content"></div>
+                <span id="right-container-filtered-content"></span>
                 <a href="#" onclick="trackdirect.filterOnStationId([]); return false;">reset</a>
             </div>
 
             <div id="right-container-timetravel">
-                <div id="right-container-timetravel-content"></div>
+                <span id="right-container-timetravel-content"></span>
                 <a href="#" onclick="trackdirect.setTimeTravelTimestamp(0); $('#right-container-timetravel').hide(); return false;">reset</a>
             </div>
         </div>
@@ -312,7 +341,7 @@
                         <?php $view = getView($_GET['view']); ?>
                         <?php if ($view) : ?>
                             <?php include($view); ?>
-			<?php else: ?>
+			            <?php else: ?>
                             <div id="td-modal-content-nojs">
                                 <?php include(ROOT . '/public/views/about.php'); ?>
                             </div>
@@ -394,6 +423,18 @@
                         </form>
                     <?php endif; ?>
                 </div>
+            </div>
+        </div>
+
+        <div id="bottominfo-container">
+            <div style="margin-left: 10px; width: 350px;">
+                <span id="status-container"></span>
+            </div>
+            <div style="width: 350px;">
+                <span id="maintainer-container">Maintained by <a href="mailto:<?php echo getWebsiteConfig('owner_email'); ?>"><?php echo getWebsiteConfig('owner_name'); ?></a>, based on <a target="_blank" href="https://www.aprsdirect.com">APRS Track Direct</a></span>
+            </div>
+            <div style="margin-right:10px; width: 350px; text-align:right;">
+                <span id="coordinate-container"></span>
             </div>
         </div>
     </body>

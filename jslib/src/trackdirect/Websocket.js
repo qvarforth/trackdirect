@@ -12,7 +12,7 @@ trackdirect.Websocket = function (wsServerUrl) {
   // Call the parent constructor
   this._instance = new WebSocket(this._wsServerUrl);
 
-  var me = this;
+  let me = this;
   this._instance.onopen = function (evt) {
     me._onOpen(evt);
   };
@@ -107,7 +107,7 @@ trackdirect.Websocket.prototype.doSendFilterRequest = function (
   historyMinutes,
   referenceTime
 ) {
-  var request = {};
+  let request = {};
   request.payload_request_type = 4;
   request.list = list;
   request.minutes = historyMinutes;
@@ -130,7 +130,7 @@ trackdirect.Websocket.prototype.doSendFilterRequestByName = function (
   historyMinutes,
   referenceTime
 ) {
-  var request = {};
+  let request = {};
   request.payload_request_type = 8;
   request.namelist = namelist;
   request.minutes = historyMinutes;
@@ -154,7 +154,7 @@ trackdirect.Websocket.prototype.doSendCompleteStationRequest = function (
   historyMinutes,
   referenceTime
 ) {
-  var request = {};
+  let request = {};
   request.payload_request_type = 7;
   request.station_id = stationId;
   request.minutes = historyMinutes;
@@ -172,7 +172,7 @@ trackdirect.Websocket.prototype.doSendCompleteStationRequest = function (
  * @return {boolean}
  */
 trackdirect.Websocket.prototype.doSendStopFilterRequest = function (stationId) {
-  var request = {};
+  let request = {};
   request.payload_request_type = 6;
   request.station_id = stationId;
   return this._addToSendQueue(request);
@@ -198,7 +198,7 @@ trackdirect.Websocket.prototype.doSendNewPositionRequest = function (
   referenceTime,
   onlyRequestLatestPacket
 ) {
-  var request = {};
+  let request = {};
   request.payload_request_type = 1;
   request.neLat = neLat;
   request.neLng = neLng;
@@ -218,7 +218,7 @@ trackdirect.Websocket.prototype.doSendNewPositionRequest = function (
     request.onlyLatestPacket = 0;
   }
 
-  var requestStr = JSON.stringify(request);
+  let requestStr = JSON.stringify(request);
   if (requestStr != this._lastSentPositionRequest) {
     this._lastSentPositionRequest = requestStr;
 
@@ -227,7 +227,7 @@ trackdirect.Websocket.prototype.doSendNewPositionRequest = function (
     }
 
     if (this._addToSendQueue(request)) {
-      var me = this;
+      let me = this;
       this._sendPositionRequestIntervalId = window.setInterval(function () {
         // Real-time update functionality may discard packets during high load,
         // so it is good to send an extra update request now and then
@@ -293,7 +293,7 @@ trackdirect.Websocket.prototype._onMessage = function (evt) {
   this._lastMessageTimestamp = Math.floor(Date.now() / 1000);
 
   // We skip try-catch since it affects performance
-  var packet = JSON.parse(evt.data);
+  let packet = JSON.parse(evt.data);
 
   // Add to queue to make sure packets are handled in order
   trackdirect.services.callbackExecutor.add(this, this._handleMessage, [
@@ -387,7 +387,7 @@ trackdirect.Websocket.prototype._addToSendQueue = function (request) {
     return false;
   }
 
-  var currentTs = Math.floor(Date.now() / 1000);
+  let currentTs = Math.floor(Date.now() / 1000);
   if (
     this._lastMessageTimestamp !== null &&
     this._lastMessageTimestamp < currentTs - 60
@@ -398,9 +398,9 @@ trackdirect.Websocket.prototype._addToSendQueue = function (request) {
     return false;
   }
 
-  var me = this;
+  let me = this;
   this._queue.push(function () {
-    var data = JSON.stringify(request);
+    let data = JSON.stringify(request);
     if (data != null) {
       me.send(data);
     }
@@ -425,21 +425,21 @@ trackdirect.Websocket.prototype._start = function () {
  */
 trackdirect.Websocket.prototype._dequeue = function () {
   this._running = true;
-  var me = this;
+  let me = this;
   setTimeout(function () {
     if (me._instance.readyState === 1) {
       // Open
-      var shift = me._queue.shift();
+      let shift = me._queue.shift();
       if (shift) {
         shift();
       } else {
         me._running = false;
       }
-      return;
+      
     } else if (me._instance.readyState > 1) {
       // Closed (or closing)
       me._running = false;
-      return;
+      
     } else {
       // Probably on the way to open, just wait
       me._dequeue();
@@ -457,7 +457,7 @@ trackdirect.Websocket.prototype._emitEventListeners = function (event, arg) {
     typeof this._eventListeners !== "undefined" &&
     event in this._eventListeners
   ) {
-    for (var i = 0; i < this._eventListeners[event].length; i++) {
+    for (let i = 0; i < this._eventListeners[event].length; i++) {
       this._eventListeners[event][i](arg);
     }
   }

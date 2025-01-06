@@ -25,13 +25,13 @@ trackdirect.services.mapAttributionModifier = {
    */
   updateHereAttribution: function (map) {
     this._loadHereAttributionData(map);
-    var me = this;
-    var base = this._getMapTileBase(map);
+    let me = this;
+    let base = this._getMapTileBase(map);
     if (base == "base") {
       this.addListener(
         "init-here-base",
         function () {
-          var attribution = me._getHereAttributionString(map);
+          let attribution = me._getHereAttributionString(map);
           me.setMapAttribution(map, attribution);
         },
         true
@@ -40,7 +40,7 @@ trackdirect.services.mapAttributionModifier = {
       this.addListener(
         "init-here-aerial",
         function () {
-          var attribution = me._getHereAttributionString(map);
+          let attribution = me._getHereAttributionString(map);
           me.setMapAttribution(map, attribution);
         },
         true
@@ -100,7 +100,7 @@ trackdirect.services.mapAttributionModifier = {
    * @return {Boolean}
    */
   _isHereTileProvider: function (map) {
-    var tileLayer = map.getLeafletTileLayer();
+    let tileLayer = map.getLeafletTileLayer();
     if (
       tileLayer !== null &&
       typeof tileLayer._url !== "undefined" &&
@@ -117,7 +117,7 @@ trackdirect.services.mapAttributionModifier = {
    * @param {trackdirect.models.Map} map
    */
   _getMapTileOptions: function (map) {
-    var tileLayer = map.getLeafletTileLayer();
+    let tileLayer = map.getLeafletTileLayer();
     if (tileLayer !== null && typeof tileLayer.options !== "undefined") {
       return tileLayer.options;
     }
@@ -130,7 +130,7 @@ trackdirect.services.mapAttributionModifier = {
    * @param {trackdirect.models.Map} map
    */
   _getMapTileVariant: function (map) {
-    var options = this._getMapTileOptions(map);
+    let options = this._getMapTileOptions(map);
     if (options.variant !== "undefined") {
       return options.variant;
     }
@@ -143,8 +143,8 @@ trackdirect.services.mapAttributionModifier = {
    * @param {trackdirect.models.Map} map
    */
   _getMapTileInitialVariant: function (map) {
-    var mapVariant = this._getMapTileVariant(map);
-    var dotIndex = mapVariant.indexOf(".");
+    let mapVariant = this._getMapTileVariant(map);
+    let dotIndex = mapVariant.indexOf(".");
     if (dotIndex >= 0) {
       return mapVariant.substring(0, dotIndex);
     }
@@ -156,7 +156,7 @@ trackdirect.services.mapAttributionModifier = {
    * @param {trackdirect.models.Map} map
    */
   _getMapTileBase: function (map) {
-    var options = this._getMapTileOptions(map);
+    let options = this._getMapTileOptions(map);
     if (options.base !== "undefined") {
       return options.base;
     }
@@ -169,18 +169,19 @@ trackdirect.services.mapAttributionModifier = {
    * @param {trackdirect.models.Map} map
    */
   _getHereAttributionString: function (map) {
-    var result = [];
-    var mapBaseVariant = this._getMapTileInitialVariant(map);
+    let result = [];
+    let mapBaseVariant = this._getMapTileInitialVariant(map);
 
+    let data;
     if (this._getMapTileBase(map) == "base") {
-      var data = this._hereBaseAttributionData;
+      data = this._hereBaseAttributionData;
     } else if (this._getMapTileBase(map) == "aerial") {
-      var data = this._hereAerialAttributionData;
+      data = this._hereAerialAttributionData;
     }
 
     if (data !== null && typeof data[mapBaseVariant] !== "undefined") {
-      for (var i = 0, len = data[mapBaseVariant].length; i < len; i++) {
-        var attributionArea = data[mapBaseVariant][i];
+      for (let i = 0, len = data[mapBaseVariant].length; i < len; i++) {
+        let attributionArea = data[mapBaseVariant][i];
 
         if (
           parseInt(map.getZoom()) >= parseInt(attributionArea.minLevel) &&
@@ -190,7 +191,7 @@ trackdirect.services.mapAttributionModifier = {
             typeof attributionArea.boxes === "undefined" ||
             this._isAnyBoxVisible(attributionArea.boxes, map)
           ) {
-            var attributionText =
+            let attributionText =
               '<span title="' +
               attributionArea.alt +
               '">' +
@@ -213,10 +214,10 @@ trackdirect.services.mapAttributionModifier = {
    */
   _isAnyBoxVisible: function (boxes, map) {
     if (typeof boxes !== "undefined" && Array.isArray(boxes)) {
-      for (var i = 0, len = boxes.length; i < len; i++) {
-        var box = boxes[i];
+      for (let i = 0, len = boxes.length; i < len; i++) {
+        let box = boxes[i];
         if (Array.isArray(box) && box.length >= 4) {
-          var boxBounds = L.latLngBounds(
+          let boxBounds = L.latLngBounds(
             L.latLng(parseFloat(box[0]), parseFloat(box[1])),
             L.latLng(parseFloat(box[2]), parseFloat(box[3]))
           );
@@ -234,14 +235,14 @@ trackdirect.services.mapAttributionModifier = {
    * @param {trackdirect.models.Map} map
    */
   _loadHereAttributionData: function (map) {
-    var options = this._getMapTileOptions(map);
-    var base = this._getMapTileBase(map);
+    let options = this._getMapTileOptions(map);
+    let base = this._getMapTileBase(map);
 
     if (
       (this._hereBaseAttributionData === null && base == "base") ||
       (this._hereAerialAttributionData === null && base == "aerial")
     ) {
-      var me = this;
+      let me = this;
 
       jQuery.ajax({
         url:
@@ -281,15 +282,15 @@ trackdirect.services.mapAttributionModifier = {
    */
   _emitEventListeners: function (event, arg) {
     if (event in this._eventListeners) {
-      for (var i = 0; i < this._eventListeners[event].length; i++) {
+      for (let i = 0; i < this._eventListeners[event].length; i++) {
         this._eventListeners[event][i](arg);
       }
     }
 
     if (event in this._eventListenersOnce) {
-      var eventListenersOnce = this._eventListenersOnce[event].splice(0);
+      let eventListenersOnce = this._eventListenersOnce[event].splice(0);
       this._eventListenersOnce[event] = [];
-      for (var i = 0; i < eventListenersOnce.length; i++) {
+      for (let i = 0; i < eventListenersOnce.length; i++) {
         eventListenersOnce[i](arg);
       }
     }

@@ -22,10 +22,10 @@ trackdirect.MarkerCreator.prototype.addPacket = function (
   if (this.isBadPacket(packet)) {
     return null;
   }
-  var markerIdKey = this._map.markerCollection.getMarkerIdKey(packet.marker_id);
+  let markerIdKey = this._map.markerCollection.getMarkerIdKey(packet.marker_id);
 
   if (this._map.markerCollection.isExistingMarker(markerIdKey)) {
-    var marker = this._map.markerCollection.getMarker(markerIdKey);
+    let marker = this._map.markerCollection.getMarker(markerIdKey);
     if (
       marker.packet.is_moving == 1 &&
       packet.is_moving != 1
@@ -74,10 +74,10 @@ trackdirect.MarkerCreator.prototype.addPacket = function (
 trackdirect.MarkerCreator.prototype._getMarkerIdKeyToOverwrite = function (
   packet
 ) {
-  var markerIdKey = this._map.markerCollection.getMarkerIdKey(packet.marker_id);
+  let markerIdKey = this._map.markerCollection.getMarkerIdKey(packet.marker_id);
   if (this._map.markerCollection.isExistingMarker(markerIdKey)) {
     // This marker exists on map, overwrite if it is marked to be overwritten
-    var marker = this._map.markerCollection.getMarker(markerIdKey);
+    let marker = this._map.markerCollection.getMarker(markerIdKey);
     if (marker.overwrite == true && packet.overwrite == 0) {
       return markerIdKey;
     }
@@ -85,7 +85,7 @@ trackdirect.MarkerCreator.prototype._getMarkerIdKeyToOverwrite = function (
     // If packet is stationary and station has another marker allready, check if it may be the same thing
     // It may be the same thing but different marker id's if it is more than 24h between packets
     // (collector only connects packets that has less than 24h apart from eachother)
-    var prevMarker = this._map.markerCollection.getStationLatestMarker(
+    let prevMarker = this._map.markerCollection.getStationLatestMarker(
       packet.station_id
     );
     if (prevMarker !== null) {
@@ -94,9 +94,9 @@ trackdirect.MarkerCreator.prototype._getMarkerIdKeyToOverwrite = function (
         packet.station_id == prevMarker.packet.station_id &&
         packet.timestamp - prevMarker.packet.timestamp > 86400 &&
         Math.round(prevMarker.packet.latitude * 100000) ==
-          Math.round(packet.latitude * 100000) &&
+        Math.round(packet.latitude * 100000) &&
         Math.round(prevMarker.packet.longitude * 100000) ==
-          Math.round(packet.longitude * 100000) &&
+        Math.round(packet.longitude * 100000) &&
         prevMarker.packet.symbol == packet.symbol &&
         prevMarker.packet.symbol_table == packet.symbol_table
       ) {
@@ -117,7 +117,7 @@ trackdirect.MarkerCreator.prototype._getMarkerIdKeyToOverwrite = function (
  */
 trackdirect.MarkerCreator.prototype._replaceMarker = function (markerIdKey) {
   if (this._map.markerCollection.isExistingMarker(markerIdKey)) {
-    var marker = this._map.markerCollection.getMarker(markerIdKey);
+    let marker = this._map.markerCollection.getMarker(markerIdKey);
     if (this._map.state.isMarkerInfoWindowOpen(marker)) {
       this._map.state.openInfoWindowForMarkerIdKey = markerIdKey;
     }
@@ -138,22 +138,22 @@ trackdirect.MarkerCreator.prototype._overwriteMarker = function (
   prevMarkerIdKey,
   newMarkerIdKey
 ) {
-  var prevMarker = this._map.markerCollection.getMarker(prevMarkerIdKey);
+  let prevMarker = this._map.markerCollection.getMarker(prevMarkerIdKey);
   if (this._map.state.isMarkerInfoWindowOpen(prevMarker)) {
     this._map.state.openInfoWindowForMarkerIdKey = newMarkerIdKey;
   }
 
-  var markerLabel = prevMarker.label;
-  var markerPolyLine =
+  let markerLabel = prevMarker.label;
+  let markerPolyLine =
     this._map.markerCollection.getMarkerPolyline(prevMarkerIdKey);
-  var markerDotMarkers =
+  let markerDotMarkers =
     this._map.markerCollection.getDotMarkers(prevMarkerIdKey);
-  var markerOriginDashedPolyline =
+  let markerOriginDashedPolyline =
     this._map.markerCollection.getMarkerDashedPolyline(prevMarkerIdKey);
 
   clearTimeout(prevMarker.toOldTimerId);
   if (markerDotMarkers != null) {
-    for (var i = 0; i < markerDotMarkers.length; i++) {
+    for (let i = 0; i < markerDotMarkers.length; i++) {
       clearTimeout(markerDotMarkers[i].toOldTimerId);
     }
   }
@@ -186,7 +186,7 @@ trackdirect.MarkerCreator.prototype._overwriteMarker = function (
     markerPolyLine.hide();
   }
   if (markerDotMarkers != null) {
-    for (var i = 0; i < markerDotMarkers.length; i++) {
+    for (let i = 0; i < markerDotMarkers.length; i++) {
       markerDotMarkers[i].hide();
     }
   }
@@ -198,7 +198,7 @@ trackdirect.MarkerCreator.prototype._overwriteMarker = function (
       typeof markerOriginDashedPolyline.relatedMarkerIdKey !== "undefined" &&
       markerOriginDashedPolyline.relatedMarkerIdKey !== null
     ) {
-      var prevMarker = this._map.markerCollection.getMarker(
+      let prevMarker = this._map.markerCollection.getMarker(
         markerOriginDashedPolyline.relatedMarkerIdKey
       );
       if (
@@ -247,8 +247,9 @@ trackdirect.MarkerCreator.prototype._setCurrentPacketSequenceStationId =
  * @param {object} packet
  */
 trackdirect.MarkerCreator.prototype._createMarker = function (packet) {
-  var markerIdKey = this._map.markerCollection.getMarkerIdKey(packet.marker_id);
-  var prevmarker = this._map.markerCollection.getMarker(markerIdKey);
+  let marker;
+  let markerIdKey = this._map.markerCollection.getMarkerIdKey(packet.marker_id);
+  let prevmarker = this._map.markerCollection.getMarker(markerIdKey);
   this._map.state.currentMarkerZindex += 1;
 
   if (packet.packet_order_id == 1 || packet.is_moving == 0) {
@@ -268,10 +269,10 @@ trackdirect.MarkerCreator.prototype._createMarker = function (packet) {
         );
       }
     }
-    var marker = new trackdirect.models.Marker(packet, false, this._map);
+    marker = new trackdirect.models.Marker(packet, false, this._map);
     this._addInfoWindowClickListener(marker, true);
   } else {
-    var marker = new trackdirect.models.Marker(packet, true, this._map);
+    marker = new trackdirect.models.Marker(packet, true, this._map);
     this._map.markerCollection.addDotMarker(markerIdKey, marker);
     this._addInfoWindowClickListener(marker, false);
   }
@@ -315,7 +316,7 @@ trackdirect.MarkerCreator.prototype._addInfoWindowClickListener = function (
   marker,
   useOmsIfExists
 ) {
-  var me = this;
+  let me = this;
   if (useOmsIfExists && this._map.oms) {
     me._map.oms.addMarker(marker);
   } else if (typeof google === "object" && typeof google.maps === "object") {
@@ -339,7 +340,7 @@ trackdirect.MarkerCreator.prototype._convertToDotMarker = function (
   packet
 ) {
   // Check that marker has not allready been converted to dot-marker
-  var dotMarker = this._map.markerCollection.getMarker(markerIdKey);
+  let dotMarker = this._map.markerCollection.getMarker(markerIdKey);
   if (dotMarker != null && dotMarker.showAsMarker) {
     dotMarker.stopDirectionPolyline();
 
@@ -355,11 +356,11 @@ trackdirect.MarkerCreator.prototype._convertToDotMarker = function (
       }
     }
 
-    var icon = this._getDotMarkerIcon(packet);
+    let icon = this._getDotMarkerIcon(packet);
     dotMarker.setOpacity(1.0);
     dotMarker.setIcon(icon);
     if (typeof google === "object" && typeof google.maps === "object") {
-      dotMarker.setOptions({ anchorPoint: null });
+      dotMarker.setOptions({anchorPoint: null});
     }
     this._map.markerCollection.addDotMarker(markerIdKey, dotMarker);
 
@@ -368,7 +369,7 @@ trackdirect.MarkerCreator.prototype._convertToDotMarker = function (
       this._map.oms.removeMarker(dotMarker);
 
       // markers that is not handled by oms need to have their own clicklistener
-      var me = this;
+      let me = this;
       if (typeof google === "object" && typeof google.maps === "object") {
         dotMarker.addListener("click", function () {
           me._map.openMarkerInfoWindow(dotMarker, false);
@@ -382,7 +383,7 @@ trackdirect.MarkerCreator.prototype._convertToDotMarker = function (
 
     // Allways hide label for marker that is converted to dot-marker (we are not sure if label will still be used)
     if (this._map.markerCollection.hasMarkerLabel(markerIdKey)) {
-      var markerLabel = this._map.markerCollection.getMarkerLabel(markerIdKey);
+      let markerLabel = this._map.markerCollection.getMarkerLabel(markerIdKey);
       markerLabel.hide();
     }
     dotMarker.hasLabel = false;
@@ -398,9 +399,10 @@ trackdirect.MarkerCreator.prototype._convertToDotMarker = function (
  * @return {object}
  */
 trackdirect.MarkerCreator.prototype._getDotMarkerIcon = function (packet) {
-  var colorId = trackdirect.services.stationColorCalculator.getColorId(packet);
+  let colorId = trackdirect.services.stationColorCalculator.getColorId(packet);
+  let icon;
   if (typeof google === "object" && typeof google.maps === "object") {
-    var icon = {
+    icon = {
       url:
         trackdirect.settings.baseUrl +
         trackdirect.settings.imagesBaseDir +
@@ -412,7 +414,7 @@ trackdirect.MarkerCreator.prototype._getDotMarkerIcon = function (packet) {
       anchor: new google.maps.Point(6, 6),
     };
   } else if (typeof L === "object") {
-    var icon = L.icon({
+    icon = L.icon({
       iconUrl:
         trackdirect.settings.baseUrl +
         trackdirect.settings.imagesBaseDir +
@@ -443,10 +445,10 @@ trackdirect.MarkerCreator.prototype._removeExistingRelatedMarkerOriginDashedPoly
       // Check if it should be overwritten!
       // (If this marker allready has a related-origin-dashed-polyline and the owner marker is alone we exclude it from path)
       //
-      var ownerMarkerIdKey =
+      let ownerMarkerIdKey =
         prevMarker._relatedMarkerOriginDashedPolyLine.ownerMarkerIdKey;
-      var ownerMarker = this._map.markerCollection.getMarker(ownerMarkerIdKey);
-      var isConfirmedMapId = true;
+      let ownerMarker = this._map.markerCollection.getMarker(ownerMarkerIdKey);
+      let isConfirmedMapId = true;
       if (
         ownerMarker !== null &&
         ownerMarker.packet.map_id != 1 &&
@@ -492,8 +494,8 @@ trackdirect.MarkerCreator.prototype._createMarkerOriginDashedPolyLine =
       typeof prevMarker._relatedMarkerOriginDashedPolyLine === "undefined" ||
       prevMarker._relatedMarkerOriginDashedPolyLine === null
     ) {
-      var color = trackdirect.services.stationColorCalculator.getColor(packet);
-      var newDashedPolyline = new trackdirect.models.DashedTailPolyline(
+      let color = trackdirect.services.stationColorCalculator.getColor(packet);
+      let newDashedPolyline = new trackdirect.models.DashedTailPolyline(
         color,
         this._map
       );
@@ -535,11 +537,11 @@ trackdirect.MarkerCreator.prototype._convertLostMarkersToGhost = function (
       list = this._map.markerCollection.getStationMarkerIdKeys(
         newPacket.station_id
       );
-      for (var markerIdKey in list) {
-        var newMarkerIdKey = this._map.markerCollection.getMarkerIdKey(
+      for (let markerIdKey in list) {
+        let newMarkerIdKey = this._map.markerCollection.getMarkerIdKey(
           newPacket.marker_id
         );
-        var marker = this._map.markerCollection.getMarker(markerIdKey);
+        let marker = this._map.markerCollection.getMarker(markerIdKey);
         if (
           marker !== null &&
           markerIdKey !== newMarkerIdKey &&
@@ -562,7 +564,7 @@ trackdirect.MarkerCreator.prototype._convertLostMarkersToGhost = function (
             if (
               masterMarkerIdKey !== markerIdKey &&
               this._map.markerCollection.isExistingMarker(masterMarkerIdKey) !==
-                null
+              null
             ) {
               // Another packet is connected to this one with a dashed polyline, this marker is probably an OBJECT sent by several senders
               continue;
@@ -609,15 +611,15 @@ trackdirect.MarkerCreator.prototype._getLatestStationMarkerToConnectTo =
       return newMarkerIdKey;
     }
 
-    var latestPrevMarkerIdKey = null;
-    var latestPrevMarkerIdKeyTimestamp = null;
+    let latestPrevMarkerIdKey = null;
+    let latestPrevMarkerIdKeyTimestamp = null;
     // Loop over all markers for this station
 
-    var list = this._map.markerCollection.getStationMarkerIdKeys(
+    let list = this._map.markerCollection.getStationMarkerIdKeys(
       newPacket.station_id
     );
-    for (var markerIdKey in list) {
-      var marker = this._map.markerCollection.getMarker(markerIdKey);
+    for (let markerIdKey in list) {
+      let marker = this._map.markerCollection.getMarker(markerIdKey);
       if (marker !== null) {
         if (markerIdKey === newMarkerIdKey) {
           return markerIdKey;
@@ -646,7 +648,7 @@ trackdirect.MarkerCreator.prototype._getLatestStationMarkerToConnectTo =
 trackdirect.MarkerCreator.prototype._connectToPreviousMarker = function (
   newPacket
 ) {
-  var newMarkerIdKey = this._map.markerCollection.getMarkerIdKey(
+  let newMarkerIdKey = this._map.markerCollection.getMarkerIdKey(
     newPacket.marker_id
   );
   // Create dot-marker for old position (is needed even if marker is new since same station may have other markers)
@@ -655,11 +657,11 @@ trackdirect.MarkerCreator.prototype._connectToPreviousMarker = function (
     newPacket.is_moving == 1 &&
     this._map.markerCollection.isPacketReplacingMarker(newPacket) == false
   ) {
-    var latestPrevMarkerIdKey = this._getLatestStationMarkerToConnectTo(
+    let latestPrevMarkerIdKey = this._getLatestStationMarkerToConnectTo(
       newPacket,
       newMarkerIdKey
     );
-    var latestPrevMarker = this._map.markerCollection.getMarker(
+    let latestPrevMarker = this._map.markerCollection.getMarker(
       latestPrevMarkerIdKey
     );
     if (latestPrevMarker !== null) {
@@ -676,11 +678,11 @@ trackdirect.MarkerCreator.prototype._connectToPreviousMarker = function (
           // If previous marker is connected to a prev marker by a origin dashed polyline,
           // we need to convert that marker to a dot-marker also (this happens when the prev marker is a mapId 7)
           // We don't do this until our new markerId gets a packet with mapId 1 (some never get it and will be abandoned)
-          var dashedPolyline =
+          let dashedPolyline =
             this._map.markerCollection.getMarkerDashedPolyline(
               latestPrevMarkerIdKey
             );
-          var latestPrevRelatedMarkerIdKey = dashedPolyline.relatedMarkerIdKey;
+          let latestPrevRelatedMarkerIdKey = dashedPolyline.relatedMarkerIdKey;
           this._convertToDotMarker(latestPrevRelatedMarkerIdKey, newPacket);
         }
 
@@ -715,7 +717,7 @@ trackdirect.MarkerCreator.prototype._connectToPreviousMarker = function (
  * @param {trackdirect.models.Marker} marker
  */
 trackdirect.MarkerCreator.prototype._createMarkerLabel = function (marker) {
-  var position = marker.packet.getLatLngLiteral();
+  let position = marker.packet.getLatLngLiteral();
 
   if (this._map.markerCollection.hasMarkerLabel(marker.markerIdKey)) {
     // Just move existing label
@@ -742,7 +744,7 @@ trackdirect.MarkerCreator.prototype._createMarkerLabel = function (marker) {
 
       // Add operator in comment to label
       if (marker.packet.comment) {
-        var opIndex = marker.packet.comment.indexOf("OP:");
+        let opIndex = marker.packet.comment.indexOf("OP:");
         if (opIndex > -1) {
           opStr = marker.packet.comment.substring(opIndex + 3).replace(/^\s+/, "") + " ";
           opStr = opStr.substring(0, opStr.indexOf(" "));
@@ -756,7 +758,7 @@ trackdirect.MarkerCreator.prototype._createMarkerLabel = function (marker) {
       }
     }
 
-    var markerLabel = new trackdirect.models.Label(
+    let markerLabel = new trackdirect.models.Label(
       {
         position: position,
         text: labelText,
@@ -785,7 +787,7 @@ trackdirect.MarkerCreator.prototype._extendTail = function (
   }
 
   if (this._map.markerCollection.hasPolyline(newmarker.markerIdKey)) {
-    var polyline = this._map.markerCollection.getMarkerPolyline(
+    let polyline = this._map.markerCollection.getMarkerPolyline(
       newmarker.markerIdKey
     );
     polyline.addMarker(newmarker);
@@ -796,12 +798,12 @@ trackdirect.MarkerCreator.prototype._extendTail = function (
       ) <= this._map.state.getOldestAllowedPacketTimestamp()
     ) {
       // previous marker is to old, no need to connect them
-      return;
+      
     } else {
-      var color = trackdirect.services.stationColorCalculator.getColor(
+      let color = trackdirect.services.stationColorCalculator.getColor(
         newmarker.packet
       );
-      var newTailPolyline = new trackdirect.models.TailPolyline(
+      let newTailPolyline = new trackdirect.models.TailPolyline(
         color,
         this._map
       );
@@ -824,9 +826,9 @@ trackdirect.MarkerCreator.prototype._replaceTailMarker = function (
   markerIdKey
 ) {
   if (this._map.markerCollection.hasPolyline(markerIdKey)) {
-    var marker = this._map.markerCollection.getMarker(markerIdKey);
-    var polylines = this._map.markerCollection.getMarkerPolyline(markerIdKey);
-    var latestIndex = polylines.getPath().length - 1;
+    let marker = this._map.markerCollection.getMarker(markerIdKey);
+    let polylines = this._map.markerCollection.getMarkerPolyline(markerIdKey);
+    let latestIndex = polylines.getPath().length - 1;
     if (latestIndex >= 0) {
       polylines.getPathItem(latestIndex).marker = marker;
     }
@@ -846,9 +848,9 @@ trackdirect.MarkerCreator.prototype.isBadPacket = function (packet) {
   ) {
     return true;
   }
-  var markerIdKey = this._map.markerCollection.getMarkerIdKey(packet.marker_id);
+  let markerIdKey = this._map.markerCollection.getMarkerIdKey(packet.marker_id);
   if (this._map.markerCollection.isExistingMarker(markerIdKey)) {
-    var marker = this._map.markerCollection.getMarker(markerIdKey);
+    let marker = this._map.markerCollection.getMarker(markerIdKey);
     if (
       packet.packet_order_id == 1 &&
       this._currentPacketSequenceStationId == packet.station_id
@@ -893,11 +895,11 @@ trackdirect.MarkerCreator.prototype.isBadPacket = function (packet) {
   }
 
   if (packet.is_moving == 1) {
-    var list = this._map.markerCollection.getStationMarkerIdKeys(
+    let list = this._map.markerCollection.getStationMarkerIdKeys(
       packet.station_id
     );
-    for (var relatedMarkerIdKey in list) {
-      var relatedMarker =
+    for (let relatedMarkerIdKey in list) {
+      let relatedMarker =
         this._map.markerCollection.getMarker(relatedMarkerIdKey);
       // Do not add packet to map if other packet with earlier timestamp exists
       if (

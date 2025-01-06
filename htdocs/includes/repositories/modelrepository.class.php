@@ -12,7 +12,7 @@ class ModelRepository
     }
 
     /**
-     * Returnes an initiated ModelRepository
+     * Returns an initiated ModelRepository
      *
      * @return ModelRepository
      */

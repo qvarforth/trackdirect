@@ -1,278 +1,229 @@
-from trackdirect.parser.policies.PacketOrderPolicy import PacketOrderPolicy
-from trackdirect.parser.policies.PacketMaxSpeedPolicy import PacketMaxSpeedPolicy
+from server.trackdirect.parser.policies.PacketOrderPolicy import PacketOrderPolicy
+from server.trackdirect.parser.policies.PacketMaxSpeedPolicy import PacketMaxSpeedPolicy
 
 
-class PacketMapIdPolicy():
-    """PacketMapIdPolicy tries to find the best mapId for the current packet
-    """
+class PacketMapIdPolicy:
+    """PacketMapIdPolicy tries to find the best mapId for the current packet."""
 
-    def __init__(self, packet, prevPacket):
+    def __init__(self, packet, prev_packet):
         """The __init__ method.
 
         Args:
-            packet (Packet):  Packet that we want analyze
+            packet (Packet):  Packet that we want to analyze
+            prev_packet (Packet): Previous related packet for the same station
         """
         self.packet = packet
-        self.prevPacket = prevPacket
-        self.hasKillCharacter = False
-        # Marker will be confirmed when we receive the third packet
-        self.markerCounterConfirmLimit = 3
+        self.prev_packet = prev_packet
+        self.has_kill_character = False
+        self.marker_counter_confirm_limit = 3
 
         # Results
         self.mapId = None
-        self.markerId = None
-        self.isReplacingPrevPacket = False
-        self.isConfirmingPrevPacket = False
-        self.isKillingPrevPacket = False
+        self.marker_id = None
+        self.is_replacing_prev_packet = False
+        self.is_confirming_prev_packet = False
+        self.is_killing_prev_packet = False
 
-    def enableHavingKillCharacter(self):
-        """Treat this packet as having a kill character
-        """
-        self.hasKillCharacter = True
+    def enable_having_kill_character(self):
+        """Treat this packet as having a kill character."""
+        self.has_kill_character = True
 
-    def getMapId(self):
-        """Returns the map id that corresponds to the found marker id
+    def get_map_id(self):
+        """Returns the map id that corresponds to the found marker id.
 
         Returns:
             int
         """
-        self._findMapId()
+        self._find_map_id()
         return self.mapId
 
-    def getMarkerId(self):
-        """Returns the found marker id
+    def get_marker_id(self):
+        """Returns the found marker id.
 
         Returns:
             int
         """
-        self._findMapId()
-        return self.markerId
+        self._find_map_id()
+        return self.marker_id
 
-    def isReplacingPreviousPacket(self):
-        """Returns true if packet replaces previous packet
-
-        Returns:
-            boolean
-        """
-        self._findMapId()
-        return self.isReplacingPrevPacket
-
-    def isConfirmingPreviousPacket(self):
-        """Returns true if packet confirmes previous packet
+    def is_replacing_previous_packet(self):
+        """Returns true if packet replaces previous packet.
 
         Returns:
             boolean
         """
-        self._findMapId()
-        return self.isConfirmingPrevPacket
+        self._find_map_id()
+        return self.is_replacing_prev_packet
 
-    def isKillingPreviousPacket(self):
-        """Returns true if packet kills previous packet
-
-        Returns:
-            boolean
-        """
-        self._findMapId()
-        return self.isKillingPrevPacket
-
-    def _findMapId(self):
-        """Find a suitable marker id for the current packet and set correponding attribute (and related attributes)
-        """
-        if (self.mapId is None):
-            packetOrderPolicy = PacketOrderPolicy()
-            if (self.packet.sourceId == 2 and len(self.packet.stationIdPath) > 0):
-                # A CWOP-station is allways sending directly
-                self.mapId = 16
-                self.markerId = 1
-            elif (not self._isPacketOnMap()):
-                self.mapId = 10
-                self.markerId = 1
-            elif (packetOrderPolicy.isPacketInWrongOrder(self.packet, self.prevPacket)):
-                self.mapId = 6
-                self.markerId = 1
-            elif (self._isFaultyGpsPosition()):
-                self._findMapIdForFaultyGpsPosition()
-            elif (self.packet.isMoving == 1):
-                self._findMapIdForMovingStation()
-            else:
-                self._findMapIdForStationaryStation()
-
-    def _isPacketOnMap(self):
-        """Returns true if current packet will be on map
+    def is_confirming_previous_packet(self):
+        """Returns true if packet confirms previous packet.
 
         Returns:
             boolean
         """
-        if (self.packet.latitude is not None
+        self._find_map_id()
+        return self.is_confirming_prev_packet
+
+    def is_killing_previous_packet(self):
+        """Returns true if packet kills previous packet.
+
+        Returns:
+            boolean
+        """
+        self._find_map_id()
+        return self.is_killing_prev_packet
+
+    def _find_map_id(self):
+        """Find a suitable marker id for the current packet and set corresponding attribute (and related attributes)."""
+        if self.mapId is not None:
+            return
+
+        packetOrderPolicy = PacketOrderPolicy()
+
+        if self.packet.source_id == 2 and self.packet.station_id_path:
+            self.mapId = 16
+            self.marker_id = 1
+        elif not self._is_packet_on_map():
+            self.mapId = 10
+            self.marker_id = 1
+        elif packetOrderPolicy.is_packet_in_wrong_order(self.packet, self.prev_packet):
+            self.mapId = 6
+            self.marker_id = 1
+        elif self._is_faulty_gps_position():
+            self._find_map_id_for_faulty_gps_position()
+        elif self.packet.is_moving == 1:
+            self._find_map_id_for_moving_station()
+        else:
+            self._find_map_id_for_stationary_station()
+
+    def _is_packet_on_map(self):
+        """Returns true if current packet will be on map.
+
+        Returns:
+            boolean
+        """
+        return (
+                self.packet.latitude is not None
                 and self.packet.longitude is not None
-                and type(self.packet.latitude) == float
-                and type(self.packet.longitude) == float
-                and self.packet.sourceId != 3
-                and self.packet.mapId in [1, 5, 7, 9]):
-            return True
-        else:
-            return False
+                and isinstance(self.packet.latitude, float)
+                and isinstance(self.packet.longitude, float)
+                and self.packet.source_id != 3
+                and self.packet.map_id in [1, 5, 7, 9]
+        )
 
-    def _findMapIdForStationaryStation(self):
-        """Find a suitable marker id for the current packet (assumes it is a stationary station) and set correponding attribute (and related attributes)
-        """
-        if (self.prevPacket.isExistingObject()
-                and self.packet.isPostitionEqual(self.prevPacket)
-                and self.packet.isSymbolEqual(self.prevPacket)
-                and self.packet.isMoving == self.prevPacket.isMoving
-                and self.prevPacket.mapId in [1, 7]):
-            # Same position and same symbol
+    def _find_map_id_for_stationary_station(self):
+        """Find a suitable marker id for the current packet (assumes it is a stationary station) and set corresponding attribute (and related attributes)."""
+        if (
+            self.prev_packet.is_existing_object()
+            and self.packet.is_position_equal(self.prev_packet)
+            and self.packet.is_symbol_equal(self.prev_packet)
+            and self.packet.is_moving == self.prev_packet.is_moving
+            and self.prev_packet.map_id in [1, 7]
+        ):
             self.mapId = 1
-            self.markerId = self.prevPacket.markerId
-            if (self.hasKillCharacter):
-                # This station we can actually kill (it's stationary), let the markerId be
+            self.marker_id = self.prev_packet.marker_id
+            if (self.has_kill_character):
                 self.mapId = 14
-
-            # Also mark this to replace previous packet
-            self.isReplacingPrevPacket = True
-        elif (self.hasKillCharacter):
-            # We found nothing to kill
-            self.markerId = 1
+            self.is_replacing_prev_packet = True
+        elif self.has_kill_character:
+            self.marker_id = 1
             self.mapId = 4
         else:
-            # Seems to be a new stationary station (or at least a new symbol for an existing station)
             self.mapId = 1
-            self.markerId = None
+            self.marker_id = None
 
-    def _findMapIdForMovingStation(self):
-        """Find a suitable marker id for the current packet (assumes it is a moving station) and set correponding attribute (and related attributes)
-        """
-        if (self.hasKillCharacter):
-            # Makes no sense in handling kill characters for moving
+    def _find_map_id_for_moving_station(self):
+        """Find a suitable marker id for the current packet (assumes it is a moving station) and set corresponding attribute (and related attributes)."""
+        if self.has_kill_character:
             self.mapId = 4
-            self.markerId = 1
+            self.marker_id = 1
+        elif (
+                self.prev_packet.is_existing_object()
+                and self.prev_packet.is_moving == 1
+                and self.prev_packet.map_id in [1, 7]
+        ):
+            calculated_distance = self.packet.get_distance(self.prev_packet.latitude, self.prev_packet.longitude)
+            calculated_speed = self.packet.get_calculated_speed(self.prev_packet)
+            packet_max_speed_policy = PacketMaxSpeedPolicy()
+            max_speed = packet_max_speed_policy.get_max_likely_speed(self.packet, self.prev_packet)
+            absolute_max_distance = 50000
+            absolute_max_speed = 2000
 
-        elif (self.prevPacket.isExistingObject()
-                and self.prevPacket.isMoving == 1
-                and self.prevPacket.mapId in [1, 7]):
-            calculatedDistance = self.packet.getDistance(
-                self.prevPacket.latitude, self.prevPacket.longitude)
-            calculatedSpeed = self.packet.getCalculatedSpeed(self.prevPacket)
-            packetMaxSpeedPolicy = PacketMaxSpeedPolicy()
-            maxSpeed = packetMaxSpeedPolicy.getMaxLikelySpeed(
-                self.packet, self.prevPacket)
-            # distance is likely if distance is shorter than 50km (map performance is bad with to long polylines)
-            absoluteMaxDistance = 50000
-            # speed may be likely but if it is faster than absoluteMaxSpeed we create a new marker any way
-            absoluteMaxSpeed = 2000
-
-            if (self.packet.isPostitionEqual(self.prevPacket)):
-                # Same position
-                self._findMapIdForMovingStationWithSamePosition()
-
-            elif (calculatedDistance < 5000 and calculatedSpeed <= absoluteMaxSpeed):
-                # Distance is very short (shorter than 5km)
-                self._findMapIdForMovingStationWithLikelySpeed()
-
-            elif (calculatedSpeed <= maxSpeed and calculatedSpeed <= absoluteMaxSpeed and calculatedDistance <= absoluteMaxDistance):
-                # Speed and distance is likely
-                self._findMapIdForMovingStationWithLikelySpeed()
-
-            elif (calculatedSpeed <= maxSpeed and calculatedDistance > absoluteMaxDistance):
-                # Speed is likly but distance is to long or speed is very fast
-                self._findMapIdForMovingStationWithToLongDistance()
-
+            if self.packet.is_position_equal(self.prev_packet):
+                self._find_map_id_for_moving_station_with_same_position()
+            elif calculated_distance < 5000 and calculated_speed <= absolute_max_speed:
+                self._find_map_id_for_moving_station_with_likely_speed()
+            elif calculated_speed <= max_speed and calculated_speed <= absolute_max_speed and calculated_distance <= absolute_max_distance:
+                self._find_map_id_for_moving_station_with_likely_speed()
+            elif calculated_speed <= max_speed and calculated_distance > absolute_max_distance:
+                self._find_map_id_for_moving_station_with_to_long_distance()
             else:
-                # No suitable marker id
                 self.mapId = 7
-                self.markerId = None
+                self.marker_id = None
         else:
-            if (self.prevPacket.isExistingObject()
-                and self.prevPacket.isMoving == 0
-                    and self.packet.isSymbolEqual(self.prevPacket)):
-                # We previously made a mistake, previous packet should have been marked as moving, just mark previous as abnormal (ghost marker)
-                self.isKillingPrevPacket = True
-
-            # Seems to be a new station
+            if (
+                self.prev_packet.is_existing_object()
+                and self.prev_packet.is_moving == 0
+                and self.packet.is_symbol_equal(self.prev_packet)
+            ):
+                self.is_killing_prev_packet = True
             self.mapId = 1
-            self.markerId = None
+            self.marker_id = None
 
-    def _findMapIdForMovingStationWithToLongDistance(self):
-        """Sets a suitable marker id for the current packet based on prevPacket and assumes that distance is to long between them
-        """
-        if (self.prevPacket.markerCounter == 1):
-            # Previous packet is not related to any previous and it is not related to this, mark it as abnormal
-            self.isKillingPrevPacket = True
-
-        # This is kind of a special case, we have no requirements on the previous packet
-        # Station is either sending few packets or is moving very fast, we accept everything as long as speed is likely
-        # Create new marker
+    def _find_map_id_for_moving_station_with_to_long_distance(self):
+        """Sets a suitable marker id for the current packet based on prevPacket and assumes that distance is too long between them."""
+        if self.prev_packet.marker_counter == 1:
+            self.is_killing_prev_packet = True
         self.mapId = 1
-        self.markerId = None
+        self.marker_id = None
 
-    def _findMapIdForMovingStationWithLikelySpeed(self):
-        """Sets a suitable marker id for the current packet based on prevPacket and assumes that speed is likly
-        """
-        self.markerId = self.prevPacket.markerId
-        if (self.prevPacket.mapId == 1
-                or (self.prevPacket.markerCounter + 1) >= self.markerCounterConfirmLimit):
+    def _find_map_id_for_moving_station_with_likely_speed(self):
+        """Sets a suitable marker id for the current packet based on prevPacket and assumes that speed is likely."""
+        self.marker_id = self.prev_packet.marker_id
+        if self.prev_packet.map_id == 1 or (self.prev_packet.marker_counter + 1) >= self.marker_counter_confirm_limit:
             self.mapId = 1
         else:
-            self.mapId = self.prevPacket.mapId
+            self.mapId = self.prev_packet.map_id
 
-        if (self.mapId == 1
-                and self.prevPacket.mapId == 7):
-            # To mark a previous packet as confirmed is not important since client should handle it anyway when a connected packet that is confirmed is recived
-            # But we do it when possible to make things easier for the client (currently we are not doiong it if several previous packets is unconfirmed)
-            self.isConfirmingPrevPacket = True
+        if self.mapId == 1 and self.prev_packet.map_id == 7:
+            self.is_confirming_prev_packet = True
 
-    def _findMapIdForMovingStationWithSamePosition(self):
-        """Sets a suitable marker id for the current packet based on prevPacket and assumes that position is equal
-        """
-        # Also mark this to replace previous packet
-        # If this packet is converted to a 12 it will be treated as confirmed in history
-        # (we kind of assumes that markerCounterConfirmLimit == 2, maybe a TODO?)
-        self.markerId = self.prevPacket.markerId
-        self.isReplacingPrevPacket = True
-        if (self.prevPacket.mapId == 1
-                or (self.prevPacket.markerCounter + 1) >= self.markerCounterConfirmLimit):
+    def _find_map_id_for_moving_station_with_same_position(self):
+        """Sets a suitable marker id for the current packet based on prevPacket and assumes that position is equal."""
+        self.marker_id = self.prev_packet.marker_id
+        self.is_replacing_prev_packet = True
+        if self.prev_packet.map_id == 1 or (self.prev_packet.marker_counter + 1) >= self.marker_counter_confirm_limit:
             self.mapId = 1
         else:
-            self.mapId = self.prevPacket.mapId
+            self.mapId = self.prev_packet.map_id
 
-    def _findMapIdForFaultyGpsPosition(self):
-        """Sets a suitable marker id for the current packet based on prevPacket and assumes that gps position is faulty (mapId 5)
-        """
-        if (self.hasKillCharacter):
-            # No point in killing a ghost-marker
+    def _find_map_id_for_faulty_gps_position(self):
+        """Sets a suitable marker id for the current packet based on prevPacket and assumes that gps position is faulty (mapId 5)."""
+        if self.has_kill_character:
             self.mapId = 4
-            self.markerId = 1
-        elif (self.prevPacket.mapId == self.mapId
-                and self.packet.isPostitionEqual(self.prevPacket)
-                and self.packet.isSymbolEqual(self.prevPacket)):
-            # Same mapId and position and same symbol
-            # Also mark this to replace previous packet
-            self.isReplacingPrevPacket = True
-            self.mapId = 5  # it is still 5
-            self.markerId = self.prevPacket.markerId
-        else:
-            # Seems to be a new stationary station (or at least a new symbol for an existing station)
+            self.marker_id = 1
+        elif (
+                self.prev_packet.map_id == self.mapId
+                and self.packet.is_position_equal(self.prev_packet)
+                and self.packet.is_symbol_equal(self.prev_packet)
+        ):
+            self.is_replacing_prev_packet = True
             self.mapId = 5
-            self.markerId = None
+            self.marker_id = self.prev_packet.marker_id
+        else:
+            self.mapId = 5
+            self.marker_id = None
 
-    def _isFaultyGpsPosition(self):
-        """Parse the packet and modify the mapId attribute if position is faulty
-        """
-        packetlatCmp = int(round(self.packet.latitude*100000))
-        packetlngCmp = int(round(self.packet.longitude*100000))
+    def _is_faulty_gps_position(self):
+        """Parse the packet and modify the mapId attribute if position is faulty."""
+        packetlat_cmp = int(round(self.packet.latitude * 100000))
+        packetlng_cmp = int(round(self.packet.longitude * 100000))
 
-        if (packetlatCmp == int(0) and packetlngCmp == int(0)):
-            return True
+        faulty_positions = [
+            (0, 0),
+            (1 * 100000, 1 * 100000),
+            (36 * 100000, 136 * 100000),
+            (-48 * 100000, 0)
+        ]
 
-        if (packetlatCmp == int(1*100000) and packetlngCmp == int(1*100000)):
-            return True
-
-        if (packetlatCmp == int(36*100000) and packetlngCmp == int(136*100000)):
-            # Some gps units seems to use this position as default until they find the real position
-            # Maybe it is the position of a gps manufacturer?
-            return True
-
-        if (packetlatCmp == int(-48*100000) and packetlngCmp == int(0)):
-            # Some gps units seems to use this position as default until they find the real position
-            return True
-        return False
+        return (packetlat_cmp, packetlng_cmp) in faulty_positions

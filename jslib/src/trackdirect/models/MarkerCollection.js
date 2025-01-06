@@ -55,7 +55,7 @@ trackdirect.models.MarkerCollection.prototype.getMarkerIdKey = function (
     this._dotMarkers.push(null);
     this._markerOriginDashedPolyLines.push(null);
 
-    var markerIdKey = this._markers.length - 1;
+    let markerIdKey = this._markers.length - 1;
     this._markerKeys[markerId] = markerIdKey;
 
     return markerIdKey;
@@ -88,7 +88,7 @@ trackdirect.models.MarkerCollection.prototype.setMarker = function (
   marker
 ) {
   if (marker !== null && typeof marker.packet !== "undefined") {
-    var packet = marker.packet;
+    let packet = marker.packet;
 
     this._markers[markerIdKey] = marker;
     this._addStationMarkerId(markerIdKey, packet);
@@ -212,11 +212,11 @@ trackdirect.models.MarkerCollection.prototype.isDuplicate = function (packet) {
     return false;
   }
 
-  for (var markerIdKey in this.getPositionMarkerIdKeys(
+  for (let markerIdKey in this.getPositionMarkerIdKeys(
     packet.latitude,
     packet.longitude
   )) {
-    var marker = this.getMarker(markerIdKey);
+    let marker = this.getMarker(markerIdKey);
     if (
       marker !== null &&
       marker.packet.station_id == packet.station_id &&
@@ -318,8 +318,8 @@ trackdirect.models.MarkerCollection.prototype.getStationCoverage = function (
  */
 trackdirect.models.MarkerCollection.prototype.getStationIdListWithVisibleCoverage =
   function () {
-    var result = [];
-    for (var stationId in this._stationCoverage) {
+    let result = [];
+    for (let stationId in this._stationCoverage) {
       if (this._stationCoverage[stationId].isRequestedToBeVisible()) {
         result.push(stationId);
       }
@@ -369,20 +369,20 @@ trackdirect.models.MarkerCollection.prototype.removeOldestDotMarker = function (
 ) {
   if (this.hasDotMarkers(markerIdKey)) {
     latestMarker = this.getMarker(markerIdKey);
-    var latestMarkerIndex = this.getDotMarkerIndex(markerIdKey, latestMarker);
-    var dotMarkers = this.getDotMarkers(markerIdKey);
-    var maxNumberOfPolyLinePoints = dotMarkers.length;
+    let latestMarkerIndex = this.getDotMarkerIndex(markerIdKey, latestMarker);
+    let dotMarkers = this.getDotMarkers(markerIdKey);
+    let maxNumberOfPolyLinePoints = dotMarkers.length;
     if (latestMarkerIndex > -1) {
       // Seems like the latest marker also is a dotmarker, this may happen if it is a moving object
       maxNumberOfPolyLinePoints = maxNumberOfPolyLinePoints - 1;
     }
 
-    var removedItems = this._dotMarkers[markerIdKey].splice(0, 1);
+    let removedItems = this._dotMarkers[markerIdKey].splice(0, 1);
     if (removedItems.length == 1) {
-      var removedMarker = removedItems[0];
+      let removedMarker = removedItems[0];
       removedMarker.hide();
       if (this.hasPolyline(removedMarker.markerIdKey)) {
-        var polyline = this.getMarkerPolyline(removedMarker.markerIdKey);
+        let polyline = this.getMarkerPolyline(removedMarker.markerIdKey);
         while (polyline.getPathLength() > maxNumberOfPolyLinePoints) {
           polyline.removePathItem(0);
         }
@@ -408,8 +408,8 @@ trackdirect.models.MarkerCollection.prototype.getDotMarkerIndex = function (
   if (!this.hasDotMarkers(markerIdKey)) {
     return -1;
   }
-  for (var i = 0, len = this._dotMarkers[markerIdKey].length; i < len; i++) {
-    var foundMarker = this._dotMarkers[markerIdKey][i];
+  for (let i = 0, len = this._dotMarkers[markerIdKey].length; i < len; i++) {
+    let foundMarker = this._dotMarkers[markerIdKey][i];
     if (foundMarker === null) {
       continue;
     }
@@ -427,9 +427,9 @@ trackdirect.models.MarkerCollection.prototype.getDotMarkerIndex = function (
       foundMarker.packet.station_id === marker.packet.station_id &&
       foundMarker.packet.timestamp === marker.packet.timestamp &&
       Math.round(foundMarker.packet.latitude * 100000) ===
-        Math.round(marker.packet.latitude * 100000) &&
+      Math.round(marker.packet.latitude * 100000) &&
       Math.round(foundMarker.packet.longitude * 100000) ===
-        Math.round(marker.packet.longitude * 100000) &&
+      Math.round(marker.packet.longitude * 100000) &&
       foundMarker.packet.map_id === marker.packet.map_id
     ) {
       return i;
@@ -642,7 +642,7 @@ trackdirect.models.MarkerCollection.prototype.getStationLatestMovingMarkerIdKey 
 trackdirect.models.MarkerCollection.prototype.getMarkerMasterMarkerKeyId =
   function (markerIdKey) {
     if (this.isExistingMarker(markerIdKey)) {
-      var marker = this._markers[markerIdKey];
+      let marker = this._markers[markerIdKey];
       if (this.hasRelatedDashedPolyline(marker)) {
         return this.getMarkerMasterMarkerKeyId(
           marker._relatedMarkerOriginDashedPolyLine.ownerMarkerIdKey
@@ -659,10 +659,10 @@ trackdirect.models.MarkerCollection.prototype.getMarkerMasterMarkerKeyId =
  */
 trackdirect.models.MarkerCollection.prototype.getStationLatestVisibleMarker =
   function (stationId) {
-    var latestVisibleMarker = null;
-    var latestVisibleMarkerTimestamp = null;
-    for (var markerIdKey in this._stationMarkers[stationId]) {
-      var marker = this._markers[markerIdKey];
+    let latestVisibleMarker = null;
+    let latestVisibleMarkerTimestamp = null;
+    for (let markerIdKey in this._stationMarkers[stationId]) {
+      let marker = this._markers[markerIdKey];
       if (
         typeof marker !== "undefined" &&
         marker !== null &&
@@ -702,7 +702,7 @@ trackdirect.models.MarkerCollection.prototype.getStationMarkerIdKeys =
  */
 trackdirect.models.MarkerCollection.prototype.getPositionMarkerIdKeys =
   function (latitude, longitude) {
-    var key = this._getCompareablePosition(latitude, longitude);
+    let key = this._getCompareablePosition(latitude, longitude);
     if (key in this._positionMarkersIdKeys) {
       return this._positionMarkersIdKeys[key];
     }
@@ -718,7 +718,7 @@ trackdirect.models.MarkerCollection.prototype.addPostionMarkerId = function (
   markerIdKey,
   packet
 ) {
-  var key = this._getCompareablePosition(packet.latitude, packet.longitude);
+  let key = this._getCompareablePosition(packet.latitude, packet.longitude);
   if (!(key in this._positionMarkersIdKeys)) {
     this._positionMarkersIdKeys[key] = {};
   }
@@ -736,7 +736,7 @@ trackdirect.models.MarkerCollection.prototype.removePostionMarkerId = function (
   longitude,
   markerIdKey
 ) {
-  var key = this._getCompareablePosition(latitude, longitude);
+  let key = this._getCompareablePosition(latitude, longitude);
   if (key in this._positionMarkersIdKeys) {
     if (markerIdKey in this._positionMarkersIdKeys[key]) {
       this._positionMarkersIdKeys[key][markerIdKey] = false;
@@ -802,7 +802,7 @@ trackdirect.models.MarkerCollection.prototype.resetMarker = function (
   markerIdKey
 ) {
   if (this.isExistingMarker(markerIdKey)) {
-    var marker = this._markers[markerIdKey];
+    let marker = this._markers[markerIdKey];
 
     this._markers[markerIdKey] = null;
     this._markerPolyLines[markerIdKey] = null;
@@ -849,15 +849,15 @@ trackdirect.models.MarkerCollection.prototype.hasNonRelatedMovingMarkerId =
     // If latest marker is related we will have no non related that is visible,
     // since we only allow one moving marker per station.
     // So we only need to compare latest moving marker...
-    var latestStationMovingMarkerIdKey = this.getStationLatestMovingMarkerIdKey(
+    let latestStationMovingMarkerIdKey = this.getStationLatestMovingMarkerIdKey(
       packet.station_id
     );
-    var newMarkerIdKey = this.getMarkerIdKey(packet.marker_id);
+    let newMarkerIdKey = this.getMarkerIdKey(packet.marker_id);
     if (
       latestStationMovingMarkerIdKey !== null &&
       latestStationMovingMarkerIdKey !== newMarkerIdKey
     ) {
-      var latestStationMovingMarker = this.getMarker(
+      let latestStationMovingMarker = this.getMarker(
         latestStationMovingMarkerIdKey
       );
       if (latestStationMovingMarker.packet.hasConfirmedMapId()) {
@@ -874,9 +874,9 @@ trackdirect.models.MarkerCollection.prototype.hasNonRelatedMovingMarkerId =
  */
 trackdirect.models.MarkerCollection.prototype.isPacketReplacingMarker =
   function (packet) {
-    var markerIdKey = this.getMarkerIdKey(packet.marker_id);
+    let markerIdKey = this.getMarkerIdKey(packet.marker_id);
     if (this.isExistingMarker(markerIdKey)) {
-      var marker = this.getMarker(markerIdKey);
+      let marker = this.getMarker(markerIdKey);
       if (marker !== null) {
         if (packet.map_id == 14) {
           // Packets that kill other packets should allways replace previous packet
@@ -954,7 +954,7 @@ trackdirect.models.MarkerCollection.prototype._addStationLastMarker = function (
  */
 trackdirect.models.MarkerCollection.prototype._getCompareablePosition =
   function (latitude, longitude) {
-    var latCmp = Math.round(latitude * 100000);
-    var lngCmp = Math.round(longitude * 100000);
+    let latCmp = Math.round(latitude * 100000);
+    let lngCmp = Math.round(longitude * 100000);
     return String(latCmp) + ":" + String(lngCmp);
   };

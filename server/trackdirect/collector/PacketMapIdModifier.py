@@ -1,164 +1,79 @@
-import logging
-from twisted.python import log
-import psycopg2
-import psycopg2.extras
-
-from trackdirect.database.PacketTableCreator import PacketTableCreator
-from trackdirect.exceptions.TrackDirectMissingTableError import TrackDirectMissingTableError
+from server.trackdirect.database.PacketTableCreator import PacketTableCreator
+from server.trackdirect.exceptions.TrackDirectMissingTableError import TrackDirectMissingTableError
 
 
-class PacketMapIdModifier():
-    """PacketMapIdModifier is used to modify mapId on existing packets in database based on new packets
-    """
+class PacketMapIdModifier:
+    """PacketMapIdModifier is used to modify mapId on existing packets in database based on new packets."""
 
-    def __init__(self, cur, packetTableCreator):
+    def __init__(self, cur, packet_table_creator: PacketTableCreator):
         """The __init__ method.
 
         Args:
-            cur (psycopg2.Cursor):                      Database cursor
-            packetTableCreator (PacketTableCreator):    PacketTableCreator instance
+            cur (psycopg2.Cursor): Database cursor
+            packet_table_creator (PacketTableCreator): PacketTableCreator instance
         """
         self.cur = cur
-        self.packetTableCreator = packetTableCreator
+        self.packet_table_creator = packet_table_creator
 
-    def execute(self, packets):
-        """Perform mapId mofifications based on information in specified packets
-
-        Args:
-            packets (array):  Packets that may affect exisintg packets mapId
-            cur (cursor):     Database curser to use
-        """
-        self._markPreviousPacketsAsReplaced(packets)
-        self._markPreviousPacketsAsAbnormal(packets)
-        self._markPreviousPacketsAsConfirmed(packets)
-
-    def _markPreviousPacketsAsReplaced(self, packets):
-        """Find packets that has been replaced by packets in this batch and mark them as replaced (mapId 2, 12 or 13)
+    def execute(self, packets: list):
+        """Perform mapId modifications based on information in specified packets.
 
         Args:
-            packets (array):  Packets that may affect exisintg packets mapId
+            packets (list): Packets that may affect existing packets mapId
         """
-        packetsToUpdateToMapId2 = {}
-        packetsToUpdateToMapId12 = {}
-        packetsToUpdateToMapId13 = {}
+        self._mark_previous_packets(packets, 'replacePacketId', 'replacePacketTimestamp', {5: 13}, 2, 12)
+        self._mark_previous_packets(packets, 'abnormalPacketId', 'abnormalPacketTimestamp', {}, 9)
+        self._mark_previous_packets(packets, 'confirmPacketId', 'confirmPacketTimestamp', {}, 1)
+
+    def _mark_previous_packets(self, packets: list, packet_id_attr: str, timestamp_attr: str, special_cases: dict, default_map_id: int, secondary_map_id: int = None):
+        """Mark previous packets based on the given attributes and map IDs.
+
+        Args:
+            packets (list): Packets that may affect existing packets mapId
+            packet_id_attr (str): Attribute name for packet ID
+            timestamp_attr (str): Attribute name for timestamp
+            special_cases (dict): Special cases for mapId based on packet mapId
+            default_map_id (int): Default mapId to set
+            secondary_map_id (int, optional): Secondary mapId to set if conditions are met
+        """
+        packets_to_update = {default_map_id: {}, secondary_map_id: {}, **{v: {} for v in special_cases.values()}}
+
         for packet in packets:
-            if (packet.replacePacketId is not None):
+            packet_id = getattr(packet, packet_id_attr, None)
+            if packet_id is not None:
                 try:
-                    self.packetTableCreator.enableCreateIfMissing()
-                    newPacketTable = self.packetTableCreator.getPacketTable(
-                        packet.timestamp)
-                    self.packetTableCreator.disableCreateIfMissing()
-                    oldPacketTable = self.packetTableCreator.getPacketTable(
-                        packet.replacePacketTimestamp)
+                    self.packet_table_creator.enable_create_if_missing()
+                    new_packet_table = self.packet_table_creator.get_table(packet.timestamp)
+                    self.packet_table_creator.disable_create_if_missing()
+                    old_packet_table = self.packet_table_creator.get_table(getattr(packet, timestamp_attr))
 
-                    if (packet.mapId == 5):
-                        if (oldPacketTable not in packetsToUpdateToMapId13):
-                            packetsToUpdateToMapId13[oldPacketTable] = []
+                    map_id = special_cases.get(packet.map_id, default_map_id)
+                    if secondary_map_id and new_packet_table != old_packet_table:
+                        map_id = secondary_map_id
 
-                        packetsToUpdateToMapId13[oldPacketTable].append(
-                            packet.replacePacketId)
+                    if old_packet_table not in packets_to_update[map_id]:
+                        packets_to_update[map_id][old_packet_table] = []
 
-                    elif (newPacketTable == oldPacketTable):
-                        if (oldPacketTable not in packetsToUpdateToMapId2):
-                            packetsToUpdateToMapId2[oldPacketTable] = []
-
-                        packetsToUpdateToMapId2[oldPacketTable].append(
-                            packet.replacePacketId)
-
-                    else:
-                        if (oldPacketTable not in packetsToUpdateToMapId12):
-                            packetsToUpdateToMapId12[oldPacketTable] = []
-
-                        packetsToUpdateToMapId12[oldPacketTable].append(
-                            packet.replacePacketId)
-                except TrackDirectMissingTableError as e:
+                    packets_to_update[map_id][old_packet_table].append(packet_id)
+                except TrackDirectMissingTableError:
                     pass
 
-        if (packetsToUpdateToMapId2):
-            for packetTable in packetsToUpdateToMapId2:
-                # Set map_id = 2
-                self._updatePacketMapId(
-                    packetTable, packetsToUpdateToMapId2[packetTable], 2)
+        for map_id, tables in packets_to_update.items():
+            if map_id is not None:
+                for packet_table, packet_ids in tables.items():
+                    self._update_packet_map_id(packet_table, packet_ids, map_id)
 
-        if (packetsToUpdateToMapId12):
-            for packetTable in packetsToUpdateToMapId12:
-                # Set map_id = 12
-                self._updatePacketMapId(
-                    packetTable, packetsToUpdateToMapId12[packetTable], 12)
-
-        if (packetsToUpdateToMapId13):
-            for packetTable in packetsToUpdateToMapId13:
-                # Set map_id = 13
-                self._updatePacketMapId(
-                    packetTable, packetsToUpdateToMapId13[packetTable], 13)
-
-    def _markPreviousPacketsAsAbnormal(self, packets):
-        """Find packets that has been confirmed to by abnormal becuse of packets in this batch and mark them as abnormal (mapId 9)
+    def _update_packet_map_id(self, packet_table: str, packet_id_list: list, map_id: int):
+        """Update map id on all specified packets.
 
         Args:
-            packets (array):  Packets that may affect exisintg packets mapId
+            packet_table (str): Packet database table to perform update on
+            packet_id_list (list): Array of all packet id's to update
+            map_id (int): The requested new map id
         """
-        packetsToUpdate = {}
-        for packet in packets:
-            if (packet.abnormalPacketId is not None):
-                try:
-                    self.packetTableCreator.disableCreateIfMissing()
-                    packetTable = self.packetTableCreator.getPacketTable(
-                        packet.abnormalPacketTimestamp)
-
-                    if (packetTable not in packetsToUpdate):
-                        packetsToUpdate[packetTable] = []
-
-                    packetsToUpdate[packetTable].append(
-                        packet.abnormalPacketId)
-                except TrackDirectMissingTableError as e:
-                    pass
-
-        if (packetsToUpdate):
-            for packetTable in packetsToUpdate:
-                # Set map_id = 9
-                self._updatePacketMapId(
-                    packetTable, packetsToUpdate[packetTable], 9)
-
-    def _markPreviousPacketsAsConfirmed(self, packets):
-        """Find packets that has been found to be correct becuase of packets in this batch and mark them as confirmed (mapId 1)
-
-        Args:
-            packets (array):  Packets that may affect exisintg packets mapId
-            cur (cursor):     Database curser to use
-        """
-        packetsToUpdate = {}
-        for packet in packets:
-            if (packet.confirmPacketId is not None):
-                try:
-                    self.packetTableCreator.disableCreateIfMissing()
-                    packetTable = self.packetTableCreator.getPacketTable(
-                        packet.confirmPacketTimestamp)
-
-                    if (packetTable not in packetsToUpdate):
-                        packetsToUpdate[packetTable] = []
-
-                    packetsToUpdate[packetTable].append(packet.confirmPacketId)
-                except TrackDirectMissingTableError as e:
-                    pass
-
-        if (packetsToUpdate):
-            for packetTable in packetsToUpdate:
-                # Set map_id = 1
-                self._updatePacketMapId(
-                    packetTable, packetsToUpdate[packetTable], 1)
-
-    def _updatePacketMapId(self, packetTable, packetIdList, mapId):
-        """Update map id on all specified packets
-
-        Args:
-            cur (cursor):          Database cursor to use
-            packetTable (str):     Packet database table to perform update on
-            packetIdList (array):  Array of all packet id's to update
-            mapId (int):           The requested new map id
-        """
-        if (packetIdList):
-            sql = self.cur.mogrify("""update """ + packetTable + """
-                set map_id = %s
-                where id in %s""", (mapId, tuple(packetIdList),))
+        if packet_id_list:
+            sql = self.cur.mogrify(
+                f"UPDATE {packet_table} SET map_id = %s WHERE id IN %s",
+                (map_id, tuple(packet_id_list))
+            )
             self.cur.execute(sql)

@@ -13,7 +13,7 @@ trackdirect.services.stationColorCalculator = {
    * @return {string}
    */
   getColor: function (packet) {
-    var colorId = this.getColorId(packet);
+    let colorId = this.getColorId(packet);
     return this._colors[colorId];
   },
 
@@ -23,8 +23,8 @@ trackdirect.services.stationColorCalculator = {
    * @return {string}
    */
   getKmlColor(packet) {
-    var hex = this.getColor(packet);
-    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    let hex = this.getColor(packet);
+    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     if (result) {
       return "FF" + result[3] + result[2] + result[1];
     }
@@ -38,13 +38,14 @@ trackdirect.services.stationColorCalculator = {
    * @return {int}
    */
   getColorId: function (packet) {
+    let colorId;
     if (packet.station_name in this._stationColorId) {
       // This station has allready got a color, use it
       colorId = this._stationColorId[packet.station_name];
       return colorId;
     } else {
-      var hash = this._simplehashStr(packet.station_name);
-      var colorId = hash % this._colors.length;
+      let hash = this._simplehashStr(packet.station_name);
+      colorId = hash % this._colors.length;
       this._stationColorId[packet.station_name] = colorId;
     }
 
@@ -57,9 +58,9 @@ trackdirect.services.stationColorCalculator = {
    * @return int
    */
   _simplehashStr: function (str) {
-    var hash = 0;
-    for (var i = 0; i < str.length; i++) {
-      var charCode = str.charCodeAt(i);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      let charCode = str.charCodeAt(i);
       hash += charCode;
     }
     return hash;

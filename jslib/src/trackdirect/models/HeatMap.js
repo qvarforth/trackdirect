@@ -8,7 +8,22 @@ trackdirect.models.HeatMap = function (map) {
 
   // Call the parent constructor
   if (typeof google === "object" && typeof google.maps === "object") {
-    google.maps.ImageMapType.call(this, this._getGoogleMapOptions());
+    const googleImageMapType = new google.maps.ImageMapType(
+      this._getGoogleMapOptions()
+    );
+
+    for (const key of Object.keys(this)) {
+      googleImageMapType[key] = this[key];
+    }
+    for (const key of Object.getOwnPropertyNames(
+      Object.getPrototypeOf(this)
+    )) {
+      if (key !== "constructor" && typeof this[key] === "function") {
+        googleImageMapType[key] = this[key];
+      }
+    }
+
+    return googleImageMapType;
   } else if (typeof L === "object") {
     L.TileLayer.call(this, this._getUrlTemplate(), this._getLeafletOptions());
   }
@@ -27,7 +42,7 @@ trackdirect.models.HeatMap.prototype.constructor = trackdirect.models.HeatMap;
  * @return {object}
  */
 trackdirect.models.HeatMap.prototype._getLeafletOptions = function () {
-  var options = {
+  let options = {
     errorTileUrl: trackdirect.settings.baseUrl + "/heatmaps/transparent.png",
     tileSize: 256,
     maxZoom: 9,
@@ -41,22 +56,22 @@ trackdirect.models.HeatMap.prototype._getLeafletOptions = function () {
  * @return {object}
  */
 trackdirect.models.HeatMap.prototype._getGoogleMapOptions = function () {
-  var me = this;
-  var options = {
+  let me = this;
+  let options = {
     getTileUrl: function (coord, zoom) {
       if (zoom > trackdirect.settings.minZoomForMarkers - 1) {
         // It should be possible to return null here, but chrome tries to fetch www.website.com/null
         return trackdirect.settings.baseUrl + "/heatmaps/transparent.png";
       }
 
-      var normalizedCoord = me._getNormalizedCoord(coord, zoom);
+      let normalizedCoord = me._getNormalizedCoord(coord, zoom);
       if (!normalizedCoord) {
         // It should be possible to return null here, but chrome tries to fetch www.website.com/null
         return trackdirect.settings.baseUrl + "/heatmaps/transparent.png";
       }
 
-      var xString = String(normalizedCoord.x);
-      var yString = String(normalizedCoord.y);
+      let xString = String(normalizedCoord.x);
+      let yString = String(normalizedCoord.y);
 
       return me
         ._getUrlTemplate()
@@ -91,11 +106,11 @@ trackdirect.models.HeatMap.prototype._getUrlTemplate = function () {
  * @return String
  */
 trackdirect.models.HeatMap.prototype._getHeatMapVersion = function () {
-  var today = new Date();
-  var dd = today.getDate();
-  var mm = today.getMonth() + 1; //January is 0!
-  var yyyy = today.getFullYear();
-  var hh = today.getHours();
+  let today = new Date();
+  let dd = today.getDate();
+  let mm = today.getMonth() + 1; //January is 0!
+  let yyyy = today.getFullYear();
+  let hh = today.getHours();
 
   if (dd < 10) {
     dd = "0" + dd;
@@ -120,12 +135,12 @@ trackdirect.models.HeatMap.prototype._getNormalizedCoord = function (
   coord,
   zoom
 ) {
-  var y = coord.y;
-  var x = coord.x;
+  let y = coord.y;
+  let x = coord.x;
 
   // tile range in one direction range is dependent on zoom level
   // 0 = 1 tile, 1 = 2 tiles, 2 = 4 tiles, 3 = 8 tiles, etc
-  var tileRange = 1 << zoom;
+  let tileRange = 1 << zoom;
 
   // don't repeat across y-axis (vertically)
   if (y < 0 || y >= tileRange) {
@@ -137,5 +152,5 @@ trackdirect.models.HeatMap.prototype._getNormalizedCoord = function (
     x = ((x % tileRange) + tileRange) % tileRange;
   }
 
-  return { x: x, y: y };
+  return {x: x, y: y};
 };

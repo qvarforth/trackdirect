@@ -16,7 +16,7 @@ else
     CURRENTDIR=$(dirname $0)
 
     export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect
-    cd $CURRENTDIR/..
+    cd $CURRENTDIR/../..
     python $CURRENTDIR/../bin/stationremover.py $CONFIGFILE $STATIONID
     exit 0
 fi

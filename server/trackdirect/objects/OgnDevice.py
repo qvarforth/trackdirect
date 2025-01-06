@@ -1,66 +1,69 @@
-from trackdirect.common.Model import Model
-
+from server.trackdirect.common.Model import Model
 
 class OgnDevice(Model):
-    """OgnDevice represents a pre registered device in the ogn ddb
-    """
+    """OgnDevice represents a pre-registered device in the OGN database."""
 
     def __init__(self, db):
-        """The __init__ method.
+        """
+        Initialize an OgnDevice instance.
 
         Args:
-            db (psycopg2.Connection): Database connection
+            db (psycopg2.Connection): Database connection.
         """
-        Model.__init__(self, db)
-
-        self.deviceType = None
-        self.deviceId = None
-        self.aircraftModel = None
+        super().__init__(db)
+        self.device_type = None
+        self.device_id = None
+        self.aircraft_model = None
         self.registration = None
         self.cn = None
         self.tracked = None
         self.identified = None
-        self.ddbAircraftType = None  # Do not confuse with the aircraft type in aprs message
+        self.ddb_aircraft_type = None  # Do not confuse with the aircraft type in APRS message
 
-    def validate(self):
-        """Returns true on success (when object content is valid), otherwise false
+    def validate(self) -> bool:
+        """
+        Validate the object's attributes.
 
         Returns:
-            True on success otherwise False
+            bool: True if the object's attributes are valid, otherwise False.
         """
+        # Add actual validation logic here
         return True
 
-    def insert(self):
-        """Method to call when we want to save a new object to database
+    def insert(self) -> bool:
+        """
+        Insert the object into the database.
 
         Returns:
-            True on success otherwise False
+            bool: True on success, otherwise False.
         """
+        # Add actual insertion logic here
         return False
 
-    def update(self):
-        """Method to call when we want to save changes to database
+    def update(self) -> bool:
+        """
+        Update the object in the database.
 
         Returns:
-            True on success otherwise False
+            bool: True on success, otherwise False.
         """
+        # Add actual update logic here
         return False
 
-    def getDict(self):
-        """Returns a dict representation of the object
+    def to_dict(self) -> dict:
+        """
+        Get a dictionary representation of the object.
 
         Returns:
-            Dict representation of the object
+            dict: Dictionary representation of the object.
         """
-        data = {}
-
-        data['device_type'] = self.deviceType
-        data['device_id'] = self.deviceId
-        data['aircraft_model'] = self.aircraftModel
-        data['registration'] = self.registration
-        data['cn'] = self.cn
-        data['tracked'] = self.tracked
-        data['identified'] = self.identified
-        data['ddb_aircraft_type'] = self.ddbAircraftType
-
-        return data
+        return {
+            'device_type': self.device_type,
+            'device_id': self.device_id,
+            'aircraft_model': self.aircraft_model,
+            'registration': self.registration,
+            'cn': self.cn,
+            'tracked': self.tracked,
+            'identified': self.identified,
+            'ddb_aircraft_type': self.ddb_aircraft_type
+        }

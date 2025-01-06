@@ -1,8 +1,8 @@
-from trackdirect.common.Model import Model
+from server.trackdirect.common.Model import Model
 
 
 class PacketWeather(Model):
-    """PacketWeather represents the weather data in a APRS packet
+    """PacketWeather represents the weather data in an APRS packet
     """
 
     def __init__(self, db):
@@ -11,39 +11,38 @@ class PacketWeather(Model):
         Args:
             db (psycopg2.Connection): Database connection
         """
-        Model.__init__(self, db)
-        self.id = None
-        self.packetId = None
-        self.stationId = None
+        super().__init__(db)
+        self.packet_id = None
+        self.station_id = None
         self.timestamp = None
         self.humidity = None
         self.pressure = None
         self.rain1h = None
         self.rain24h = None
-        self.rainSinceMidnight = None
+        self.rain_since_midnight = None
         self.temperature = None
-        self.windDirection = None
-        self.windGust = None
-        self.windSpeed = None
+        self.wind_direction = None
+        self.wind_gust = None
+        self.wind_speed = None
         self.luminosity = None
         self.snow = None
-        self.wxRawTimestamp = None
+        self.wx_raw_timestamp = None
 
-    def validate(self):
+    def validate(self) -> bool:
         """Returns true on success (when object content is valid), otherwise false
 
         Returns:
             True on success otherwise False
         """
-        if (self.stationId <= 0):
+        if self.station_id is None or self.station_id <= 0:
             return False
 
-        if (self.packetId <= 0):
+        if self.packet_id is None or self.packet_id <= 0:
             return False
 
         return True
 
-    def insert(self):
+    def insert(self) -> bool:
         """Method to call when we want to save a new object to database
 
         Since packet will be inserted in batch we never use this method.
@@ -53,7 +52,7 @@ class PacketWeather(Model):
         """
         return False
 
-    def update(self):
+    def update(self) -> bool:
         """Method to call when we want to save changes to database
 
         Since packet will be updated in batch we never use this method.
@@ -63,30 +62,27 @@ class PacketWeather(Model):
         """
         return False
 
-    def getDict(self):
+    def get_dict(self) -> dict:
         """Returns the packet weather as a dict
-
-        Args:
-            None
 
         Returns:
             A packet weather dict
         """
-        data = {}
-        data['id'] = self.id
-        data['packet_id'] = self.packetId
-        data['station_id'] = self.stationId
-        data['timestamp'] = self.timestamp
-        data['humidity'] = self.humidity
-        data['pressure'] = self.pressure
-        data['rain_1h'] = self.rain1h
-        data['rain_24h'] = self.rain24h
-        data['rain_since_midnight'] = self.rainSinceMidnight
-        data['temperature'] = self.temperature
-        data['wind_direction'] = self.windDirection
-        data['wind_gust'] = self.windGust
-        data['wind_speed'] = self.windSpeed
-        data['luminosity'] = self.luminosity
-        data['snow'] = self.snow
-        data['wx_raw_timestamp'] = self.wxRawTimestamp
-        return data
+        return {
+            'id': self.id,
+            'packet_id': self.packet_id,
+            'station_id': self.station_id,
+            'timestamp': self.timestamp,
+            'humidity': self.humidity,
+            'pressure': self.pressure,
+            'rain_1h': self.rain1h,
+            'rain_24h': self.rain24h,
+            'rain_since_midnight': self.rain_since_midnight,
+            'temperature': self.temperature,
+            'wind_direction': self.wind_direction,
+            'wind_gust': self.wind_gust,
+            'wind_speed': self.wind_speed,
+            'luminosity': self.luminosity,
+            'snow': self.snow,
+            'wx_raw_timestamp': self.wx_raw_timestamp
+        }

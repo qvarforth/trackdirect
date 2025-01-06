@@ -12,7 +12,12 @@ trackdirect.models.Marker = function (packet, isDotMarker, map) {
 
   // Call the parent constructor
   if (typeof google === "object" && typeof google.maps === "object") {
-    google.maps.Marker.call(this, this._getGoogleMarkerOptions());
+    const googleMarker = new google.maps.Marker(
+      this._getGoogleMarkerOptions()
+    );
+
+    Object.assign(this, googleMarker);
+    Object.setPrototypeOf(this, trackdirect.models.Marker.prototype);
   } else if (typeof L === "object") {
     L.Marker.call(
       this,
@@ -120,16 +125,16 @@ trackdirect.models.Marker.prototype.isVisible = function () {
  */
 trackdirect.models.Marker.prototype.getPositionLiteral = function () {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var latLng = this.getPosition();
+    let latLng = this.getPosition();
     if (typeof latLng !== "undefined" && typeof latLng.lat === "function") {
-      return { lat: latLng.lat(), lng: latLng.lng() };
+      return {lat: latLng.lat(), lng: latLng.lng()};
     } else {
       return latLng;
     }
   } else if (typeof L === "object") {
-    var latLng = this.getLatLng();
+    let latLng = this.getLatLng();
     if (typeof latLng !== "undefined") {
-      return { lat: latLng.lat, lng: latLng.lng };
+      return {lat: latLng.lat, lng: latLng.lng};
     } else {
       return latLng;
     }
@@ -227,7 +232,7 @@ trackdirect.models.Marker.prototype.getDefaultMap = function () {
  */
 trackdirect.models.Marker.prototype.getMap = function () {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var map = google.maps.Marker.prototype.getMap.call(this);
+    let map = google.maps.Marker.prototype.getMap.call(this);
     if (typeof map !== "undefined") {
       return map;
     }
@@ -261,7 +266,7 @@ trackdirect.models.Marker.prototype.getZIndex = function () {
 };
 
 /**
- * Show marker including all realted that should be visible at current zoom level
+ * Show marker including all related that should be visible at current zoom level
  */
 trackdirect.models.Marker.prototype.showCompleteMarker = function () {
   // In filter-mode we only show stations that we filter on
@@ -414,13 +419,13 @@ trackdirect.models.Marker.prototype.showMarkerPrevPosition = function () {
   if (this.shouldMarkerBeVisible() && this.packet.hasConfirmedMapId()) {
     // Handle the history dots
 
-    var oldestAllowedPacketTimestamp =
+    let oldestAllowedPacketTimestamp =
       this._defaultMap.state.getOldestAllowedPacketTimestamp();
-    var dotMarkers = this._defaultMap.markerCollection.getDotMarkers(
+    let dotMarkers = this._defaultMap.markerCollection.getDotMarkers(
       this.markerIdKey
     );
-    for (var i = 0; i < dotMarkers.length; i++) {
-      var dotMarker = dotMarkers[i];
+    for (let i = 0; i < dotMarkers.length; i++) {
+      let dotMarker = dotMarkers[i];
 
       // Only show prev positions that is not to old (not even prev positions for filtered stations)
       if (
@@ -444,11 +449,11 @@ trackdirect.models.Marker.prototype.showMarkerPrevPosition = function () {
 trackdirect.models.Marker.prototype.hideMarkerPrevPosition = function () {
   if (this.packet.hasConfirmedMapId()) {
     // Handle the history dots
-    var dotMarkers = this._defaultMap.markerCollection.getDotMarkers(
+    let dotMarkers = this._defaultMap.markerCollection.getDotMarkers(
       this.markerIdKey
     );
-    for (var i = 0; i < dotMarkers.length; i++) {
-      var dotMarker = dotMarkers[i];
+    for (let i = 0; i < dotMarkers.length; i++) {
+      let dotMarker = dotMarkers[i];
       dotMarker.hide();
     }
 
@@ -477,7 +482,7 @@ trackdirect.models.Marker.prototype.showMarkerTail = function () {
       this._defaultMap.markerCollection.hasPolyline(this.markerIdKey) &&
       this.packet.hasConfirmedMapId()
     ) {
-      var polyline = this._defaultMap.markerCollection.getMarkerPolyline(
+      let polyline = this._defaultMap.markerCollection.getMarkerPolyline(
         this.markerIdKey
       );
       // Before we show polyline we remove all points that is to old
@@ -485,8 +490,8 @@ trackdirect.models.Marker.prototype.showMarkerTail = function () {
         this._defaultMap.state.getClientTimestamp(
           polyline.getPathItem(0).marker.packet.timestamp
         ) < this._defaultMap.state.getOldestAllowedPacketTimestamp()
-      ) {
-        var relatedMarker = polyline.getPathItem(0).marker;
+        ) {
+        let relatedMarker = polyline.getPathItem(0).marker;
         if (relatedMarker.getMap() === null) {
           // related marker is to old and is not visible, it will never be shown.
           // We let the regular remove-functionality remove the marker
@@ -499,13 +504,13 @@ trackdirect.models.Marker.prototype.showMarkerTail = function () {
     }
 
     // Handle dashed polylines
-    var dashedPolyline =
+    let dashedPolyline =
       this._defaultMap.markerCollection.getMarkerDashedPolyline(
         this.markerIdKey
       );
     if (dashedPolyline !== null && this.packet.hasConfirmedMapId()) {
       // The related marker is the marker where the dashed polyline STARTS
-      var dashedPolyLineRelatedMarker =
+      let dashedPolyLineRelatedMarker =
         this._defaultMap.markerCollection.getMarker(
           dashedPolyline.relatedMarkerIdKey
         );
@@ -520,7 +525,7 @@ trackdirect.models.Marker.prototype.showMarkerTail = function () {
         dashedPolyline.show();
 
         if (typeof dashedPolyline.relatedMarkerIdKey !== "undefined") {
-          var relatedMarker = this._defaultMap.markerCollection.getMarker(
+          let relatedMarker = this._defaultMap.markerCollection.getMarker(
             dashedPolyline.relatedMarkerIdKey
           );
           if (
@@ -545,7 +550,7 @@ trackdirect.models.Marker.prototype.showMarkerTail = function () {
  * @param {int} markerIdKey
  */
 trackdirect.models.Marker.prototype.hideMarkerTail = function (markerIdKey) {
-  var latestMarker = this._defaultMap.markerCollection.getStationLatestMarker(
+  let latestMarker = this._defaultMap.markerCollection.getStationLatestMarker(
     this.packet.station_id
   );
   if (
@@ -569,7 +574,7 @@ trackdirect.models.Marker.prototype.hideMarkerTail = function (markerIdKey) {
   }
 
   // Handle polylines
-  var polyline = this._defaultMap.markerCollection.getMarkerPolyline(
+  let polyline = this._defaultMap.markerCollection.getMarkerPolyline(
     this.markerIdKey
   );
   if (polyline !== null) {
@@ -593,13 +598,13 @@ trackdirect.models.Marker.prototype.hideMarkerTail = function (markerIdKey) {
 
   // Handle dashed polylines that ENDS at this marker
   // Since tail for this marker is hidden also the dashed tail should be hidden
-  var dashedPolyline =
+  let dashedPolyline =
     this._defaultMap.markerCollection.getMarkerDashedPolyline(this.markerIdKey);
   if (dashedPolyline !== null) {
     dashedPolyline.hide();
 
     if (typeof dashedPolyline.relatedMarkerIdKey !== "undefined") {
-      var relatedMarker = this._defaultMap.markerCollection.getMarker(
+      let relatedMarker = this._defaultMap.markerCollection.getMarker(
         dashedPolyline.relatedMarkerIdKey
       );
       if (
@@ -675,7 +680,7 @@ trackdirect.models.Marker.prototype.markToBeOverWritten = function () {
  * @return boolean
  */
 trackdirect.models.Marker.prototype.isSingleMovingMarker = function () {
-  var markerCounter = 0;
+  let markerCounter = 0;
   if (
     typeof this.packet.marker_counter !== "undefined" &&
     this.packet.marker_counter !== null
@@ -747,9 +752,9 @@ trackdirect.models.Marker.prototype.shouldMarkerBeVisible = function () {
   }
 
   if (this._defaultMap.state.visibleSymbols.length > 0) {
-    var symbolFound = false;
-    for (var key in this._defaultMap.state.visibleSymbols) {
-      var visibleSymbol = this._defaultMap.state.visibleSymbols[key];
+    let symbolFound = false;
+    for (let key in this._defaultMap.state.visibleSymbols) {
+      let visibleSymbol = this._defaultMap.state.visibleSymbols[key];
       if (
         this.packet.symbol.charCodeAt(0) == visibleSymbol[0] &&
         this.packet.symbol_table.charCodeAt(0) == visibleSymbol[1]
@@ -777,13 +782,13 @@ trackdirect.models.Marker.prototype.shouldMarkerBeVisible = function () {
     this._defaultMap.state.filterStationIds.indexOf(this.packet.station_id) > -1
   ) {
     // We are filtering and we are filtering on this station
-    var latestStationMarker =
+    let latestStationMarker =
       this._defaultMap.markerCollection.getStationLatestMarker(
         this.packet.station_id
       );
     if (
       this._defaultMap.state.getClientTimestamp(this.packet.timestamp) <=
-        this._defaultMap.state.getOldestAllowedPacketTimestamp() &&
+      this._defaultMap.state.getOldestAllowedPacketTimestamp() &&
       typeof latestStationMarker !== "undefined" &&
       latestStationMarker !== null &&
       !this._isMarkersEqual(latestStationMarker)
@@ -848,7 +853,7 @@ trackdirect.models.Marker.prototype.isMovingStation = function () {
   ) {
     // This marker is supposed to be moving but has not moved for a long time
     // Check that we have no later marker for this station that is considered moving
-    var stationLatestMovingMarkerIdKey =
+    let stationLatestMovingMarkerIdKey =
       this._defaultMap.markerCollection.getStationLatestMovingMarkerIdKey(
         this.packet.station_id
       );
@@ -862,7 +867,7 @@ trackdirect.models.Marker.prototype.isMovingStation = function () {
 };
 
 /**
- * Stop existing direction polyline is exists and is active
+ * Stop existing direction polyline if exists and is active
  */
 trackdirect.models.Marker.prototype.stopDirectionPolyline = function () {
   if (this.directionPolyLine !== null) {
@@ -875,10 +880,10 @@ trackdirect.models.Marker.prototype.stopDirectionPolyline = function () {
  */
 trackdirect.models.Marker.prototype.stopToOldTimeout = function () {
   clearTimeout(this.toOldTimerId);
-  var dotMarkers = this._defaultMap.markerCollection.getDotMarkers(
+  let dotMarkers = this._defaultMap.markerCollection.getDotMarkers(
     this.markerIdKey
   );
-  for (var j = 0; j < dotMarkers.length; j++) {
+  for (let j = 0; j < dotMarkers.length; j++) {
     clearTimeout(dotMarkers[j].toOldTimerId);
   }
 };
@@ -888,7 +893,7 @@ trackdirect.models.Marker.prototype.stopToOldTimeout = function () {
  * @return {string}
  */
 trackdirect.models.Marker.prototype.getToolTipContent = function () {
-  var iconUrl = trackdirect.services.symbolPathFinder.getFilePath(
+  let iconUrl = trackdirect.services.symbolPathFinder.getFilePath(
     this.packet.symbol_table,
     this.packet.symbol,
     null,
@@ -897,10 +902,10 @@ trackdirect.models.Marker.prototype.getToolTipContent = function () {
     20,
     20
   );
-  var date = new Date(this.packet.timestamp * 1000);
-  var positionDate = new Date(this.packet.position_timestamp * 1000);
+  let date = new Date(this.packet.timestamp * 1000);
+  let positionDate = new Date(this.packet.position_timestamp * 1000);
 
-  var dateString = moment(date).format(
+  let dateString = moment(date).format(
     trackdirect.settings.dateFormatNoTimeZone
   );
   if (this.packet.timestamp > this.packet.position_timestamp) {
@@ -911,7 +916,7 @@ trackdirect.models.Marker.prototype.getToolTipContent = function () {
   }
 
   if (this.packet.getOgnRegistration() != null) {
-    var name = escapeHtml(this.packet.station_name);
+    let name = escapeHtml(this.packet.station_name);
     name += ", ";
     name += escapeHtml(this.packet.getOgnRegistration());
     if (this.packet.getOgnCN() !== null) {
@@ -963,24 +968,29 @@ trackdirect.models.Marker.prototype.getToolTipContent = function () {
  * @return {object}
  */
 trackdirect.models.Marker.prototype._getGoogleMarkerOptions = function () {
-  var anchorPoint = null;
+  let anchorPoint;
+  let scaledImageSize;
+  let imageSize;
+  let imageAnchor;
+  let opacity;
+  let iconUrl;
   if (this._isDotMarker) {
-    var colorId = trackdirect.services.stationColorCalculator.getColorId(
+    let colorId = trackdirect.services.stationColorCalculator.getColorId(
       this.packet
     );
-    var iconUrl =
+    let iconUrl =
       trackdirect.settings.baseUrl +
       trackdirect.settings.imagesBaseDir +
       "dotColor" +
       colorId +
       ".png";
-    var scaledImageSize = new google.maps.Size(12, 12);
-    var imageSize = new google.maps.Size(12, 12);
-    var imageAnchor = new google.maps.Point(6, 6);
-    var opacity = 1.0;
+    scaledImageSize = new google.maps.Size(12, 12);
+    imageSize = new google.maps.Size(12, 12);
+    imageAnchor = new google.maps.Point(6, 6);
+    opacity = 1.0;
   } else {
-    var scalePx = 24;
-    var sizePx = 24;
+    let scalePx = 24;
+    let sizePx = 24;
     if (this._shouldMarkerSymbolBeScaled()) {
       scalePx = 48;
     }
@@ -991,13 +1001,13 @@ trackdirect.models.Marker.prototype._getGoogleMarkerOptions = function () {
       }
     }
 
-    var imageSize = new google.maps.Size(scalePx, scalePx);
-    var imageAnchor = new google.maps.Point(
+    imageSize = new google.maps.Size(scalePx, scalePx);
+    imageAnchor = new google.maps.Point(
       Math.floor(scalePx / 2),
       Math.floor(scalePx / 2)
     );
-    var scaledImageSize = new google.maps.Size(scalePx, scalePx);
-    var iconUrl = trackdirect.services.symbolPathFinder.getFilePath(
+    scaledImageSize = new google.maps.Size(scalePx, scalePx);
+    iconUrl = trackdirect.services.symbolPathFinder.getFilePath(
       this.packet.symbol_table,
       this.packet.symbol,
       this.packet.course,
@@ -1020,7 +1030,7 @@ trackdirect.models.Marker.prototype._getGoogleMarkerOptions = function () {
       );
     }
 
-    var opacity = 1.0;
+    opacity = 1.0;
   }
 
   return {
@@ -1043,25 +1053,27 @@ trackdirect.models.Marker.prototype._getGoogleMarkerOptions = function () {
  * @return {object}
  */
 trackdirect.models.Marker.prototype._getLeafletMarkerOptions = function () {
+  let icon;
+  let opacity;
   if (this._isDotMarker) {
-    var colorId = trackdirect.services.stationColorCalculator.getColorId(
+    let colorId = trackdirect.services.stationColorCalculator.getColorId(
       this.packet
     );
-    var iconUrl =
+    let iconUrl =
       trackdirect.settings.baseUrl +
       trackdirect.settings.imagesBaseDir +
       "dotColor" +
       colorId +
       ".png";
-    var icon = L.icon({
+    icon = L.icon({
       iconUrl: iconUrl,
       iconSize: [12, 12],
       iconAnchor: [6, 6],
     });
-    var opacity = 0.8;
+    opacity = 0.8;
   } else {
-    var scalePx = 24;
-    var sizePx = 24;
+    let scalePx = 24;
+    let sizePx = 24;
     if (this._shouldMarkerSymbolBeScaled()) {
       scalePx = 48;
     }
@@ -1072,7 +1084,7 @@ trackdirect.models.Marker.prototype._getLeafletMarkerOptions = function () {
       }
     }
 
-    var iconUrl = trackdirect.services.symbolPathFinder.getFilePath(
+    let iconUrl = trackdirect.services.symbolPathFinder.getFilePath(
       this.packet.symbol_table,
       this.packet.symbol,
       this.packet.course,
@@ -1081,7 +1093,7 @@ trackdirect.models.Marker.prototype._getLeafletMarkerOptions = function () {
       scalePx,
       scalePx
     );
-    var iconRetinaUrl = trackdirect.services.symbolPathFinder.getFilePath(
+    let iconRetinaUrl = trackdirect.services.symbolPathFinder.getFilePath(
       this.packet.symbol_table,
       this.packet.symbol,
       this.packet.course,
@@ -1090,17 +1102,17 @@ trackdirect.models.Marker.prototype._getLeafletMarkerOptions = function () {
       scalePx * 2,
       scalePx * 2
     );
-    var icon = L.icon({
+    icon = L.icon({
       iconUrl: iconUrl,
       iconRetinaUrl: iconRetinaUrl,
       iconSize: [scalePx, scalePx],
       iconAnchor: [Math.floor(scalePx / 2), Math.floor(scalePx / 2)],
     });
 
-    var opacity = 1.0;
+    opacity = 1.0;
   }
 
-  var tooltipTitle = "";
+  let tooltipTitle = "";
   if (typeof L.tooltip == "undefined") {
     tooltipTitle = this.packet.station_name;
   }
@@ -1115,16 +1127,16 @@ trackdirect.models.Marker.prototype._getLeafletMarkerOptions = function () {
 
 /**
  * Returnes ture for symbols that that look better if they are scaled to twice the size
- * @param {boolean}
+ * @return {boolean}
  */
 trackdirect.models.Marker.prototype._shouldMarkerSymbolBeScaled = function () {
   if (typeof trackdirect.settings.symbolsToScale === "undefined") {
     return false;
   }
 
-  for (var i = 0; i < trackdirect.settings.symbolsToScale.length; i++) {
-    var symbol = trackdirect.settings.symbolsToScale[i][0];
-    var symbolTable = trackdirect.settings.symbolsToScale[i][1];
+  for (let i = 0; i < trackdirect.settings.symbolsToScale.length; i++) {
+    let symbol = trackdirect.settings.symbolsToScale[i][0];
+    let symbolTable = trackdirect.settings.symbolsToScale[i][1];
 
     if (symbolTable == null && this.packet.symbol.charCodeAt() == symbol) {
       return true;
@@ -1148,7 +1160,7 @@ trackdirect.models.Marker.prototype._hideLater = function (
   delayInMilliSeconds,
   onlyHideIfNeeded
 ) {
-  var me = this;
+  let me = this;
   this.hideTimerId = window.setTimeout(function () {
     if (me._defaultMap.state.isMarkerInfoWindowOpen(me)) {
       // User is looking at this marker, try to hide it later
@@ -1178,8 +1190,9 @@ trackdirect.models.Marker.prototype._addMarkerTooltip = function () {
  */
 trackdirect.models.Marker.prototype._addMarkerLeafletMapTooltip = function () {
   if (!trackdirect.isMobile) {
+    let tooltip;
     if (typeof L.tooltip != "undefined") {
-      var tooltip = L.tooltip({
+      tooltip = L.tooltip({
         direction: "right",
         noWrap: true,
         offset: [6, 30],
@@ -1187,8 +1200,8 @@ trackdirect.models.Marker.prototype._addMarkerLeafletMapTooltip = function () {
       });
     }
 
-    var me = this;
-    var isMyTooltipVisible = false;
+    let me = this;
+    let isMyTooltipVisible = false;
     this.on("mouseover", function (e) {
       if (typeof tooltip !== "undefined") {
         tooltip.setContent(me.getToolTipContent());
@@ -1247,7 +1260,7 @@ trackdirect.models.Marker.prototype._addMarkerGoogleMapTooltip = function () {
   if (!trackdirect.isMobile) {
     if (!$("#marker-tooltip").length) {
       // Does not exists, create it
-      var tooltip = $(document.createElement("div"));
+      let tooltip = $(document.createElement("div"));
       tooltip.attr("id", "marker-tooltip");
       tooltip.css("display", "none");
       tooltip.css("position", "absolute");
@@ -1276,11 +1289,11 @@ trackdirect.models.Marker.prototype._addMarkerGoogleMapTooltip = function () {
       $("body").append(tooltip);
     }
 
-    var me = this;
-    var isMyTooltipVisible = false;
+    let me = this;
+    let isMyTooltipVisible = false;
     google.maps.event.addListener(this, "mouseover", function () {
-      var point = this._fromGoogleLatLngToPoint(me.getPosition());
-      var mapElementId = this._defaultMap.getMapElementId();
+      let point = this._fromGoogleLatLngToPoint(me.getPosition());
+      let mapElementId = this._defaultMap.getMapElementId();
       $("#marker-tooltip")
         .html(me.getToolTipContent())
         .css({
@@ -1331,14 +1344,14 @@ trackdirect.models.Marker.prototype._addMarkerGoogleMapTooltip = function () {
 trackdirect.models.Marker.prototype._fromGoogleLatLngToPoint = function (
   latLng
 ) {
-  var topRight = this._defaultMap
+  let topRight = this._defaultMap
     .getProjection()
     .fromLatLngToPoint(this._defaultMap.getBounds().getNorthEast());
-  var bottomLeft = this._defaultMap
+  let bottomLeft = this._defaultMap
     .getProjection()
     .fromLatLngToPoint(this._defaultMap.getBounds().getSouthWest());
-  var scale = Math.pow(2, this._defaultMap.getZoom());
-  var worldPoint = this._defaultMap.getProjection().fromLatLngToPoint(latLng);
+  let scale = Math.pow(2, this._defaultMap.getZoom());
+  let worldPoint = this._defaultMap.getProjection().fromLatLngToPoint(latLng);
   return new google.maps.Point(
     (worldPoint.x - bottomLeft.x) * scale,
     (worldPoint.y - topRight.y) * scale
@@ -1351,7 +1364,7 @@ trackdirect.models.Marker.prototype._fromGoogleLatLngToPoint = function (
  * @return {boolean}
  */
 trackdirect.models.Marker.prototype._isMarkersEqual = function (marker2) {
-  var marker1 = this;
+  let marker1 = this;
   if (
     typeof marker2 !== "undefined" &&
     marker2 !== null &&
@@ -1360,9 +1373,9 @@ trackdirect.models.Marker.prototype._isMarkersEqual = function (marker2) {
     marker1.packet.station_id === marker2.packet.station_id &&
     marker1.packet.timestamp === marker2.packet.timestamp &&
     Math.round(marker1.packet.latitude * 100000) ===
-      Math.round(marker2.packet.latitude * 100000) &&
+    Math.round(marker2.packet.latitude * 100000) &&
     Math.round(marker1.packet.longitude * 100000) ===
-      Math.round(marker2.packet.longitude * 100000) &&
+    Math.round(marker2.packet.longitude * 100000) &&
     marker1.packet.map_id === marker2.packet.map_id
   ) {
     return true;
@@ -1378,9 +1391,9 @@ trackdirect.models.Marker.prototype._isMarkersEqual = function (marker2) {
 (trackdirect.models.Marker.prototype._addMarkerToOldTimeout = function (
   altDelayMilliSeconds
 ) {
-  var markerCollection = this._defaultMap.markerCollection;
-  var state = this._defaultMap.state;
-  var delay =
+  let markerCollection = this._defaultMap.markerCollection;
+  let state = this._defaultMap.state;
+  let delay =
     (this._defaultMap.state.getClientTimestamp(this.packet.timestamp) -
       state.getOldestAllowedPacketTimestamp()) *
     1000;
@@ -1397,16 +1410,16 @@ trackdirect.models.Marker.prototype._isMarkersEqual = function (marker2) {
     clearTimeout(this.toOldTimerId);
   }
 
-  var me = this;
+  let me = this;
   this.toOldTimerId = window.setTimeout(function () {
     if (me._defaultMap.state.isMarkerInfoWindowOpen(me)) {
       // User is looking at this marker, try again later...
       me._addMarkerToOldTimeout(500);
     } else {
-      var latestStationMarker = markerCollection.getStationLatestMarker(
+      let latestStationMarker = markerCollection.getStationLatestMarker(
         me.packet.station_id
       );
-      var latestMarker = markerCollection.getMarker(me.markerIdKey);
+      let latestMarker = markerCollection.getMarker(me.markerIdKey);
 
       // Only hide it if we are not filtering or if station has newer markers
       if (
@@ -1415,7 +1428,7 @@ trackdirect.models.Marker.prototype._isMarkersEqual = function (marker2) {
       ) {
         if (latestMarker === me) {
           // This is the latest marker for this markerId, hide all of it!
-          var callback = function () {
+          let callback = function () {
             me.hideCompleteMarker();
             markerCollection.resetMarkerPolyline(me.markerIdKey);
             markerCollection.resetDotMarkers(me.markerIdKey);
@@ -1423,11 +1436,11 @@ trackdirect.models.Marker.prototype._isMarkersEqual = function (marker2) {
           trackdirect.services.callbackExecutor.add(me, callback, []);
         } else if (markerCollection.hasDotMarkers(me.markerIdKey)) {
           // We should hide a dotmarker that we know exists
-          var index = markerCollection.getDotMarkerIndex(me.markerIdKey, me);
+          let index = markerCollection.getDotMarkerIndex(me.markerIdKey, me);
           if (index == 0) {
-            var callback = function () {
+            let callback = function () {
               if (markerCollection.hasDotMarkers(me.markerIdKey)) {
-                var success = markerCollection.removeOldestDotMarker(
+                let success = markerCollection.removeOldestDotMarker(
                   me.markerIdKey
                 );
                 if (!success) {
@@ -1440,7 +1453,7 @@ trackdirect.models.Marker.prototype._isMarkersEqual = function (marker2) {
             trackdirect.services.callbackExecutor.add(me, callback, []);
           } else if (index > 0) {
             // Reschedule first marker removal (just to be sure)
-            var dotMarkers = markerCollection.getDotMarkers(me.markerIdKey);
+            let dotMarkers = markerCollection.getDotMarkers(me.markerIdKey);
             dotMarkers[0]._addMarkerToOldTimeout(0);
 
             // Try again later
@@ -1464,7 +1477,7 @@ trackdirect.models.Marker.prototype._isMarkersEqual = function (marker2) {
     arg
   ) {
     if (event in this._tdEventListeners) {
-      for (var i = 0; i < this._tdEventListeners[event].length; i++) {
+      for (let i = 0; i < this._tdEventListeners[event].length; i++) {
         this._tdEventListeners[event][i](arg);
       }
     }

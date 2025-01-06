@@ -1,9 +1,10 @@
-psycopg2-binary
+psycopg2-binary~=2.9.9
 wheel
 setuptools
-autobahn[twisted]
-twisted
+autobahn[twisted]~=23.1.2
+twisted~=24.7.0
 pympler
 jsmin
-psutil
+psutil~=6.0.0
 git+https://github.com/rossengeorgiev/aprs-python
+aprslib~=0.7.2

@@ -5,18 +5,23 @@ trackdirect.services.MapSectorCalculator = {
    * @return {array}
    */
   getMapSectors: function (bounds) {
-    var result = [];
+    let result = [];
+    let maxLat;
+    let minLat;
+    let maxLng;
+    let minLng;
+
     // We include some border map sectors so that markers appear before user enter those map-sectors (if they are loaded from server)
     if (typeof google === "object" && typeof google.maps === "object") {
-      var maxLat = Math.ceil(bounds.getNorthEast().lat()) + 1;
-      var minLat = Math.floor(bounds.getSouthWest().lat()) - 1;
-      var maxLng = Math.ceil(bounds.getNorthEast().lng()) + 1;
-      var minLng = Math.floor(bounds.getSouthWest().lng()) - 1;
+      maxLat = Math.ceil(bounds.getNorthEast().lat()) + 1;
+      minLat = Math.floor(bounds.getSouthWest().lat()) - 1;
+      maxLng = Math.ceil(bounds.getNorthEast().lng()) + 1;
+      minLng = Math.floor(bounds.getSouthWest().lng()) - 1;
     } else if (typeof L === "object") {
-      var maxLat = Math.ceil(bounds.getNorthEast().lat) + 1;
-      var minLat = Math.floor(bounds.getSouthWest().lat) - 1;
-      var maxLng = Math.ceil(bounds.getNorthEast().lng) + 1;
-      var minLng = Math.floor(bounds.getSouthWest().lng) - 1;
+      maxLat = Math.ceil(bounds.getNorthEast().lat) + 1;
+      minLat = Math.floor(bounds.getSouthWest().lat) - 1;
+      maxLng = Math.ceil(bounds.getNorthEast().lng) + 1;
+      minLng = Math.floor(bounds.getSouthWest().lng) - 1;
     }
 
     if (maxLng < minLng) {
@@ -55,14 +60,14 @@ trackdirect.services.MapSectorCalculator = {
    * @return {array}
    */
   getMapSectorsByInterval: function (minLat, maxLat, minLng, maxLng) {
-    var result = [];
+    let result = [];
 
-    var minAreaCode = this.getMapSector(minLat, minLng);
-    var maxAreaCode = this.getMapSector(maxLat, maxLng);
+    let minAreaCode = this.getMapSector(minLat, minLng);
+    let maxAreaCode = this.getMapSector(maxLat, maxLng);
 
     lngDiff = parseInt(Math.ceil(maxLng)) - parseInt(Math.ceil(minLng));
 
-    var areaCode = minAreaCode;
+    let areaCode = minAreaCode;
     while (areaCode <= maxAreaCode) {
       if (areaCode % 10 == 5) {
         result.push(areaCode);
@@ -71,7 +76,7 @@ trackdirect.services.MapSectorCalculator = {
         result.push(areaCode + 5);
       }
 
-      for (var i = 1; i <= lngDiff; i++) {
+      for (let i = 1; i <= lngDiff; i++) {
         if (areaCode % 10 == 5) {
           result.push(areaCode + 10 * i - 5);
           result.push(areaCode + 10 * i);
@@ -93,8 +98,8 @@ trackdirect.services.MapSectorCalculator = {
    * @param {float} longitude
    */
   getMapSector: function (latitude, longitude) {
-    var lat = this._getMapSectorLatRepresentation(latitude);
-    var lng = this._getMapSectorLngRepresentation(longitude);
+    let lat = this._getMapSectorLatRepresentation(latitude);
+    let lng = this._getMapSectorLngRepresentation(longitude);
 
     // lat interval: 0 - 18000000
     // lng interval: 0 - 00003600
@@ -107,8 +112,8 @@ trackdirect.services.MapSectorCalculator = {
    * @return int
    */
   _getMapSectorLatRepresentation: function (latitude) {
-    var lat = parseInt(Math.floor(latitude)) + 90; // Positive representation of lat;
-    var latDecimalPart = latitude - Math.floor(latitude);
+    let lat = parseInt(Math.floor(latitude)) + 90; // Positive representation of lat;
+    let latDecimalPart = latitude - Math.floor(latitude);
 
     if (latDecimalPart < 0.2) {
       lat = lat * 10 + 0;

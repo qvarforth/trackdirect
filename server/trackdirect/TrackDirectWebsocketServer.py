@@ -1,434 +1,309 @@
 import logging
-
 from twisted.internet import threads, reactor, task
 from twisted.internet.error import AlreadyCancelled, AlreadyCalled
-
 from autobahn.twisted.websocket import WebSocketServerProtocol
-
 import json
 import time
 import psycopg2
 import psycopg2.extras
 import os
-import trackdirect
-from trackdirect.database.DatabaseConnection import DatabaseConnection
-
-from trackdirect.websocket.WebsocketResponseCreator import WebsocketResponseCreator
-from trackdirect.websocket.WebsocketConnectionState import WebsocketConnectionState
-
-from trackdirect.websocket.aprsis.AprsISReader import AprsISReader
-from trackdirect.websocket.aprsis.AprsISPayloadCreator import AprsISPayloadCreator
+from server.trackdirect.TrackDirectConfig import TrackDirectConfig
+from server.trackdirect.database.DatabaseConnection import DatabaseConnection
+from server.trackdirect.websocket.WebsocketResponseCreator import WebsocketResponseCreator
+from server.trackdirect.websocket.WebsocketConnectionState import WebsocketConnectionState
+from server.trackdirect.websocket.aprsis.AprsISReader import AprsISReader
+from server.trackdirect.websocket.aprsis.AprsISPayloadCreator import AprsISPayloadCreator
 
 
 class TrackDirectWebsocketServer(WebSocketServerProtocol):
-    """The TrackDirectWebsocketServer class handles the incoming requests
-    """
+    """The TrackDirectWebsocketServer class handles the incoming requests."""
 
     def __init__(self):
-        """The __init__ method.
-        """
-        WebSocketServerProtocol.__init__(self)
+        """Initialize the TrackDirectWebsocketServer."""
+        super().__init__()
+
         self.logger = logging.getLogger('trackdirect')
 
-        self.config = trackdirect.TrackDirectConfig()
-        self.maxClientIdleTime = int(self.config.maxClientIdleTime) * 60
-        self.maxQueuedRealtimePackets = int(
-            self.config.maxQueuedRealtimePackets)
+        self.max_queued_realtime_packets = None
+        self.max_client_idle_time = None
 
-        dbConnection = DatabaseConnection()
-        db = dbConnection.getConnection(True)
+        db_connection = DatabaseConnection()
+        db = db_connection.get_connection(True)
 
-        self.connectionState = WebsocketConnectionState()
-        self.responseCreator = WebsocketResponseCreator(
-            self.connectionState, db)
-        self.aprsISReader = AprsISReader(self.connectionState, db)
-        self.aprsISPayloadCreator = AprsISPayloadCreator(
-            self.connectionState, db)
+        self.connection_state = WebsocketConnectionState()
+        self.response_creator = WebsocketResponseCreator(self.connection_state, db)
+        self.aprs_is_reader = AprsISReader(self.connection_state, db)
+        self.aprs_is_payload_creator = AprsISPayloadCreator(self.connection_state, db)
 
-        self.numberOfRealTimePacketThreads = 0
-        self.timestampSenderCall = None
-        self.realTimeListenerCall = None
-        self.onInactiveCall = None
-        self.isUnknownClient = False
+        self.number_of_real_time_packet_threads = 0
+        self.timestamp_sender_call = None
+        self.real_time_listener_call = None
+        self.on_inactive_call = None
+        self.is_unknown_client = False
 
     def onConnect(self, request):
-        """Method that is executed on connect
-
-        Args:
-            request (object):  The connection request
-        """
+        """Executed on connect."""
         try:
-            if ('x-forwarded-for' in request.headers):
-                self.logger.warning("Client connecting from origin: {0}, x-forwarded-for: {1} (server pid {2})".format(
-                    request.origin, request.headers['x-forwarded-for'], str(os.getpid())))
+            config = TrackDirectConfig()
+            config.populate(self.factory.config_file)
+
+            self.max_client_idle_time = int(config.max_client_idle_time) * 60
+            self.max_queued_realtime_packets = int(config.max_queued_realtime_packets)
+
+            if 'x-forwarded-for' in request.headers:
+                self.logger.warning(
+                    f"Client connecting from origin: {request.origin}, x-forwarded-for: {request.headers['x-forwarded-for']} (server pid {os.getpid()})"
+                )
             else:
                 self.logger.warning(
-                    "Client connecting from origin: {0} (server pid {1})".format(request.origin, str(os.getpid())))
-
+                    f"Client connecting from origin: {request.origin} (server pid {os.getpid()})"
+                )
         except Exception as e:
-            self.logger.error(e, exc_info=1)
-            raise e
+            self.logger.error(e, exc_info=True)
+            raise
 
     def onOpen(self):
-        """Method that is executed on open
-        """
+        """Executed on open."""
         try:
             self.logger.info("WebSocket connection open.")
-
-            self._sendResponseByType(42)  # Inform client that we are active
-            self._startTimestampSender()
-            self._reScheduleInactiveEvent()
+            self._send_response_by_type(42)  # Inform client that we are active
+            self._start_timestamp_sender()
+            self._re_schedule_inactive_event()
         except Exception as e:
-            self.logger.error(e, exc_info=1)
+            self.logger.error(e, exc_info=True)
 
-    def onMessage(self, payload, isBinary):
-        """Method that is executed on incoming message
-
-        Args:
-            request (object):   The connection request
-            isBinary (boolean): True if binary otherwise false
-        """
+    def onMessage(self, payload, is_binary):
+        """Executed on incoming message."""
         try:
             request = json.loads(payload)
-            if (self.isUnknownClient):
-                self.logger.warning(
-                    "Incoming message from unknown client: {0}".format(str(request)))
+            if self.is_unknown_client:
+                self.logger.warning(f"Incoming message from unknown client: {request}")
 
-            if ("payload_request_type" not in request):
-                self.logger.warning(
-                    "Incoming request has no type (%s)" % (exp))
+            if "payload_request_type" not in request:
+                self.logger.warning("Incoming request has no type")
                 self.logger.warning(payload)
                 return
-            self._onRequest(request)
-        except (ValueError) as exp:
-            self.logger.warning(
-                "Incoming request could not be parsed (%s)" % (exp))
+            self._on_request(request)
+        except ValueError as exp:
+            self.logger.warning(f"Incoming request could not be parsed ({exp})")
             self.logger.warning(payload)
         except psycopg2.InterfaceError as e:
-            # Connection to database is lost, better just terminate connection to make user reconnect with new db connection
-            self.logger.error(e, exc_info=1)
-            raise e
+            self.logger.error(e, exc_info=True)
+            raise
         except Exception as e:
-            # Log error to make us aware of unknow problem
-            self.logger.error(e, exc_info=1)
+            self.logger.error(e, exc_info=True)
 
-    def onClose(self, wasClean, code, reason):
-        """Method that is executed on close
-
-        Args:
-            wasClean (boolean):  True if clean close otherwise false
-            code (int):          Close code
-            reason (object):     Reason for close
-        """
+    def onClose(self, was_clean, code, reason):
+        """Executed on close."""
         try:
-            self.logger.info("WebSocket connection closed: {0}".format(reason))
-            self.connectionState.disconnected = True
-            self._stopTimestampSender()
-            self._stopRealTimeListener(True)
+            self.logger.info(f"WebSocket connection closed: {reason}")
+            self.connection_state.disconnected = True
+            self._stop_timestamp_sender()
+            self._stop_real_time_listener(True)
         except Exception as e:
-            # Log error to make us aware of unknow problem
-            self.logger.error(e, exc_info=1)
+            self.logger.error(e, exc_info=True)
 
-    def _onRequest(self, request, requestId=None):
-        """Method that is executed on incoming request
+    def _on_request(self, request, request_id=None):
+        """Executed on incoming request."""
+        if request["payload_request_type"] != 11:
+            self._re_schedule_inactive_event()
 
-        Args:
-            request (object):   The connection request
-            requestId (int):    Id of the request
-        """
-        if (request["payload_request_type"] != 11):
-            self._reScheduleInactiveEvent()
-
-        if (request["payload_request_type"] in [5, 7, 9]):
-            # Request that not affects the current map status (to much)
-            deferred = threads.deferToThread(
-                self._processRequest, request, None)
-            deferred.addErrback(self._onError)
-
+        if request["payload_request_type"] in [5, 7, 9]:
+            deferred = threads.deferToThread(self._process_request, request, None)
+            deferred.addErrback(self._on_error)
         else:
-            # Request that affects map and current state
-            if (requestId is None):
-                requestId = self.connectionState.latestRequestId + 1
-                self.connectionState.latestRequestType = request["payload_request_type"]
-                self.connectionState.latestRequestId = requestId
-                self.connectionState.latestRequestTimestamp = int(time.time())
-                self._stopRealTimeListener(False)
+            if request_id is None:
+                request_id = self.connection_state.latest_requestId + 1
+                self.connection_state.latest_request_type = request["payload_request_type"]
+                self.connection_state.latest_requestId = request_id
+                self.connection_state.latest_request_timestamp = int(time.time())
+                self._stop_real_time_listener(False)
 
-            if (self.connectionState.latestHandledRequestId < requestId - 1):
-                reactor.callLater(0.1, self._onRequest, request, requestId)
+            if self.connection_state.latest_handled_request_id < request_id - 1:
+                reactor.callLater(0.1, self._on_request, request, request_id)
             else:
-                self._updateState(request)
+                self._update_state(request)
+                deferred = threads.deferToThread(self._process_request, request, request_id)
+                deferred.addErrback(self._on_error)
+                deferred.addCallback(self._on_request_done)
 
-                deferred = threads.deferToThread(
-                    self._processRequest, request, requestId)
-                deferred.addErrback(self._onError)
-                deferred.addCallback(self._onRequestDone)
-
-    def _processRequest(self, request, requestId):
-        """Method that sends a response to websocket client based on request
-
-        Args:
-            request (Dict):   Request from websocket client
-            requestId (int):   Request id of processed request
-        """
+    def _process_request(self, request, request_id):
+        """Send a response to websocket client based on request."""
         try:
-            for response in self.responseCreator.getResponses(request, requestId):
-                if self.connectionState.disconnected:
+            for response in self.response_creator.get_responses(request, request_id):
+                if self.connection_state.disconnected:
                     break
-                reactor.callFromThread(self._sendDictResponse, response)
-            return requestId
+                reactor.callFromThread(self._send_dict_response, response)
+            return request_id
         except psycopg2.InterfaceError as e:
-            # Connection to database is lost, better just terminate connection to make user reconnect with new db connection
-            self.logger.error(e, exc_info=1)
-            raise e
+            self.logger.error(e, exc_info=True)
+            raise
         except Exception as e:
-            # Log error to make us aware of unknow problem
-            self.logger.error(e, exc_info=1)
+            self.logger.error(e, exc_info=True)
 
-    def _onRequestDone(self, requestId):
-        """Method that is executed when request is processed
-
-        Args:
-            requestId (int):   Request id of processed request
-        """
+    def _on_request_done(self, request_id):
+        """Executed when request is processed."""
         try:
-            if (self.connectionState.latestHandledRequestId < requestId):
-                self.connectionState.latestHandledRequestId = requestId
-            if (self.connectionState.latestRequestId == requestId):
-                # We have no newer requests
-                # Tell client response is complete
-                self._sendResponseByType(35)
+            if self.connection_state.latest_handled_request_id < request_id:
+                self.connection_state.latest_handled_request_id = request_id
+            if self.connection_state.latest_requestId == request_id:
+                self._send_response_by_type(35)
 
-                if (self.connectionState.latestTimeTravelRequest is None
-                        and self.connectionState.noRealTime is False
-                        and self.connectionState.isValidLatestPosition()):
-                    self._startRealTimeListener(requestId)
-
-                elif ((int(time.time()) - self.connectionState.latestRequestTimestamp) <= self.maxClientIdleTime):
-                    self._sendResponseByType(33)  # Tell client we are idle
+                if (self.connection_state.latest_time_travel_request is None
+                        and not self.connection_state.no_real_time
+                        and self.connection_state.is_valid_latest_position()):
+                    self._start_real_time_listener(request_id)
+                elif (int(time.time()) - self.connection_state.latest_request_timestamp) <= self.max_client_idle_time:
+                    self._send_response_by_type(33)
         except psycopg2.InterfaceError as e:
-            # Connection to database is lost, better just terminate connection to make user reconnect with new db connection
-            raise e
+            raise
         except Exception as e:
-            # Log error to make us aware of unknow problem
-            self.logger.error(e, exc_info=1)
+            self.logger.error(e, exc_info=True)
 
-    def _onError(self, error):
-        """Method that is executed when a deferToThread failed
-
-        Args:
-            error (Exception):   The Exception
-        """
-        # Exception should only end up here if db connection is lost
-        # Force restart of wsserver
+    def _on_error(self, error):
+        """Executed when a deferToThread failed."""
         if reactor.running:
             reactor.stop()
         raise error
 
-    def _startRealTimeListener(self, relatedRequestId):
-        """Start real time APRS-IS listener, onRealTimePacketFound will be executed when a packet is received
+    def _start_real_time_listener(self, related_request_id):
+        """Start real time APRS-IS listener."""
+        def read_real_time_packet():
+            if (self.connection_state.latest_requestId == related_request_id
+                    and not self.connection_state.disconnected):
+                self.aprs_is_reader.read(on_real_time_packet_found)
 
-        Args:
-            relatedRequestId (int):   Request id of related request
-        """
-        def readRealTimePacket():
-            if (self.connectionState.latestRequestId == relatedRequestId and not self.connectionState.disconnected):
-                self.aprsISReader.read(onRealTimePacketFound)
+        def on_real_time_packet_complete():
+            self.number_of_real_time_packet_threads -= 1
+            if self.number_of_real_time_packet_threads <= 0:
+                read_real_time_packet()
 
-        def onRealTimePacketComplete():
-            self.numberOfRealTimePacketThreads -= 1
-            if (self.numberOfRealTimePacketThreads <= 0):
-                # If we have no packets on the way we should see if we have another waiting
-                readRealTimePacket()
-
-        def onRealTimePacketFound(raw, sourceId):
-            if (raw is None and sourceId is None):
-                # Something went wrong, stop everything
-                self._onInactive()
+        def on_real_time_packet_found(raw, source_id):
+            if raw is None and source_id is None:
+                self._on_inactive()
             else:
-                if (self.numberOfRealTimePacketThreads > self.maxQueuedRealtimePackets):
-                    # To many packets, several previous LoopingCall's is not done yet.
-                    # We need to discard some packets, otherwise server will be overloaded and we will only send old packets.
-                    # Client is required to request total update now and then, so the discarded packets should be send to client later.
-
-                    counter = self.aprsISReader.clear(5)
-                    #self.logger.warning('Discarding ' + str(counter) + ' packets')
+                if self.number_of_real_time_packet_threads > self.max_queued_realtime_packets:
+                    self.aprs_is_reader.clear(5)
                 else:
-                    self.numberOfRealTimePacketThreads += 1
-                    deferred = threads.deferToThread(
-                        self._processRealTimePacket, raw, sourceId)
-                    deferred.addCallback(lambda _: onRealTimePacketComplete())
-                    deferred.addErrback(self._onError)
+                    self.number_of_real_time_packet_threads += 1
+                    deferred = threads.deferToThread(self._process_real_time_packet, raw, source_id)
+                    deferred.addCallback(lambda _: on_real_time_packet_complete())
+                    deferred.addErrback(self._on_error)
 
-        # Tell client we are connecting to real time feed
-        self._sendResponseByType(34)
-        self.aprsISReader.start()  # Will start if needed and change filter if needed
-        # Tell client we are listening on real time feed
-        self._sendResponseByType(31)
+        self._send_response_by_type(34)
+        self.aprs_is_reader.start()
+        self._send_response_by_type(31)
 
-        self.realTimeListenerCall = task.LoopingCall(readRealTimePacket)
-        self.realTimeListenerCall.start(0.2)
+        self.real_time_listener_call = task.LoopingCall(read_real_time_packet)
+        self.real_time_listener_call.start(0.2, False)
 
-    def _stopRealTimeListener(self, disconnect=False):
-        """Stop real time APRS-IS listener, onRealTimePacketFound will be executed when a packet is received
-
-        Args:
-            disconnect (Boolean):   Set to true to also disconnect from APRS-IS servers
-        """
-        if (self.realTimeListenerCall is not None):
+    def _stop_real_time_listener(self, disconnect=False):
+        """Stop real time APRS-IS listener."""
+        if self.real_time_listener_call is not None:
             try:
-                self.realTimeListenerCall.stop()
-            except (AlreadyCalled, AssertionError) as e:
+                self.real_time_listener_call.stop()
+            except (AlreadyCalled, AssertionError):
                 pass
 
-            if (disconnect):
-                self.aprsISReader.stop()
+            if disconnect:
+                self.aprs_is_reader.stop()
             else:
-                self.aprsISReader.pause()
+                self.aprs_is_reader.pause()
 
-    def _processRealTimePacket(self, raw, sourceId):
-        """Method that is executed when we have a new real time packet to send
-
-        Args:
-            raw (string):    Raw packet from APRS-IS
-            sourceId (int):  The id of the source (1 for APRS and 2 for CWOP ...)
-        """
+    def _process_real_time_packet(self, raw, source_id):
+        """Executed when we have a new real time packet to send."""
         try:
-            for response in self.aprsISPayloadCreator.getPayloads(raw, sourceId):
-                reactor.callFromThread(self._sendDictResponse, response)
+            for response in self.aprs_is_payload_creator.get_payloads(raw, source_id):
+                reactor.callFromThread(self._send_dict_response, response)
         except psycopg2.InterfaceError as e:
-            # Connection to database is lost, better just terminate connection to make user reconnect with new db connection
-            self.logger.error(e, exc_info=1)
-            raise e
+            self.logger.error(e, exc_info=True)
+            raise
         except Exception as e:
-            # Log error to make us aware of unknow problem
-            self.logger.error(e, exc_info=1)
+            self.logger.error(e, exc_info=True)
 
-    def _startTimestampSender(self):
-        """Method schedules call to _sendTimestampResponse to keep connection up
-        """
-        self.timestampSenderCall = task.LoopingCall(
-            self._sendTimestampResponse)
-        self.timestampSenderCall.start(1.0)
+    def _start_timestamp_sender(self):
+        """Schedule call to _sendTimestampResponse to keep connection up."""
+        self.timestamp_sender_call = task.LoopingCall(self._send_timestamp_response)
+        self.timestamp_sender_call.start(1.0)
 
-    def _stopTimestampSender(self):
-        """Stop looping call to _sendTimestampResponse
-        """
-        if (self.timestampSenderCall is not None):
+    def _stop_timestamp_sender(self):
+        """Stop looping call to _sendTimestampResponse."""
+        if self.timestamp_sender_call is not None:
             try:
-                self.timestampSenderCall.stop()
-            except AssertionError as e:
+                self.timestamp_sender_call.stop()
+            except AssertionError:
                 pass
 
-    def _reScheduleInactiveEvent(self):
-        """Method schedules call to _onInactive when client has been idle too long
-
-        Note:
-            When _reScheduleInactiveEvent is called any previous schedules will be cancelled and countdown will be reset
-        """
-        if (self.onInactiveCall is not None):
+    def _re_schedule_inactive_event(self):
+        """Schedule call to _onInactive when client has been idle too long."""
+        if self.on_inactive_call is not None:
             try:
-                self.onInactiveCall.cancel()
-            except (AlreadyCalled, AlreadyCancelled) as e:
+                self.on_inactive_call.cancel()
+            except (AlreadyCalled, AlreadyCancelled):
                 pass
-        self.onInactiveCall = reactor.callLater(
-            self.maxClientIdleTime, self._onInactive)
+        self.on_inactive_call = reactor.callLater(self.max_client_idle_time, self._on_inactive)
 
-    def _onInactive(self):
-        """Method that is executed when client has been inactive too long
-        """
+    def _on_inactive(self):
+        """Executed when client has been inactive too long."""
         try:
-            # Client is inactive, pause (to save bandwidth, cpu and memory)
-            self._sendResponseByType(36)
-            self._stopTimestampSender()
-            self._stopRealTimeListener(True)
-            self.connectionState.totalReset()
+            self._send_response_by_type(36)
+            self._stop_timestamp_sender()
+            self._stop_real_time_listener(True)
+            self.connection_state.total_reset()
         except psycopg2.InterfaceError as e:
-            # Connection to database is lost, better just terminate connection to make user reconnect with new db connection
-            self.logger.error(e, exc_info=1)
-            raise e
+            self.logger.error(e, exc_info=True)
+            raise
         except Exception as e:
-            # Log error to make us aware of unknow problem
-            self.logger.error(e, exc_info=1)
+            self.logger.warning('Exception in _on_inactive')
+            self.logger.warning(e, exc_info=False)
 
-    def _sendTimestampResponse(self):
-        """Send server timestamp to syncronize server and client
-
-        Notes:
-            This is also used to tell the client that we are still here
-            Most browser will disconnect if they do not hear anything in 300sec
-        """
+    def _send_timestamp_response(self):
+        """Send server timestamp to synchronize server and client."""
         try:
-            if (self.connectionState.latestHandledRequestId < self.connectionState.latestRequestId):
-                # server is busy with request, no point in doing this now
+            if self.connection_state.latest_handled_request_id < self.connection_state.latest_requestId:
                 return
-            data = {}
-            data["timestamp"] = int(time.time())
-            self._sendResponseByType(41, data)
+            data = {"timestamp": int(time.time())}
+            self._send_response_by_type(41, data)
         except psycopg2.InterfaceError as e:
-            # Connection to database is lost, better just terminate connection to make user reconnect with new db connection
-            self.logger.error(e, exc_info=1)
-            raise e
+            self.logger.error(e, exc_info=True)
+            raise
         except Exception as e:
-            # Log error to make us aware of unknow problem
-            self.logger.error(e, exc_info=1)
+            self.logger.warning('Exception in _send_timestamp_response')
+            self.logger.warning(e, exc_info=False)
 
-    def _sendResponseByType(self, payloadResponseType, data=None):
-        """Send specified response to client
+    def _send_response_by_type(self, payload_response_type, data=None):
+        """Send specified response to client."""
+        payload = {'payload_response_type': payload_response_type}
+        if data is not None:
+            payload['data'] = data
+        self._send_dict_response(payload)
 
-        Args:
-            payloadResponseType (int):  A number that specifies what type of response we are sending
-            data (dict):                The response data as a dict
-        """
-        if (data is not None):
-            payload = {
-                'payload_response_type': payloadResponseType, 'data': data}
-        else:
-            payload = {'payload_response_type': payloadResponseType}
-        self._sendDictResponse(payload)
-
-    def _sendDictResponse(self, payload):
-        """Send message dict payload to client
-
-        Args:
-            payload (Dict):  Response payload
-        """
+    def _send_dict_response(self, payload):
+        """Send message dict payload to client."""
         try:
-            jsonPayload = json.dumps(payload, ensure_ascii=True).encode('utf8')
-            if (jsonPayload is not None):
-                self.sendMessage(jsonPayload)
+            json_payload = json.dumps(payload, ensure_ascii=True).encode('utf8')
+            if json_payload is not None:
+                self.sendMessage(json_payload)
         except psycopg2.InterfaceError as e:
-            # Connection to database is lost, better just terminate connection to make user reconnect with new db connection
-            self.logger.error(e, exc_info=1)
-            raise e
+            self.logger.error(e, exc_info=True)
+            raise
         except Exception as e:
-            # Log error to make us aware of unknow problem
-            self.logger.warning(e, exc_info=1)
+            self.logger.warning('Exception in _send_dict_response')
+            self.logger.warning(e, exc_info=False)
 
-    def _updateState(self, request):
-        """Update the connection state based on request
+    def _update_state(self, request):
+        """Update the connection state based on request."""
+        if all(key in request for key in ["neLat", "neLng", "swLat", "swLng", "minutes"]):
+            self.connection_state.set_latest_map_bounds(
+                request["neLat"], request["neLng"], request["swLat"], request["swLng"]
+            )
 
-        Args:
-            request (Dict):    Request form client
-        """
-        if ("neLat" in request
-                and "neLng" in request
-                and "swLat" in request
-                and "swLng" in request
-                and "minutes" in request):
-            self.connectionState.setLatestMapBounds(
-                request["neLat"], request["neLng"], request["swLat"], request["swLng"])
+        if "onlyLatestPacket" in request:
+            self.connection_state.set_only_latest_packet_requested(request["onlyLatestPacket"] == 1)
 
-        if ("onlyLatestPacket" in request):
-            self.connectionState.setOnlyLatestPacketRequested(
-                (request["onlyLatestPacket"] == 1))
+        if "minutes" in request:
+            time = request.get("time")
+            self.connection_state.set_latest_minutes(request["minutes"], time)
 
-        if ("minutes" in request):
-            if ("time" in request):
-                self.connectionState.setLatestMinutes(
-                    request["minutes"], request["time"])
-            else:
-                self.connectionState.setLatestMinutes(request["minutes"], None)
-
-        if ("noRealTime" in request):
-            self.connectionState.disableRealTime()
+        if "noRealTime" in request:
+            self.connection_state.disable_real_time()

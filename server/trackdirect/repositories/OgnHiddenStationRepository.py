@@ -1,92 +1,86 @@
-from trackdirect.common.Repository import Repository
-from trackdirect.objects.OgnHiddenStation import OgnHiddenStation
+from ..common.Repository import Repository
+from ..objects.OgnHiddenStation import OgnHiddenStation
+import psycopg2
+from typing import Optional
 
 
 class OgnHiddenStationRepository(Repository):
-    """A Repository class for the OgnHiddenStation class
-    """
+    """A Repository class for the OgnHiddenStation class."""
 
     def __init__(self, db):
-        """The __init__ method.
+        """
+        Initialize the OgnHiddenStationRepository object.
 
         Args:
-            db (psycopg2.Connection): Database connection
+            db (psycopg2.Connection): Database connection.
         """
-        self.db = db
+        super().__init__(db)
 
-    def getObjectById(self, id):
-        """The getObjectById method is supposed to return an object based on the specified id in database
+    def get_object_by_id(self, id: int) -> Optional[OgnHiddenStation]:
+        """
+        Return an OgnHiddenStation object based on the specified id in the database.
 
         Args:
-            id (int):  Database row id
+            id (int): Database row id.
 
         Returns:
-            OgnHiddenStation
+            Optional[OgnHiddenStation]: The OgnHiddenStation object if found, otherwise None.
         """
-        selectCursor = self.db.cursor()
-        selectCursor.execute(
-            """select * from ogn_hidden_station where id = %s""", (id,))
-        record = selectCursor.fetchone()
+        cursor = self.db.cursor()
+        cursor.execute("SELECT * FROM ogn_hidden_station WHERE id = %s", (id,))
+        record = cursor.fetchone()
+        cursor.close()
 
-        dbObject = self.create()
-        if (record is not None):
-            dbObject = self.getObjectFromRecord(record)
-        else:
-            # station do not exists, return empty object
-            pass
+        if record is not None:
+            return self.get_object_from_record(record)
+        return None
 
-        selectCursor.close()
-        return dbObject
-
-    def getObjectByHashedName(self, hashedName, createNewIfMissing):
-        """The getObjectById method is supposed to return an object based on the specified id in database
+    def get_object_by_hashed_name(self, hashed_name: str, create_new_if_missing: bool) -> OgnHiddenStation:
+        """
+        Return an OgnHiddenStation object based on the specified hashed name in the database.
 
         Args:
-            hashedName (string):           Uniqe hash for station
-            createNewIfMissing (boolean):  Set to true if a new should be created if no one is found
+            hashed_name (str): Unique hash for the station.
+            create_new_if_missing (bool): Set to True if a new object should be created if none is found.
 
         Returns:
-            OgnHiddenStation instance
+            OgnHiddenStation: The OgnHiddenStation object.
         """
-        selectCursor = self.db.cursor()
-        selectCursor.execute(
-            """select * from ogn_hidden_station where hashed_name = %s""", (str(hashedName),))
-        record = selectCursor.fetchone()
+        cursor = self.db.cursor()
+        cursor.execute("SELECT * FROM ogn_hidden_station WHERE hashed_name = %s", (hashed_name,))
+        record = cursor.fetchone()
+        cursor.close()
 
-        if (record is not None):
-            dbObject = self.getObjectFromRecord(record)
-        elif (createNewIfMissing):
-            # not exist, create it
-            dbObject = self.create()
-            dbObject.hashedName = hashedName
-            dbObject.save()
-        else:
-            # ogn_device do not exists, return empty object
-            dbObject = self.create()
+        if record is not None:
+            return self.get_object_from_record(record)
+        elif create_new_if_missing:
+            db_object = self.create()
+            db_object.hashedName = hashed_name
+            db_object.save()
+            return db_object
+        return self.create()
 
-        selectCursor.close()
-        return dbObject
-
-    def getObjectFromRecord(self, record):
-        """Returns a OgnHiddenStation object based on the specified database record dict
+    def get_object_from_record(self, record: dict) -> OgnHiddenStation:
+        """
+        Return an OgnHiddenStation object based on the specified database record.
 
         Args:
-            record (dict):  A database record dict from the ogn_device database table
+            record (dict): A database record from the ogn_hidden_station table.
 
         Returns:
-            A OgnHiddenStation object
+            OgnHiddenStation: The OgnHiddenStation object.
         """
-        dbObject = self.create()
-        if (record is not None):
-            dbObject.id = int(record["id"])
-            dbObject.name = record["hashed_name"]
+        db_object = self.create()
+        if record is not None:
+            db_object.id = int(record["id"])
+            db_object.hashedName = record["hashed_name"]
+        return db_object
 
-        return dbObject
-
-    def create(self):
-        """Creates an empty OgnHiddenStation object
+    def create(self) -> OgnHiddenStation:
+        """
+        Create an empty OgnHiddenStation object.
 
         Returns:
-            OgnHiddenStation instance
+            OgnHiddenStation: The new OgnHiddenStation object.
         """
         return OgnHiddenStation(self.db)

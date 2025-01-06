@@ -1,50 +1,49 @@
-from trackdirect.common.Model import Model
+from server.trackdirect.common.Model import Model
 
 
 class Marker(Model):
-    """Marker represents the marker that each visible packet has, two packet with the same marker id will be connected on map
+    """Marker represents the marker that each visible packet has.
+    Two packets with the same marker id will be connected on the map.
     """
 
     def __init__(self, db):
-        """The __init__ method.
+        """Initialize the Marker instance.
 
         Args:
             db (psycopg2.Connection): Database connection
         """
-        Model.__init__(self, db)
-        self.id = None
+        super().__init__(db)
 
-    def validate(self):
-        """Returns true on success (when object content is valid), otherwise false
+    def validate(self) -> bool:
+        """Validate the object content.
 
         Returns:
-            True on success otherwise False
+            bool: True if the object content is valid, otherwise False
         """
         return True
 
-    def insert(self):
-        """Method to call when we want to save a new object to database
+    def insert(self) -> bool:
+        """Insert a new object into the database.
 
-        Since packet will be inserted in batch we never use this method.
+        Since packets will be inserted in batch, this method is not used.
 
         Returns:
-            True on success otherwise False
+            bool: True on success, otherwise False
         """
-        if (not self.isExistingObject()):
+        if not self.is_existing_object():
             cursor = self.db.cursor()
-            cursor.execute("""select nextval('marker_seq')""")
+            cursor.execute("""SELECT nextval('marker_seq')""")
             self.id = cursor.fetchone()[0]
             cursor.close()
             return True
-        else:
-            return False
+        return False
 
-    def update(self):
-        """Method to call when we want to save changes to database
+    def update(self) -> bool:
+        """Update the object in the database.
 
-        Since packet will be updated in batch we never use this method.
+        Since packets will be updated in batch, this method is not used.
 
         Returns:
-            True on success otherwise False
+            bool: True on success, otherwise False
         """
         return False

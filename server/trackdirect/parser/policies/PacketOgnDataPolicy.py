@@ -1,240 +1,225 @@
 import logging
-from twisted.python import log
-
-from trackdirect.parser.policies.AprsPacketSymbolPolicy import AprsPacketSymbolPolicy
-from trackdirect.parser.policies.PacketPathTcpPolicy import PacketPathTcpPolicy
+from server.trackdirect.parser.policies.AprsPacketSymbolPolicy import AprsPacketSymbolPolicy
+from server.trackdirect.parser.policies.PacketPathTcpPolicy import PacketPathTcpPolicy
 
 
-class PacketOgnDataPolicy():
-    """PacketOgnDataPolicy can answer questions about OGN data in the packet
-    """
+class PacketOgnDataPolicy:
+    """PacketOgnDataPolicy can answer questions about OGN data in the packet."""
 
-    def __init__(self, data, ognDeviceRepository, sourceId):
-        """The __init__ method.
+    def __init__(self, data, ogn_device_repository, source_id):
+        """
+        The __init__ method.
 
         Args:
-            data (dict):                          Raw packet data
-            ognDeviceRepository (OgnDeviceRepository):  OgnDeviceRepository instance
-            sourceId (int):                       Source Id
+            data (dict): Raw packet data
+            ogn_device_repository (OgnDeviceRepository): OgnDeviceRepository instance
+            source_id (int): Source Id
         """
         self.data = data
-        self.ognDeviceRepository = ognDeviceRepository
-
+        self.ogn_device_repository = ogn_device_repository
         self.logger = logging.getLogger('trackdirect')
 
-        self.isOgnPositionPacket = self.isOgnPositionPacket(sourceId)
-        self.isAllowedToTrack = True
-        self.isAllowedToIdentify = True
+        self.is_ogn_position_packet = self.is_ogn_position_packet(source_id)
+        self.is_allowed_to_track = True
+        self.is_allowed_to_identify = True
 
         self.result = {}
         self._parse()
 
-    def getOgnData(self):
-        """Returnes raw OGN data
+    def get_ogn_data(self):
+        """
+        Returns raw OGN data.
 
         Returns:
-            Dict of OGN data
+            dict: OGN data
         """
         return self.result
 
-    def isOgnPositionPacket(self, sourceId):
-        """Returnes true if packet is a OGN Position packet
+    def is_ogn_position_packet(self, source_id):
+        """
+        Returns true if packet is an OGN Position packet.
 
         Args:
-            sourceId (int): Source Id
+            source_id (int): Source Id
 
         Returns:
-            Boolean
+            bool: True if OGN Position packet, otherwise False
         """
-        if (sourceId == 5):
-            if ("comment" in self.data
-                    and self.data["comment"] is not None
-                    and len(self.data["comment"].strip()) > 10
-                    and self.data["comment"].strip().startswith("id")):
+        if source_id == 5:
+            if self._is_valid_comment() and self.data["comment"].strip().startswith("id"):
                 return True
 
-            symbol = self.data['symbol'] if ('symbol' in self.data) else None
-            symbolTable = self.data['symbol_table'] if (
-                'symbol_table' in self.data) else None
-            aprsPacketSymbolPolicy = AprsPacketSymbolPolicy()
-            if (aprsPacketSymbolPolicy.isMaybeMovingSymbol(symbol, symbolTable)):
+            symbol = self.data.get('symbol')
+            symbol_table = self.data.get('symbol_table')
+            aprs_packet_symbol_policy = AprsPacketSymbolPolicy()
+            if aprs_packet_symbol_policy.is_maybe_moving_symbol(symbol, symbol_table):
                 return True
         else:
-            if ("comment" in self.data
-                    and self.data["comment"] is not None
-                    and len(self.data["comment"].strip()) > 10
-                    and self.data["comment"].strip().startswith("id")
-                    and "fpm " in self.data["comment"] + " "
-                    and "rot " in self.data["comment"] + " "
-                    and "dB " in self.data["comment"] + " "):
+            if (self._is_valid_comment() and self.data["comment"].strip().startswith("id")
+                    and all(keyword in self.data["comment"] + " " for keyword in ["fpm ", "rot ", "dB "])):
                 return True
         return False
 
+    def _is_valid_comment(self):
+        """Check if the comment field is valid."""
+        return "comment" in self.data and self.data["comment"] is not None and len(self.data["comment"].strip()) > 10
+
     def _parse(self):
-        """Parse the OGN data in packet
-        """
-        if (not self.isOgnPositionPacket):
+        """Parse the OGN data in packet."""
+        if not self.is_ogn_position_packet:
             self.result = None
-        else:
-            packetPathTcpPolicy = PacketPathTcpPolicy(self.data['path'])
-            if (not packetPathTcpPolicy.isSentByTCP()):
-                self.isAllowedToIdentify = False
+            return
 
-            if ("comment" in self.data and self.data["comment"] is not None):
-                ognParts = self.data["comment"].split()
-                for part in ognParts:
-                    if (part.startswith('id')):
-                        part = part.replace("-", "")
-                        self._parseSenderAddress(part)
-                        self._parseSenderDetails(part)
+        packet_path_tcp_policy = PacketPathTcpPolicy(self.data['path'])
+        if not packet_path_tcp_policy.is_sent_by_tcp():
+            self.is_allowed_to_identify = False
 
-                    elif (part.endswith('fpm')):
-                        self._parseClimbRate(part)
+        if "comment" in self.data and self.data["comment"] is not None:
+            ogn_parts = self.data["comment"].split()
+            for part in ogn_parts:
+                if part.startswith('id'):
+                    part = part.replace("-", "")
+                    self._parse_sender_address(part)
+                    self._parse_sender_details(part)
+                elif part.endswith('fpm'):
+                    self._parse_climb_rate(part)
+                elif part.endswith('rot'):
+                    self._parse_turn_rate(part)
+                elif part.endswith('dB'):
+                    if self.is_allowed_to_identify and self.is_allowed_to_track:
+                        self._parse_signal_to_noise_ratio(part)
+                elif part.endswith('e'):
+                    if self.is_allowed_to_identify and self.is_allowed_to_track:
+                        self._parse_bit_errors_corrected(part)
+                elif part.endswith('kHz'):
+                    if self.is_allowed_to_identify and self.is_allowed_to_track:
+                        self._parse_frequency_offset(part)
+                if not self.is_allowed_to_track:
+                    return
 
-                    elif (part.endswith('rot')):
-                        self._parseTurnRate(part)
+        if not self.is_allowed_to_identify and 'ogn_sender_address' in self.result:
+            self.result['ogn_sender_address'] = None
 
-                    elif (part.endswith('dB')):
-                        if (self.isAllowedToIdentify and self.isAllowedToTrack):
-                            self._parseSignalToNoiseRatio(part)
-
-                    elif (part.endswith('e')):
-                        if (self.isAllowedToIdentify and self.isAllowedToTrack):
-                            self._parseBitErrorsCorrected(part)
-
-                    elif (part.endswith('kHz')):
-                        if (self.isAllowedToIdentify and self.isAllowedToTrack):
-                            self._parseFrequencyOffset(part)
-                    if (not self.isAllowedToTrack):
-                        return
-
-        if (not self.isAllowedToIdentify):
-            if ('ogn_sender_address' in self.result):
-                self.result['ogn_sender_address'] = None
-
-    def _parseSenderAddress(self, content):
-        """Parse th OGN sender address
-
-        Arguments:
-            content (string) :  String that contains information to parse
+    def _parse_sender_address(self, content):
         """
-        if ('ogn_sender_address' not in self.result):
-            self.isAllowedToIdentify = True
+        Parse the OGN sender address.
+
+        Args:
+            content (str): String that contains information to parse
+        """
+        if 'ogn_sender_address' not in self.result:
+            self.is_allowed_to_identify = True
             self.result['ogn_sender_address'] = content[4:10].strip()
 
-            ognDevice = self.ognDeviceRepository.getObjectByDeviceId(
-                self.result['ogn_sender_address'])
-            if (ognDevice.isExistingObject() and not ognDevice.tracked):
-                # Pilot do not want to be tracked, so we skip saving the packet
-                self.isAllowedToIdentify = False
-                self.isAllowedToTrack = False
-
-            elif (self.result['ogn_sender_address'] == 'ICAFFFFFF'):
-                # The Device ID ICAFFFFFF is used by several aircrafts, we can not know what to do with them...
-                self.isAllowedToIdentify = False
-                self.isAllowedToTrack = False
-
-            elif (not ognDevice.isExistingObject() or not ognDevice.identified):
-                # Pilot has not approved to show identifiable data, so we make up a random station name and clear all identifiable data
-                self.isAllowedToIdentify = False
+            ogn_device = self.ogn_device_repository.get_object_by_device_id(self.result['ogn_sender_address'])
+            if ogn_device.device_id is not None and not ogn_device.tracked:
+                self.is_allowed_to_identify = False
+                self.is_allowed_to_track = False
+            elif self.result['ogn_sender_address'] == 'ICAFFFFFF':
+                self.is_allowed_to_identify = False
+                self.is_allowed_to_track = False
+            elif ogn_device.device_id is not None and not ogn_device.identified:
+                self.is_allowed_to_identify = False
         else:
-            self.isAllowedToIdentify = False
+            self.is_allowed_to_identify = False
 
-    def _parseSenderDetails(self, content):
-        """Parse OGN aircraft type and OGN address type
-
-        Arguments:
-            content (string) :  String that contains information to parse
+    def _parse_sender_details(self, content):
         """
-        if ('ogn_aircraft_type_id' not in self.result):
+        Parse OGN aircraft type and OGN address type.
+
+        Args:
+            content (str): String that contains information to parse
+        """
+        if 'ogn_aircraft_type_id' not in self.result:
             try:
-                ognSenderDetailsHex = content[2:4]
-                ognSenderDetailsBinary = bin(
-                    int(ognSenderDetailsHex, 16))[2:].zfill(8)
+                ogn_sender_details_hex = content[2:4]
+                ogn_sender_details_binary = bin(int(ogn_sender_details_hex, 16))[2:].zfill(8)
 
-                stealth = ognSenderDetailsBinary[0:1]
-                noTracking = ognSenderDetailsBinary[1:2]
-                ognAircraftTypeIdBinary = ognSenderDetailsBinary[2:6]
-                ognAddressTypeIdBinary = ognSenderDetailsBinary[6:8]
+                stealth = ogn_sender_details_binary[0]
+                no_tracking = ogn_sender_details_binary[1]
+                ogn_aircraft_type_id_binary = ogn_sender_details_binary[2:6]
+                ogn_address_type_id_binary = ogn_sender_details_binary[6:8]
 
-                self.result['ogn_aircraft_type_id'] = int(
-                    ognAircraftTypeIdBinary, 2)
-                if (self.result['ogn_aircraft_type_id'] == 0 or self.result['ogn_aircraft_type_id'] > 15):
+                self.result['ogn_aircraft_type_id'] = int(ogn_aircraft_type_id_binary, 2)
+                if self.result['ogn_aircraft_type_id'] == 0 or self.result['ogn_aircraft_type_id'] > 15:
                     self.result['ogn_aircraft_type_id'] = None
 
-                self.result['ogn_address_type_id'] = int(
-                    ognAddressTypeIdBinary, 2)
-                if (self.result['ogn_address_type_id'] == 0 or self.result['ogn_address_type_id'] > 4):
+                self.result['ogn_address_type_id'] = int(ogn_address_type_id_binary, 2)
+                if self.result['ogn_address_type_id'] == 0 or self.result['ogn_address_type_id'] > 4:
                     self.result['ogn_address_type_id'] = None
 
             except ValueError:
-                # Assume that we should track this aircraft (we should not receive packets that has the noTracking or stealth flag set)
-                noTracking = '0'
+                no_tracking = '0'
                 stealth = '0'
 
-            if (stealth == '1' or noTracking == '1'):
-                self.isAllowedToIdentify = False
-                self.isAllowedToTrack = False
+            if stealth == '1' or no_tracking == '1':
+                self.is_allowed_to_identify = False
+                self.is_allowed_to_track = False
 
-    def _parseClimbRate(self, content):
-        """Parse OGN climb rate
-
-        Arguments:
-            content (string) :  String that contains information to parse
+    def _parse_climb_rate(self, content):
         """
-        if ('ogn_climb_rate' not in self.result and content.endswith('fpm')):
+        Parse OGN climb rate.
+
+        Args:
+            content (str): String that contains information to parse
+        """
+        if 'ogn_climb_rate' not in self.result and content.endswith('fpm'):
             content = content.replace("fpm", "")
             try:
                 self.result['ogn_climb_rate'] = int(content)
             except ValueError:
                 pass
 
-    def _parseTurnRate(self, content):
-        """Parse OGN turn rate
-
-        Arguments:
-            content (string) :  String that contains information to parse
+    def _parse_turn_rate(self, content):
         """
-        if ('ogn_turn_rate' not in self.result and content.endswith('rot')):
+        Parse OGN turn rate.
+
+        Args:
+            content (str): String that contains information to parse
+        """
+        if 'ogn_turn_rate' not in self.result and content.endswith('rot'):
             content = content.replace("rot", "")
             try:
                 self.result['ogn_turn_rate'] = float(content)
             except ValueError:
                 pass
 
-    def _parseSignalToNoiseRatio(self, content):
-        """Parse OGN SNR
-
-        Arguments:
-            content (string) :  String that contains information to parse
+    def _parse_signal_to_noise_ratio(self, content):
         """
-        if ('ogn_signal_to_noise_ratio' not in self.result and content.endswith('dB')):
+        Parse OGN SNR.
+
+        Args:
+            content (str): String that contains information to parse
+        """
+        if 'ogn_signal_to_noise_ratio' not in self.result and content.endswith('dB'):
             content = content.replace("dB", "")
             try:
                 self.result['ogn_signal_to_noise_ratio'] = float(content)
             except ValueError:
                 pass
 
-    def _parseBitErrorsCorrected(self, content):
-        """Parse OGN number of bit errors corrected in the packet upon reception
-
-        Arguments:
-            content (string) :  String that contains information to parse
+    def _parse_bit_errors_corrected(self, content):
         """
-        if ('ogn_bit_errors_corrected' not in self.result and content.endswith('e')):
+        Parse OGN number of bit errors corrected in the packet upon reception.
+
+        Args:
+            content (str): String that contains information to parse
+        """
+        if 'ogn_bit_errors_corrected' not in self.result and content.endswith('e'):
             content = content.replace("e", "")
             try:
                 self.result['ogn_bit_errors_corrected'] = int(content)
             except ValueError:
                 pass
 
-    def _parseFrequencyOffset(self, content):
-        """Parse OGN frequency offset measured upon reception
-
-        Arguments:
-            content (string) :  String that contains information to parse
+    def _parse_frequency_offset(self, content):
         """
-        if ('ogn_frequency_offset' not in self.result and content.endswith('kHz')):
+        Parse OGN frequency offset measured upon reception.
+
+        Args:
+            content (str): String that contains information to parse
+        """
+        if 'ogn_frequency_offset' not in self.result and content.endswith('kHz'):
             content = content.replace("kHz", "")
             try:
                 self.result['ogn_frequency_offset'] = float(content)

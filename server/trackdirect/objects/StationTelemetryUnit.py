@@ -1,4 +1,4 @@
-from trackdirect.common.Model import Model
+from server.trackdirect.common.Model import Model
 
 
 class StationTelemetryUnit(Model):
@@ -11,12 +11,11 @@ class StationTelemetryUnit(Model):
         Args:
             db (psycopg2.Connection): Database connection
         """
-        Model.__init__(self, db)
-        self.id = None
-        self.stationId = None
-        self.createdTs = None
-        self.latestTs = None
-        self.validToTs = None
+        super().__init__(db)
+        self.station_id = None
+        self.created_ts = None
+        self.latest_ts = None
+        self.valid_to_ts = None
         self.u1 = None
         self.u2 = None
         self.u3 = None
@@ -31,110 +30,120 @@ class StationTelemetryUnit(Model):
         self.l7 = None
         self.l8 = None
 
-    def validate(self):
+    def validate(self) -> bool:
         """Returns true on success (when object content is valid), otherwise false
 
         Returns:
             True on success otherwise False
         """
-        if (type(self.stationId) != int or self.stationId <= 0):
-            return False
+        return isinstance(self.station_id, int) and self.station_id > 0
 
-        return True
-
-    def save(self):
+    def save(self) -> bool:
         """Save object data to database if attribute data is valid
 
         Returns:
             Returns true on success otherwise false
         """
-        if (self.validate()):
-            if (self.isExistingObject()):
+        if self.validate():
+            if self.is_existing_object():
                 return self.update()
             else:
                 cursor = self.db.cursor()
-                cursor.execute("""update station_telemetry_unit
-                    set latest_ts = %s
-                    where station_id = %s
-                        and valid_to_ts is null
-                        and u1 = %s
-                        and u2 = %s
-                        and u3 = %s
-                        and u4 = %s
-                        and u5 = %s
-                        and l1 = %s
-                        and l2 = %s
-                        and l3 = %s
-                        and l4 = %s
-                        and l5 = %s
-                        and l6 = %s
-                        and l7 = %s
-                        and l8 = %s""",
-                               (self.createdTs,
-                                self.stationId,
-                                self.u1,
-                                self.u2,
-                                self.u3,
-                                self.u4,
-                                self.u5,
-                                self.l1,
-                                self.l2,
-                                self.l3,
-                                self.l4,
-                                self.l5,
-                                self.l6,
-                                self.l7,
-                                self.l8))
+                cursor.execute(
+                    """UPDATE station_telemetry_unit
+                    SET latest_ts = %s
+                    WHERE station_id = %s
+                        AND valid_to_ts IS NULL
+                        AND u1 = %s
+                        AND u2 = %s
+                        AND u3 = %s
+                        AND u4 = %s
+                        AND u5 = %s
+                        AND l1 = %s
+                        AND l2 = %s
+                        AND l3 = %s
+                        AND l4 = %s
+                        AND l5 = %s
+                        AND l6 = %s
+                        AND l7 = %s
+                        AND l8 = %s""",
+                    (
+                        self.created_ts,
+                        self.station_id,
+                        self.u1,
+                        self.u2,
+                        self.u3,
+                        self.u4,
+                        self.u5,
+                        self.l1,
+                        self.l2,
+                        self.l3,
+                        self.l4,
+                        self.l5,
+                        self.l6,
+                        self.l7,
+                        self.l8,
+                    ),
+                )
 
-                if (cursor.rowcount == 0):
+                if cursor.rowcount == 0:
+                    cursor.close()
                     return self.insert()
                 else:
-                    # We do not insert it since it was equal to the existsing row
+                    cursor.close()
+                    # We do not insert it since it was equal to the existing row
                     return True
         return False
 
-    def insert(self):
+    def insert(self) -> bool:
         """Method to call when we want to save a new object to database
 
         Returns:
             True on success otherwise False
         """
-        if (not self.isExistingObject()):
-            insertCursor = self.db.cursor()
-            insertCursor.execute("""update station_telemetry_unit
-                set valid_to_ts = %s
-                where station_id = %s
-                and valid_to_ts is null""",
-                                 (self.createdTs,
-                                  self.stationId))
+        if not self.is_existing_object():
+            cursor = self.db.cursor()
+            cursor.execute(
+                """UPDATE station_telemetry_unit
+                SET valid_to_ts = %s
+                WHERE station_id = %s
+                AND valid_to_ts IS NULL""",
+                (self.created_ts, self.station_id),
+            )
 
-            insertCursor.execute("""insert into station_telemetry_unit(station_id, created_ts, latest_ts, u1, u2, u3, u4, u5, l1, l2, l3, l4, l5, l6, l7, l8)
-                values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                                 (self.stationId,
-                                  self.createdTs,
-                                  self.createdTs,
-                                  self.u1,
-                                  self.u2,
-                                  self.u3,
-                                  self.u4,
-                                  self.u5,
-                                  self.l1,
-                                  self.l2,
-                                  self.l3,
-                                  self.l4,
-                                  self.l5,
-                                  self.l6,
-                                  self.l7,
-                                  self.l8))
-
+            cursor.execute(
+                """INSERT INTO station_telemetry_unit(
+                    station_id, created_ts, latest_ts, u1, u2, u3, u4, u5, l1, l2, l3, l4, l5, l6, l7, l8)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (
+                    self.station_id,
+                    self.created_ts,
+                    self.created_ts,
+                    self.u1,
+                    self.u2,
+                    self.u3,
+                    self.u4,
+                    self.u5,
+                    self.l1,
+                    self.l2,
+                    self.l3,
+                    self.l4,
+                    self.l5,
+                    self.l6,
+                    self.l7,
+                    self.l8,
+                ),
+            )
+            cursor.close()
             return True
         else:
             return False
 
-    def update(self):
+    def update(self) -> bool:
         """Method to call when we want to save changes to database
 
         Returns:
             True on success otherwise False
         """
+        # Implement the update logic here
         return False

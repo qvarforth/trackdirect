@@ -1,23 +1,18 @@
-class PacketKillCharPolicy():
-    """The PacketKillCharPolicy class handles logic related to packet kill character
-    """
+class PacketKillCharPolicy:
+    """The PacketKillCharPolicy class handles logic related to packet kill character."""
 
     def __init__(self):
-        """The __init__ method.
-        """
+        """The __init__ method."""
+        pass
 
-    def hasKillCharacter(self, data):
-        """A packet may contain a kill char, if exists the object/item should be hidden on map
+    def has_kill_character(self, data):
+        """A packet may contain a kill char, if exists the object/item should be hidden on map.
 
         Args:
-            data (dict):   Raw packet data
+            data (dict): Raw packet data
 
         Returns:
-            Boolean
+            bool: True if the object name ends with '_', False otherwise
         """
-        if ("object_name" in data
-                and data["object_name"] is not None
-                and data["object_name"] != ''
-                and data["object_name"].endswith('_')):
-            return True
-        return False
+        object_name = data.get("object_name")
+        return bool(object_name and object_name.endswith('_'))

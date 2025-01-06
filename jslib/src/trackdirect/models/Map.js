@@ -9,11 +9,24 @@ trackdirect.models.Map = function (mapElementId, options) {
 
   // Call the parent constructor
   if (typeof google === "object" && typeof google.maps === "object") {
-    google.maps.Map.call(
-      this,
+    const googleMap = new google.maps.Map(
       document.getElementById(mapElementId),
-      this._getGoolgeMapOptions()
+      this._getGoogleMapOptions()
     );
+
+    for (const key of Object.keys(this)) {
+      googleMap[key] = this[key];
+    }
+    for (const key of Object.getOwnPropertyNames(
+      Object.getPrototypeOf(this)
+    )) {
+      if (key !== "constructor" && typeof this[key] === "function") {
+        googleMap[key] = this[key];
+      }
+    }
+
+    googleMap._initMap();
+    return googleMap;
   } else if (typeof L === "object") {
     L.Map.call(
       this,
@@ -26,9 +39,8 @@ trackdirect.models.Map = function (mapElementId, options) {
         position: "bottomright",
       })
       .addTo(this);
+    this._initMap();
   }
-
-  this._initMap();
 };
 if (typeof google === "object" && typeof google.maps === "object") {
   trackdirect.models.Map.prototype = Object.create(google.maps.Map.prototype);
@@ -111,9 +123,8 @@ trackdirect.models.Map.prototype._initMap = function () {
   // create kmlLayer object from URL
   if (typeof google === "object" && typeof google.maps === "object") {
     if (typeof this._tdMapOptions.mid !== "undefined") {
-      var kmlUrl =
-        "https://www.google.com/maps/d/u/0/kml?mid=" + this._tdMapOptions.mid;
-      var kmlLayer = new google.maps.KmlLayer(kmlUrl, { map: this });
+      let kmlUrl = "https://www.google.com/maps/d/u/0/kml?mid=" + this._tdMapOptions.mid;
+      let kmlLayer = new google.maps.KmlLayer(kmlUrl, {map: this});
     }
   }
 };
@@ -144,7 +155,7 @@ trackdirect.models.Map.prototype.setCenter = function (pos, zoom) {
     zoom = typeof zoom !== "undefined" ? zoom : this.getZoom();
     L.Map.prototype.setView.call(this, pos, zoom);
   }
-  this._renderCordinatesContainer(pos);
+  this._renderCoordinatesContainer(pos);
 };
 
 /**
@@ -153,16 +164,16 @@ trackdirect.models.Map.prototype.setCenter = function (pos, zoom) {
  */
 trackdirect.models.Map.prototype.getCenterLiteral = function () {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var latLng = google.maps.Map.prototype.getCenter.call(this);
+    let latLng = google.maps.Map.prototype.getCenter.call(this);
     if (typeof latLng !== "undefined" && typeof latLng.lat === "function") {
-      return { lat: latLng.lat(), lng: latLng.lng() };
+      return {lat: latLng.lat(), lng: latLng.lng()};
     } else {
       return latLng;
     }
   } else if (typeof L === "object") {
-    var latLng = L.Map.prototype.getCenter.call(this);
+    let latLng = L.Map.prototype.getCenter.call(this);
     if (typeof latLng !== "undefined") {
-      return { lat: latLng.lat, lng: latLng.lng };
+      return {lat: latLng.lat, lng: latLng.lng};
     } else {
       return latLng;
     }
@@ -176,8 +187,8 @@ trackdirect.models.Map.prototype.getCenterLiteral = function () {
  */
 trackdirect.models.Map.prototype.fitBounds = function (bounds) {
   if (typeof google === "object" && typeof google.maps === "object") {
-    var latLngBounds = new google.maps.LatLngBounds();
-    for (var i = 0; i < bounds.length; i++) {
+    let latLngBounds = new google.maps.LatLngBounds();
+    for (let i = 0; i < bounds.length; i++) {
       latLngBounds.extend(bounds[i]);
     }
     google.maps.Map.prototype.fitBounds.call(this, latLngBounds);
@@ -191,7 +202,7 @@ trackdirect.models.Map.prototype.fitBounds = function (bounds) {
  * @param {LatLngLiteral} pos
  */
 trackdirect.models.Map.prototype.setCenterByStationId = function (stationId) {
-  var latestVisibleMarker =
+  let latestVisibleMarker =
     this.markerCollection.getStationLatestVisibleMarker(stationId);
   if (latestVisibleMarker !== null) {
     this.setCenter(latestVisibleMarker.packet.getLatLngLiteral());
@@ -245,7 +256,7 @@ trackdirect.models.Map.prototype.getNumberOfNewMarkersToShow = function () {
 trackdirect.models.Map.prototype.showNewMarkersInQueue = function (track) {
   track = typeof track !== "undefined" ? track : true;
 
-  var oldestAllowedTrackingTimestamp = 0;
+  let oldestAllowedTrackingTimestamp = 0;
   if (this.state.onlyTrackRecentPackets) {
     oldestAllowedTrackingTimestamp = Math.floor(Date.now() / 1000) - 60;
   }
@@ -254,7 +265,7 @@ trackdirect.models.Map.prototype.showNewMarkersInQueue = function (track) {
     if (!this.markerCollection.isExistingMarker(markerIdKey)) {
       continue;
     }
-    var marker = this.markerCollection.getMarker(markerIdKey);
+    let marker = this.markerCollection.getMarker(markerIdKey);
     trackdirect.services.callbackExecutor.addWithPriority(
       marker,
       marker.showCompleteMarker,
@@ -269,7 +280,7 @@ trackdirect.models.Map.prototype.showNewMarkersInQueue = function (track) {
         this.state.trackStationId !== null &&
         this.state.trackStationId == marker.packet.station_id &&
         this.state.getClientTimestamp(marker.packet.timestamp) >
-          oldestAllowedTrackingTimestamp
+        oldestAllowedTrackingTimestamp
       ) {
         trackdirect.services.callbackExecutor.addWithPriority(
           this,
@@ -437,9 +448,9 @@ trackdirect.models.Map.prototype.getMid = function () {
  */
 trackdirect.models.Map.prototype.resetAllMarkers = function () {
   while (this.markerCollection.getNumberOfMarkers() > 0) {
-    var i = this.markerCollection.getNumberOfMarkers();
+    let i = this.markerCollection.getNumberOfMarkers();
     while (i--) {
-      var marker = this.markerCollection.getMarker(i);
+      let marker = this.markerCollection.getMarker(i);
       if (marker !== null) {
         marker.stopToOldTimeout();
         marker.stopDirectionPolyline();
@@ -447,7 +458,7 @@ trackdirect.models.Map.prototype.resetAllMarkers = function () {
         marker.hideMarkerPrevPosition();
         marker.hideMarkerTail();
 
-        var stationCoverage = this.markerCollection.getStationCoverage(marker.packet.station_id);
+        let stationCoverage = this.markerCollection.getStationCoverage(marker.packet.station_id);
         if (stationCoverage) {
           stationCoverage.hide();
         }
@@ -508,7 +519,7 @@ trackdirect.models.Map.prototype.openMarkerInfoWindow = function (
 trackdirect.models.Map.prototype.openLatestStationInfoWindow = function (
   stationId
 ) {
-  var latestVisibleMarker =
+  let latestVisibleMarker =
     this.markerCollection.getStationLatestVisibleMarker(stationId);
   if (latestVisibleMarker !== null) {
     // open marker info-window since this marker replaced a previous one
@@ -540,7 +551,7 @@ trackdirect.models.Map.prototype.openPolylineInfoWindow = function (
 trackdirect.models.Map.prototype._addInfoWindowListeners = function (
   infoWindow
 ) {
-  var me = this;
+  let me = this;
   infoWindow.addTdListener("station-tail-needed", function (stationId) {
     me._emitTdEventListeners("station-tail-needed", stationId);
   });
@@ -567,7 +578,7 @@ trackdirect.models.Map.prototype._addInfoWindowListeners = function (
     arg
   ) {
     if (event in this._tdEventListeners) {
-      for (var i = 0; i < this._tdEventListeners[event].length; i++) {
+      for (let i = 0; i < this._tdEventListeners[event].length; i++) {
         this._tdEventListeners[event][i](arg);
       }
     }
@@ -581,7 +592,7 @@ trackdirect.models.Map.prototype._addInfoWindowListeners = function (
   if (this._tdEventTimeout != null) {
     clearTimeout(this._tdEventTimeout);
   }
-  var me = this;
+  let me = this;
   this._tdEventTimeout = window.setTimeout(function () {
     me._emitTdEventListeners("change");
     me._tdEventTimeout = null;
@@ -643,9 +654,9 @@ trackdirect.models.Map.prototype._updateLeafletTileLayer = function () {
     }
 
     if (typeof L.mapboxGL === "function") {
-      var attribution = "";
-      var accessToken = "no-token";
-      var style = "";
+      let attribution = "";
+      let accessToken = "no-token";
+      let style = "";
 
       if ("mapboxGLStyle" in this._tdMapOptions) {
         style = this._tdMapOptions["mapboxGLStyle"];
@@ -664,7 +675,7 @@ trackdirect.models.Map.prototype._updateLeafletTileLayer = function () {
       this.addLayer(this._leafletTileLayer);
       this.attributionControl.addAttribution(attribution);
     } else {
-      var options = {};
+      let options = {};
       if (isHighDensity()) {
         options["ppi"] = "320";
         options["size"] = "512";
@@ -687,8 +698,8 @@ trackdirect.models.Map.prototype._updateLeafletTileLayer = function () {
  */
 trackdirect.models.Map.prototype._updateMapContent = function () {
   if (this.getBounds() != null) {
-    var previousVisibleMapSectors = [];
-    for (var i = 0; i < this._visibleMapSectors.length; i++) {
+    let previousVisibleMapSectors = [];
+    for (let i = 0; i < this._visibleMapSectors.length; i++) {
       previousVisibleMapSectors.push(this._visibleMapSectors[i]);
     }
 
@@ -723,14 +734,14 @@ trackdirect.models.Map.prototype._updateMapContent = function () {
  */
 trackdirect.models.Map.prototype._isAnyMarkerDetailsVisible = function () {
   // This is only needed when zooming (when moving the regular show-marker will also show the details)
-  var showPrevPosition =
+  let showPrevPosition =
     this.getZoom() >= trackdirect.settings.minZoomForMarkerPrevPosition &&
     this._currentContentZoom <
-      trackdirect.settings.minZoomForMarkerPrevPosition;
-  var showMarkerTail =
+    trackdirect.settings.minZoomForMarkerPrevPosition;
+  let showMarkerTail =
     this.getZoom() >= trackdirect.settings.minZoomForMarkerTail &&
     this._currentContentZoom < trackdirect.settings.minZoomForMarkerTail;
-  var showMarkerLabel =
+  let showMarkerLabel =
     this.getZoom() >= trackdirect.settings.minZoomForMarkerLabel &&
     this._currentContentZoom < trackdirect.settings.minZoomForMarkerLabel;
 
@@ -746,14 +757,14 @@ trackdirect.models.Map.prototype._isAnyMarkerDetailsVisible = function () {
  */
 trackdirect.models.Map.prototype._isAnyMarkerDetailsHidden = function () {
   // This is only needed when zooming (when moving the regular show-marker will also show the details)
-  var hidePrevPosition =
+  let hidePrevPosition =
     this.getZoom() < trackdirect.settings.minZoomForMarkerPrevPosition &&
     this._currentContentZoom >=
-      trackdirect.settings.minZoomForMarkerPrevPosition;
-  var hideMarkerTail =
+    trackdirect.settings.minZoomForMarkerPrevPosition;
+  let hideMarkerTail =
     this.getZoom() < trackdirect.settings.minZoomForMarkerTail &&
     this._currentContentZoom >= trackdirect.settings.minZoomForMarkerTail;
-  var hideMarkerLabel =
+  let hideMarkerLabel =
     this.getZoom() < trackdirect.settings.minZoomForMarkerLabel &&
     this._currentContentZoom >= trackdirect.settings.minZoomForMarkerLabel;
 
@@ -767,14 +778,14 @@ trackdirect.models.Map.prototype._isAnyMarkerDetailsHidden = function () {
  * Show markers details that should be visible in visible map sectors
  */
 trackdirect.models.Map.prototype._showVisibleMarkerDetails = function () {
-  for (var i = 0; i < this._visibleMapSectors.length; i++) {
-    var mapSector = this._visibleMapSectors[i];
-    var mapSectorMarkerKeys =
+  for (let i = 0; i < this._visibleMapSectors.length; i++) {
+    let mapSector = this._visibleMapSectors[i];
+    let mapSectorMarkerKeys =
       this.markerCollection.getMapSectorMarkerKeys(mapSector);
     // Array with markers fo this sector exists, we have something to show
-    for (var j = 0; j < mapSectorMarkerKeys.length; j++) {
-      var markerIdKey = mapSectorMarkerKeys[j];
-      var marker = this.markerCollection.getMarker(markerIdKey);
+    for (let j = 0; j < mapSectorMarkerKeys.length; j++) {
+      let markerIdKey = mapSectorMarkerKeys[j];
+      let marker = this.markerCollection.getMarker(markerIdKey);
       if (marker === null) {
         continue;
       }
@@ -791,14 +802,14 @@ trackdirect.models.Map.prototype._showVisibleMarkerDetails = function () {
  * Hide markers details that should not be visible in visible map sectors
  */
 trackdirect.models.Map.prototype._hideVisibleMarkerDetails = function () {
-  for (var i = 0; i < this._visibleMapSectors.length; i++) {
-    var mapSector = this._visibleMapSectors[i];
-    var mapSectorMarkerKeys =
+  for (let i = 0; i < this._visibleMapSectors.length; i++) {
+    let mapSector = this._visibleMapSectors[i];
+    let mapSectorMarkerKeys =
       this.markerCollection.getMapSectorMarkerKeys(mapSector);
     // Array with markers fo this sector exists, we have something to hide
-    for (var j = 0; j < mapSectorMarkerKeys.length; j++) {
-      var markerIdKey = mapSectorMarkerKeys[j];
-      var marker = this.markerCollection.getMarker(markerIdKey);
+    for (let j = 0; j < mapSectorMarkerKeys.length; j++) {
+      let markerIdKey = mapSectorMarkerKeys[j];
+      let marker = this.markerCollection.getMarker(markerIdKey);
       if (marker === null) {
         continue;
       }
@@ -820,9 +831,9 @@ trackdirect.models.Map.prototype.showHideMarkers = function () {
     this.oms.unspiderfy();
   }
   if (this.state.isFilterMode) {
-    for (var markerIdKey in this.markerCollection.getAllMarkers()) {
+    for (let markerIdKey in this.markerCollection.getAllMarkers()) {
       if (this.markerCollection.isExistingMarker(markerIdKey)) {
-        var marker = this.markerCollection.getMarker(markerIdKey);
+        let marker = this.markerCollection.getMarker(markerIdKey);
 
         if (marker) {
           if (marker.shouldMarkerBeVisible()) {
@@ -840,17 +851,17 @@ trackdirect.models.Map.prototype.showHideMarkers = function () {
       }
     }
   } else {
-    for (var i = 0; i < this._visibleMapSectors.length; i++) {
-      var mapSector = this._visibleMapSectors[i];
-      var mapSectorMarkerKeys =
+    for (let i = 0; i < this._visibleMapSectors.length; i++) {
+      let mapSector = this._visibleMapSectors[i];
+      let mapSectorMarkerKeys =
         this.markerCollection.getMapSectorMarkerKeys(mapSector);
 
       // Array with markers for this sector exists, we have something to show/hide
-      for (var j = 0; j < mapSectorMarkerKeys.length; j++) {
-        var markerIdKey = mapSectorMarkerKeys[j];
+      for (let j = 0; j < mapSectorMarkerKeys.length; j++) {
+        let markerIdKey = mapSectorMarkerKeys[j];
 
         if (this.markerCollection.isExistingMarker(markerIdKey)) {
-          var marker = this.markerCollection.getMarker(markerIdKey);
+          let marker = this.markerCollection.getMarker(markerIdKey);
           if (marker.shouldMarkerBeVisible()) {
             marker.showCompleteMarker();
           } else {
@@ -873,9 +884,9 @@ trackdirect.models.Map.prototype.showHideMarkers = function () {
 trackdirect.models.Map.prototype.showHidePHGCircles = function () {
   if (this.getZoom() >= trackdirect.settings.minZoomForMarkers) {
     if (this.state.isFilterMode) {
-      for (var markerIdKey in this.markerCollection.getAllMarkers()) {
+      for (let markerIdKey in this.markerCollection.getAllMarkers()) {
         if (this.markerCollection.isExistingMarker(markerIdKey)) {
-          var marker = this.markerCollection.getMarker(markerIdKey);
+          let marker = this.markerCollection.getMarker(markerIdKey);
 
           if (
             marker.showAsMarker &&
@@ -894,16 +905,16 @@ trackdirect.models.Map.prototype.showHidePHGCircles = function () {
         }
       }
     } else {
-      for (var i = 0; i < this._visibleMapSectors.length; i++) {
-        var mapSector = this._visibleMapSectors[i];
-        var mapSectorMarkerKeys =
+      for (let i = 0; i < this._visibleMapSectors.length; i++) {
+        let mapSector = this._visibleMapSectors[i];
+        let mapSectorMarkerKeys =
           this.markerCollection.getMapSectorMarkerKeys(mapSector);
         // Array with markers for this sector exists, we have something to show/hide
-        for (var j = 0; j < mapSectorMarkerKeys.length; j++) {
-          var markerIdKey = mapSectorMarkerKeys[j];
+        for (let j = 0; j < mapSectorMarkerKeys.length; j++) {
+          let markerIdKey = mapSectorMarkerKeys[j];
 
           if (this.markerCollection.isExistingMarker(markerIdKey)) {
-            var marker = this.markerCollection.getMarker(markerIdKey);
+            let marker = this.markerCollection.getMarker(markerIdKey);
 
             if (
               marker.showAsMarker &&
@@ -933,9 +944,9 @@ trackdirect.models.Map.prototype.showHidePHGCircles = function () {
 trackdirect.models.Map.prototype.showHideRNGCircles = function () {
   if (this.getZoom() >= trackdirect.settings.minZoomForMarkers) {
     if (this.state.isFilterMode) {
-      for (var markerIdKey in this.markerCollection.getAllMarkers()) {
+      for (let markerIdKey in this.markerCollection.getAllMarkers()) {
         if (this.markerCollection.isExistingMarker(markerIdKey)) {
-          var marker = this.markerCollection.getMarker(markerIdKey);
+          let marker = this.markerCollection.getMarker(markerIdKey);
           if (
             marker.showAsMarker &&
             marker.packet.rng != null &&
@@ -953,16 +964,16 @@ trackdirect.models.Map.prototype.showHideRNGCircles = function () {
         }
       }
     } else {
-      for (var i = 0; i < this._visibleMapSectors.length; i++) {
-        var mapSector = this._visibleMapSectors[i];
-        var mapSectorMarkerKeys =
+      for (let i = 0; i < this._visibleMapSectors.length; i++) {
+        let mapSector = this._visibleMapSectors[i];
+        let mapSectorMarkerKeys =
           this.markerCollection.getMapSectorMarkerKeys(mapSector);
         // Array with markers for this sector exists, we have something to show/hide
-        for (var j = 0; j < mapSectorMarkerKeys.length; j++) {
-          var markerIdKey = mapSectorMarkerKeys[j];
+        for (let j = 0; j < mapSectorMarkerKeys.length; j++) {
+          let markerIdKey = mapSectorMarkerKeys[j];
 
           if (this.markerCollection.isExistingMarker(markerIdKey)) {
-            var marker = this.markerCollection.getMarker(markerIdKey);
+            let marker = this.markerCollection.getMarker(markerIdKey);
             if (
               marker.showAsMarker &&
               marker.packet.rng != null &&
@@ -988,8 +999,8 @@ trackdirect.models.Map.prototype.showHideRNGCircles = function () {
  * Make sure that all markers that we know is hidden
  */
 trackdirect.models.Map.prototype.hideAllMarkers = function () {
-  for (var markerIdKey in this.markerCollection.getAllMarkers()) {
-    var marker = this.markerCollection.getMarker(markerIdKey);
+  for (let markerIdKey in this.markerCollection.getAllMarkers()) {
+    let marker = this.markerCollection.getMarker(markerIdKey);
     if (marker !== null) {
       // hide this marker
       marker.hideCompleteMarker();
@@ -1006,19 +1017,19 @@ trackdirect.models.Map.prototype.showTopLabelOnPosition = function (
   latitude,
   longitude
 ) {
-  var topMarkerIdKey = -1;
-  var topMarkerZindex = 0;
+  let topMarkerIdKey = -1;
+  let topMarkerZindex = 0;
 
   if (
     Object.keys(
       this.markerCollection.getPositionMarkerIdKeys(latitude, longitude)
     ).length > 1
   ) {
-    for (var markerIdKey in this.markerCollection.getPositionMarkerIdKeys(
+    for (let markerIdKey in this.markerCollection.getPositionMarkerIdKeys(
       latitude,
       longitude
     )) {
-      var marker = this.markerCollection.getMarker(markerIdKey);
+      let marker = this.markerCollection.getMarker(markerIdKey);
       if (marker !== null && marker.shouldMarkerBeVisible()) {
         if (marker.getZIndex() > topMarkerZindex) {
           topMarkerZindex = marker.getZIndex();
@@ -1030,9 +1041,9 @@ trackdirect.models.Map.prototype.showTopLabelOnPosition = function (
     }
 
     if (topMarkerIdKey != -1) {
-      var topMarker = this.markerCollection.getMarker(topMarkerIdKey);
+      let topMarker = this.markerCollection.getMarker(topMarkerIdKey);
       topMarker.hasLabel = true;
-      var topMarkerMapSector =
+      let topMarkerMapSector =
         trackdirect.services.MapSectorCalculator.getMapSector(
           topMarker.getPositionLiteral().lat,
           topMarker.getPositionLiteral().lng
@@ -1060,37 +1071,37 @@ trackdirect.models.Map.prototype._hideMarkersInPreviousVisibleMapSectors =
     // (if we show first we may hide something that should be visible)
 
     if (this._currentContentZoom >= trackdirect.settings.minZoomForMarkers) {
-      var markerIdKeyListToMaybeHide = {};
-      var markerIdKeyListNotToHide = {};
-      for (var i = 0; i < previousVisibleMapSectors.length; i++) {
-        var mapSector = previousVisibleMapSectors[i];
+      let markerIdKeyListToMaybeHide = {};
+      let markerIdKeyListNotToHide = {};
+      for (let i = 0; i < previousVisibleMapSectors.length; i++) {
+        let mapSector = previousVisibleMapSectors[i];
         if (
           !this.isMapSectorVisible(mapSector) ||
           this.getZoom() < trackdirect.settings.minZoomForMarkers
         ) {
           // Seems like this sector is not visible any more (or we have zoomed out), hide markers
-          var mapSectorMarkerKeys =
+          let mapSectorMarkerKeys =
             this.markerCollection.getMapSectorMarkerKeys(mapSector);
-          for (var j = 0; j < mapSectorMarkerKeys.length; j++) {
-            var markerIdKey = mapSectorMarkerKeys[j];
+          for (let j = 0; j < mapSectorMarkerKeys.length; j++) {
+            let markerIdKey = mapSectorMarkerKeys[j];
             markerIdKeyListToMaybeHide[markerIdKey] = markerIdKey;
           }
         } else if (this.getZoom() >= trackdirect.settings.minZoomForMarkers) {
           // Seems like this map sector is still visible (and we have not zoomed out)
-          var mapSectorMarkerKeys =
+          let mapSectorMarkerKeys =
             this.markerCollection.getMapSectorMarkerKeys(mapSector);
-          for (var j = 0; j < mapSectorMarkerKeys.length; j++) {
-            var markerIdKey = mapSectorMarkerKeys[j];
+          for (let j = 0; j < mapSectorMarkerKeys.length; j++) {
+            let markerIdKey = mapSectorMarkerKeys[j];
             // Marker exists in map sector that is still visible, do not hide it
             markerIdKeyListNotToHide[markerIdKey] = markerIdKey;
           }
         }
       }
-      for (var markerIdKey in markerIdKeyListToMaybeHide) {
+      for (let markerIdKey in markerIdKeyListToMaybeHide) {
         if (markerIdKey in markerIdKeyListNotToHide) {
           continue;
         }
-        var marker = this.markerCollection.getMarker(markerIdKey);
+        let marker = this.markerCollection.getMarker(markerIdKey);
         if (marker !== null) {
           // hide this marker
           trackdirect.services.callbackExecutor.addWithPriority(
@@ -1114,18 +1125,18 @@ trackdirect.models.Map.prototype._showMarkersInNewVisibleMapSectors = function (
   // This should handle both zooming and moving
 
   if (this.getZoom() >= trackdirect.settings.minZoomForMarkers) {
-    for (var i = 0; i < this._visibleMapSectors.length; i++) {
-      var mapSector = this._visibleMapSectors[i];
+    for (let i = 0; i < this._visibleMapSectors.length; i++) {
+      let mapSector = this._visibleMapSectors[i];
       if (
         previousVisibleMapSectors.indexOf(mapSector) == -1 ||
         this._currentContentZoom < trackdirect.settings.minZoomForMarkers
       ) {
         // Seems like this sector is new (or we have zoomed in now), show markers
-        var mapSectorMarkerKeys =
+        let mapSectorMarkerKeys =
           this.markerCollection.getMapSectorMarkerKeys(mapSector);
-        for (var j = 0; j < mapSectorMarkerKeys.length; j++) {
-          var markerIdKey = mapSectorMarkerKeys[j];
-          var marker = this.markerCollection.getMarker(markerIdKey);
+        for (let j = 0; j < mapSectorMarkerKeys.length; j++) {
+          let markerIdKey = mapSectorMarkerKeys[j];
+          let marker = this.markerCollection.getMarker(markerIdKey);
           if (marker !== null) {
             trackdirect.services.callbackExecutor.addWithPriority(
               marker,
@@ -1138,10 +1149,10 @@ trackdirect.models.Map.prototype._showMarkersInNewVisibleMapSectors = function (
     }
 
     // Also make sure all stations with a visible coverage is shown
-    var stationIdList =
+    let stationIdList =
       this.markerCollection.getStationIdListWithVisibleCoverage();
-    for (var i = 0; i < stationIdList.length; i++) {
-      var latestMarker = this.markerCollection.getStationLatestMarker(
+    for (let i = 0; i < stationIdList.length; i++) {
+      let latestMarker = this.markerCollection.getStationLatestMarker(
         stationIdList[i]
       );
       if (latestMarker !== null) {
@@ -1157,12 +1168,12 @@ trackdirect.models.Map.prototype._showMarkersInNewVisibleMapSectors = function (
  * Set map initial position
  */
 trackdirect.models.Map.prototype._setMapInitialLocation = function () {
-  var zoom = this._getInitialZoom();
+  let zoom = this._getInitialZoom();
   if (
     typeof this._tdMapOptions.initCenter !== "undefined" &&
     this._tdMapOptions.initCenter !== null
   ) {
-    var pos = this._tdMapOptions.initCenter;
+    let pos = this._tdMapOptions.initCenter;
     this.setCenter(pos, zoom);
   } else {
     this.setMapDefaultLocation();
@@ -1180,16 +1191,16 @@ trackdirect.models.Map.prototype.setMapDefaultLocation = function (
   setDefaultZoom =
     typeof setDefaultZoom !== "undefined" ? setDefaultZoom : false;
 
-  var defaultLatitude =
+  let defaultLatitude =
     typeof this._tdMapOptions.defaultLatitude !== "undefined"
       ? this._tdMapOptions.defaultLatitude
       : 59.35;
-  var defaultLongitude =
+  let defaultLongitude =
     typeof this._tdMapOptions.defaultLongitude !== "undefined"
       ? this._tdMapOptions.defaultLongitude
       : 18.05;
 
-  var pos = {
+  let pos = {
     lat: parseFloat(defaultLatitude),
     lng: parseFloat(defaultLongitude),
   };
@@ -1216,10 +1227,10 @@ trackdirect.models.Map.prototype.addMarkerToMapSectorInterval = function (
   startLatLng,
   endLatLng
 ) {
-  var minLat = startLatLng.lat;
-  var maxLat = endLatLng.lat;
-  var minLng = startLatLng.lng;
-  var maxLng = endLatLng.lng;
+  let minLat = startLatLng.lat;
+  let maxLat = endLatLng.lat;
+  let minLng = startLatLng.lng;
+  let maxLng = endLatLng.lng;
   if (endLatLng.lat < minLat) {
     minLat = endLatLng.lat;
     maxLat = startLatLng.lat;
@@ -1228,10 +1239,9 @@ trackdirect.models.Map.prototype.addMarkerToMapSectorInterval = function (
     minLng = endLatLng.lng;
     maxLng = startLatLng.lng;
   }
-  for (var lat = Math.floor(minLat); lat <= Math.ceil(maxLat); lat++) {
-    for (var lng = Math.floor(minLng); lng <= Math.ceil(maxLng); lng++) {
-      var markerMapSector =
-        trackdirect.services.MapSectorCalculator.getMapSector(lat, lng);
+  for (let lat = Math.floor(minLat); lat <= Math.ceil(maxLat); lat++) {
+    for (let lng = Math.floor(minLng); lng <= Math.ceil(maxLng); lng++) {
+      let markerMapSector = trackdirect.services.MapSectorCalculator.getMapSector(lat, lng);
 
       this.markerCollection.addMarkerToMapSector(markerIdKey, markerMapSector);
 
@@ -1255,20 +1265,20 @@ trackdirect.models.Map.prototype.addMarkerToMapSectors = function (
   packet,
   tryToShowPacket
 ) {
-  var markerMapSectors = [];
+  let markerMapSectors = [];
 
   markerMapSectors.push(packet.map_sector);
   if (
     typeof packet.related_map_sectors !== "undefined" &&
     packet.related_map_sectors !== null
   ) {
-    for (var i = 0; i < packet.related_map_sectors.length; i++) {
+    for (let i = 0; i < packet.related_map_sectors.length; i++) {
       markerMapSectors.push(packet.related_map_sectors[i]);
     }
   }
 
-  for (var i = 0; i < markerMapSectors.length; i++) {
-    var markerMapSector = markerMapSectors[i];
+  for (let i = 0; i < markerMapSectors.length; i++) {
+    let markerMapSector = markerMapSectors[i];
     this.markerCollection.addMarkerToMapSector(markerIdKey, markerMapSector);
 
     if (tryToShowPacket) {
@@ -1296,9 +1306,9 @@ trackdirect.models.Map.prototype._initMapEvents = function () {
  * Initialize google map basic events
  */
 trackdirect.models.Map.prototype._initGoogleMapEvents = function () {
-  var me = this;
+  let me = this;
   google.maps.event.addListener(this, "mousemove", function (event) {
-    me._renderCordinatesContainer(event.latLng);
+    me._renderCoordinatesContainer(event.latLng);
   });
 
   google.maps.event.addListener(this, "idle", function () {
@@ -1320,9 +1330,9 @@ trackdirect.models.Map.prototype._initGoogleMapEvents = function () {
  * Initialize leaflet map basic events
  */
 trackdirect.models.Map.prototype._initLeafletMapEvents = function () {
-  var me = this;
+  let me = this;
   this.on("mousemove", function (event) {
-    me._renderCordinatesContainer(event.latlng);
+    me._renderCoordinatesContainer(event.latlng);
   });
 
   this.on("moveend", function () {
@@ -1344,20 +1354,20 @@ trackdirect.models.Map.prototype._initLeafletMapEvents = function () {
  * Initialize OMS
  */
 trackdirect.models.Map.prototype._initOms = function () {
-  var options = {};
+  let options = {};
   options["nearbyDistance"] = 12;
   if (typeof google === "object" && typeof google.maps === "object") {
-    var mti = google.maps.MapTypeId;
+    let mti = google.maps.MapTypeId;
     this.oms = new OverlappingMarkerSpiderfier(this, options);
     this.oms.legColors.usual[mti.HYBRID] = this.oms.legColors.usual[
       mti.SATELLITE
-    ] = "#fff";
+      ] = "#fff";
     this.oms.legColors.usual[mti.TERRAIN] = this.oms.legColors.usual[
       mti.ROADMAP
-    ] = "#222";
+      ] = "#222";
     this.oms.legColors.highlighted[mti.HYBRID] = this.oms.legColors.highlighted[
       mti.SATELLITE
-    ] = "#f00";
+      ] = "#f00";
     this.oms.legColors.highlighted[mti.TERRAIN] =
       this.oms.legColors.highlighted[mti.ROADMAP] = "#f00";
   } else if (typeof L === "object") {
@@ -1369,7 +1379,7 @@ trackdirect.models.Map.prototype._initOms = function () {
  * Initialize info window for markers
  */
 trackdirect.models.Map.prototype._initInfoWindowEvent = function () {
-  var me = this;
+  let me = this;
   if (this.oms) {
     this.oms.addListener("click", function (marker, event) {
       me.openMarkerInfoWindow(marker, false);
@@ -1382,9 +1392,9 @@ trackdirect.models.Map.prototype._initInfoWindowEvent = function () {
  * Get default google "map options", used for initializing google map
  * @return {object}
  */
-trackdirect.models.Map.prototype._getGoolgeMapOptions = function () {
-  var zoom = this._getInitialZoom();
-  var mapOptions = {
+trackdirect.models.Map.prototype._getGoogleMapOptions = function () {
+  let zoom = this._getInitialZoom();
+  let mapOptions = {
     zoom: zoom,
     panControl: false,
     zoomControl: true,
@@ -1409,8 +1419,8 @@ trackdirect.models.Map.prototype._getGoolgeMapOptions = function () {
  * @return {object}
  */
 trackdirect.models.Map.prototype._getLeafletMapOptions = function () {
-  var zoom = this._getInitialZoom();
-  var mapOptions = {
+  let zoom = this._getInitialZoom();
+  let mapOptions = {
     zoom: zoom,
     zoomControl: true,
     attributionControl: true,
@@ -1428,7 +1438,7 @@ trackdirect.models.Map.prototype._getLeafletMapOptions = function () {
  * @return {int}
  */
 trackdirect.models.Map.prototype._getInitialZoom = function () {
-  var zoom = trackdirect.settings.defaultCurrentZoom;
+  let zoom = trackdirect.settings.defaultCurrentZoom;
   if (
     typeof this._tdMapOptions.zoom !== "undefined" &&
     this._tdMapOptions.zoom !== null
@@ -1447,12 +1457,13 @@ trackdirect.models.Map.prototype._getInitialZoom = function () {
  */
 trackdirect.models.Map.prototype.getCurrentRadiusInKm = function () {
   if (this.getBounds() != null) {
+    let latLngLiteral
     if (typeof google === "object" && typeof google.maps === "object") {
-      var latLng = this.getBounds().getNorthEast();
-      var latLngLiteral = { lat: latLng.lat(), lng: latLng.lng() };
+      let latLng = this.getBounds().getNorthEast();
+      latLngLiteral = {lat: latLng.lat(), lng: latLng.lng()};
     } else if (typeof L === "object") {
-      var latLng = this.getBounds().getNorthEast();
-      var latLngLiteral = { lat: latLng.lat, lng: latLng.lng };
+      let latLng = this.getBounds().getNorthEast();
+      latLngLiteral = {lat: latLng.lat, lng: latLng.lng};
     }
     return (
       trackdirect.services.distanceCalculator.getDistance(
@@ -1465,22 +1476,22 @@ trackdirect.models.Map.prototype.getCurrentRadiusInKm = function () {
 };
 
 /**
- * Print position in the cordinates container
+ * Print position in the coordinate container
  * @return {google.maps.LatLng/L.LatLng/LatLngLiteral} mouseLatLng
  */
-trackdirect.models.Map.prototype._renderCordinatesContainer = function (
+trackdirect.models.Map.prototype._renderCoordinatesContainer = function (
   mouseLatLng
 ) {
-  var options = this.getTdMapOptions();
-  if (typeof options.cordinatesContainer === "undefined") {
+  let options = this.getTdMapOptions();
+  if (typeof options.coordinatesContainer === "undefined") {
     return;
   }
-  if (options.cordinatesContainer == null) {
+  if (options.coordinatesContainer == null) {
     return;
   }
 
-  var lat = null;
-  var lng = null;
+  let lat = null;
+  let lng = null;
   if (typeof mouseLatLng.lat == "function") {
     lat = mouseLatLng.lat();
     lng = mouseLatLng.lng();
@@ -1490,13 +1501,13 @@ trackdirect.models.Map.prototype._renderCordinatesContainer = function (
   }
 
   if (lat <= 90 && lat >= -90 && lng <= 180 && lng >= -180) {
-    var content = "";
+    let content = "";
     content += this._getGpsDegreeFromGpsDecimal(lat.toFixed(5), "lat");
     content += " " + this._getGpsDegreeFromGpsDecimal(lng.toFixed(5), "lon");
-    content += "<br>" + lat.toFixed(5) + ", " + lng.toFixed(5);
-    content += "<br>" + this._getMaidenheadLocatorFromGpsDecimal(lat, lng);
+    content += "&nbsp;|&nbsp;" + lat.toFixed(5) + ", " + lng.toFixed(5);
+    content += "&nbsp;|&nbsp;" + this._getMaidenheadLocatorFromGpsDecimal(lat, lng);
 
-    $("#" + options.cordinatesContainer).html(content);
+    $("#" + options.coordinatesContainer).html(content);
   }
 };
 
@@ -1510,9 +1521,9 @@ trackdirect.models.Map.prototype._getGpsDegreeFromGpsDecimal = function (
   dms,
   type
 ) {
-  var sign = 1,
+  let sign = 1,
     Abs = 0;
-  var days, minutes, secounds, direction;
+  let days, minutes, secounds, direction;
 
   if (dms < 0) {
     sign = -1;
@@ -1553,16 +1564,16 @@ trackdirect.models.Map.prototype._getMaidenheadLocatorFromGpsDecimal = function 
   lng,
 ) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVX';
-  var result = '';
+  let result = '';
   lng = lng + 180;
   lat = lat + 90;
-  result  = chars.charAt(parseInt(lng / 20));
+  result = chars.charAt(parseInt(lng / 20));
   result += chars.charAt(parseInt(lat / 10));
   result += parseInt(lng / 2 % 10);
   result += parseInt(lat % 10);
-  lng_r = (lng - parseInt(lng/2)*2) * 60;
+  lng_r = (lng - parseInt(lng / 2) * 2) * 60;
   lat_r = (lat - parseInt(lat)) * 60;
-  result += chars.charAt(parseInt(lng_r/5));
-  result += chars.charAt(parseInt(lat_r/2.5));
+  result += chars.charAt(parseInt(lng_r / 5));
+  result += chars.charAt(parseInt(lat_r / 2.5));
   return result;
 };
