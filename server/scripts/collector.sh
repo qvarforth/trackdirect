@@ -15,7 +15,7 @@ if ps -ef | grep -v grep | grep "bin/collector.py $CONFIGFILE $COLLECTORNUMBER" 
 else
     CURRENTDIR=$(dirname $0)
 
-    sleep 10
+    sleep 30
     export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect
     cd $CURRENTDIR/../..
     $CURRENTDIR/ogn_devices_install.sh trackdirect db 5432

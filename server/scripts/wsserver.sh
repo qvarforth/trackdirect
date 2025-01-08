@@ -13,7 +13,7 @@ if ps -eo pid,pgid,cmd | grep -v grep | grep "bin/wsserver.py --config $CONFIGFI
 else
     CURRENTDIR=$(dirname $0)
 
-    sleep 10
+    sleep 30
     export PYTHONPATH=$PYTHONPATH:$CURRENTDIR/../trackdirect
     cd $CURRENTDIR/../..
     python $CURRENTDIR/../bin/wsserver.py --config $CONFIGFILE
