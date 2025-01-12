@@ -145,7 +145,7 @@
                        <?php if (getWebsiteConfig('websocket_url') != null) : ?>
                            var wsServerUrl = "<?php echo getWebsiteConfig('websocket_url'); ?>";
                         <?php else : ?>
-                            var wsServerUrl = 'ws://<?php echo $_SERVER['SERVER_NAME']; ?>:8090/ws';
+                            var wsServerUrl = 'ws://<?php echo $_SERVER['SERVER_NAME']; ?>/ws';
                         <?php endif; ?>
                         var mapElementId = 'map-container';
 
