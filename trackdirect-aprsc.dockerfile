@@ -20,4 +20,5 @@ EXPOSE 14501
 WORKDIR /opt/aprsc
 USER aprsc
 
+COPY config/aprsc.conf /opt/aprsc/etc/aprsc.conf
 CMD /opt/aprsc/sbin/aprsc -c /opt/aprsc/etc/aprsc.conf
