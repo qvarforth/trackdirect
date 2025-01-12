@@ -139,13 +139,21 @@
 
                     // host is used to create url to /heatmaps and /images (leave empty to use same host as website)
                     options['host'] = "";
-
                     var supportsWebSockets = 'WebSocket' in window || 'MozWebSocket' in window;
-		            if (supportsWebSockets) {
-                       <?php if (getWebsiteConfig('websocket_url') != null) : ?>
-                           var wsServerUrl = "<?php echo getWebsiteConfig('websocket_url'); ?>";
+                    if (supportsWebSockets) {
+                        <?php if (getWebsiteConfig('websocket_url') != null) : ?>
+                             var wsServerUrl = "<?php echo getWebsiteConfig('websocket_url'); ?>";
                         <?php else : ?>
-                           var wsServerUrl = 'ws://<?php echo $_SERVER['SERVER_NAME']; ?>:<?php echo $_SERVER['SERVER_PORT']; ?>/ws';
+                            var wsServerUrl = '';
+                            if (window.location.protocol == 'https:') {
+                                wsServerUrl += 'wss://' + window.location.host;
+                            } else {
+                                wsServerUrl += 'ws://' + window.location.host;
+                            }
+                            if (window.location.port != '' && window.location.port != 0) {
+                               wsServerUrl += ':' + window.location.port;
+                            }
+                            wsServerUrl += '/ws';
                         <?php endif; ?>
                         var mapElementId = 'map-container';
 
@@ -251,7 +259,7 @@
                 <button class="dropbtn">Settings
                     <i class="fa fa-caret-down"></i>
                 </button>
-		        <div class="dropdown-content" id="tdTopnavSettings">
+                <div class="dropdown-content" id="tdTopnavSettings">
                     <a href="javascript:void(0);" onclick="trackdirect.toggleImperialUnits(); $(this).toggleClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox <?php echo (isImperialUnitUser()?'dropdown-content-checkbox-active':''); ?>" title="Switch to imperial units">Use imperial units</a>
                     <a href="javascript:void(0);" onclick="trackdirect.toggleStationaryPositions(); $(this).toggleClass('dropdown-content-checkbox-active');" class="dropdown-content-checkbox" title="Hide stations that is not moving">Hide not moving stations</a>
 
@@ -284,7 +292,7 @@
                     </a>
 
                     <a href="/views/latest.php"
-			            class="tdlink"
+                        class="tdlink"
                         onclick="$(this).attr('href', '/views/latest.php?imperialUnits=' + (trackdirect.isImperialUnits()?'1':'0'))"
                         title="List latest heard stations!">
                         Latest heard
@@ -341,7 +349,7 @@
                         <?php $view = getView($_GET['view']); ?>
                         <?php if ($view) : ?>
                             <?php include($view); ?>
-			            <?php else: ?>
+                        <?php else: ?>
                             <div id="td-modal-content-nojs">
                                 <?php include(ROOT . '/public/views/about.php'); ?>
                             </div>
