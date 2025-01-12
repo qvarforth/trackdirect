@@ -61,7 +61,7 @@ services:
       context: .
       dockerfile: trackdirect-db.dockerfile
     environment:
-      POSTGRES_USER: root
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: foobar
       POSTGRES_DB: trackdirect
     volumes:

@@ -2,13 +2,14 @@
 if [ $# -eq 0 ]
   then
     echo "No arguments supplied"
-    echo "$0 [dbname] [dbport]"
+    echo "$0 [dbname] [dbport] [dbuser]"
     exit
 fi
 
 DATABASE=$1
 HOST=$2
 PORT=$3
+USER=$4
 
 pushd `dirname $0` > /dev/null
 SCRIPTPATH=`pwd -P`
@@ -34,7 +35,7 @@ else
 sed '/^#/ d' < ogndevices.csv > ogndevices2.csv
 
 # Load file into database (assumes .pgpass is correctly set)
-psql -h $HOST -p $PORT $DATABASE << EOF
+psql -h $HOST -p $PORT $DATABASE -U $USER << EOF
 
 create table if not exists ogn_device (
     "device_type" text not null,
