@@ -14,6 +14,7 @@ config/*
 !config/postgresql.conf
 !config/aprsc.conf
 !config/apache-default.conf
+!config/reverseproxy-default.conf
 
 ogndevices
 
