@@ -150,9 +150,6 @@
                             } else {
                                 wsServerUrl += 'ws://' + window.location.host;
                             }
-                            if (window.location.port != '' && window.location.port != 0) {
-                               wsServerUrl += ':' + window.location.port;
-                            }
                             wsServerUrl += '/ws';
                         <?php endif; ?>
                         var mapElementId = 'map-container';
