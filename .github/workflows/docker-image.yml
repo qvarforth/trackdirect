@@ -8,20 +8,28 @@ on:
 
 jobs:
 
-  build-db:
-
+  docker-build-db:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Login to Docker
-      run: docker login ghcr.io
-    - name: Build the Docker image
-      run: docker build . --file trackdirect-db.dockerfile --tag ghcr.io/mrtalon63/trackdirect-db:latest
-    - name: Create image with Action ID
-      run: docker tag ghcr.io/mrtalon63/trackdirect-db:latest ghcr.io/mrtalon63/trackdirect-db:${{ github.RUN_ID }}
-    - name: Push both images to ghcr.io
-      run: docker push ghcr.io/mrtalon63/trackdirect-db:latest && ghcr.io/mrtalon63/trackdirect-db:${{ github.RUN_ID }}
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: mrtalon63
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: trackdirect-db.dockerfile
+          push: true
+          tags: |
+            ghcr.io/mrtalon63/trackdirect-db:latest
+            ghcr.io/mrtalon63/trackdirect-db:${{ github.RUN_ID }}
 
   build-apache:
 
