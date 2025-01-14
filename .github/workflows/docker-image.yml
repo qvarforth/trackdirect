@@ -1,0 +1,75 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build-db:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file trackdirect-db.dockerfile --tag ghcr.io/mrtalon63/trackdirect-db:latest
+    - name: Create image with Action ID
+      run: docker tag ghcr.io/mrtalon63/trackdirect-db:latest ghcr.io/mrtalon63/trackdirect-db:${{ github.RUN_ID }}
+    - name: Push both images to ghcr.io
+      run: docker push ghcr.io/mrtalon63/trackdirect-db:latest && ghcr.io/mrtalon63/trackdirect-db:${{ github.RUN_ID }}
+
+  build-apache:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file trackdirect-apache.dockerfile --tag ghcr.io/mrtalon63/trackdirect-apache:latest
+    - name: Create image with Action ID
+      run: docker tag ghcr.io/mrtalon63/trackdirect-apache:latest ghcr.io/mrtalon63/trackdirect-apache:${{ github.RUN_ID }}
+    - name: Push both images to ghcr.io
+      run: docker push ghcr.io/mrtalon63/trackdirect-apache:latest && ghcr.io/mrtalon63/trackdirect-apache:${{ github.RUN_ID }}
+
+  build-python:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file trackdirect-python.dockerfile --tag ghcr.io/mrtalon63/trackdirect-python:latest
+    - name: Create image with Action ID
+      run: docker tag ghcr.io/mrtalon63/trackdirect-python:latest ghcr.io/mrtalon63/trackdirect-python:${{ github.RUN_ID }}
+    - name: Push both images to ghcr.io
+      run: docker push ghcr.io/mrtalon63/trackdirect-python:latest && ghcr.io/mrtalon63/trackdirect-python:${{ github.RUN_ID }}
+
+  build-aprsc:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file trackdirect-aprsc.dockerfile --tag ghcr.io/mrtalon63/trackdirect-aprsc:latest
+    - name: Create image with Action ID
+      run: docker tag ghcr.io/mrtalon63/trackdirect-aprsc:latest ghcr.io/mrtalon63/trackdirect-aprsc:${{ github.RUN_ID }}
+    - name: Push both images to ghcr.io
+      run: docker push ghcr.io/mrtalon63/trackdirect-aprsc:latest && ghcr.io/mrtalon63/trackdirect-aprsc:${{ github.RUN_ID }}
+
+  
+  build-cron:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file trackdirect-cron.dockerfile --tag ghcr.io/mrtalon63/trackdirect-cron:latest
+    - name: Create image with Action ID
+      run: docker tag ghcr.io/mrtalon63/trackdirect-cron:latest ghcr.io/mrtalon63/trackdirect-cron:${{ github.RUN_ID }}
+    - name: Push both images to ghcr.io
+      run: docker push ghcr.io/mrtalon63/trackdirect-cron:latest && ghcr.io/mrtalon63/trackdirect-cron:${{ github.RUN_ID }}
