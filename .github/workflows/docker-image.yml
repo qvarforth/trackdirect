@@ -14,6 +14,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Login to Docker
+      run: docker login ghcr.io
     - name: Build the Docker image
       run: docker build . --file trackdirect-db.dockerfile --tag ghcr.io/mrtalon63/trackdirect-db:latest
     - name: Create image with Action ID
@@ -27,6 +29,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Login to Docker
+      run: docker login ghcr.io
     - name: Build the Docker image
       run: docker build . --file trackdirect-apache.dockerfile --tag ghcr.io/mrtalon63/trackdirect-apache:latest
     - name: Create image with Action ID
@@ -40,6 +44,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Login to Docker
+      run: docker login ghcr.io
     - name: Build the Docker image
       run: docker build . --file trackdirect-python.dockerfile --tag ghcr.io/mrtalon63/trackdirect-python:latest
     - name: Create image with Action ID
@@ -53,6 +59,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Login to Docker
+      run: docker login ghcr.io
     - name: Build the Docker image
       run: docker build . --file trackdirect-aprsc.dockerfile --tag ghcr.io/mrtalon63/trackdirect-aprsc:latest
     - name: Create image with Action ID
@@ -67,6 +75,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Login to Docker
+      run: docker login ghcr.io
     - name: Build the Docker image
       run: docker build . --file trackdirect-cron.dockerfile --tag ghcr.io/mrtalon63/trackdirect-cron:latest
     - name: Create image with Action ID
