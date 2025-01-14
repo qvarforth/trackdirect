@@ -24,7 +24,6 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .
           file: trackdirect-db.dockerfile
           push: true
           tags: |
