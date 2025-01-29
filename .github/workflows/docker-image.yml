@@ -8,6 +8,12 @@ on:
 
 jobs:
 
+  repo-name:
+    runs-on: ubuntu-latest
+    steps:
+     - name: lowercase github.repository
+       run: echo "IMAGE_NAME=${GITHUB_REPOSITORY@L}" >> ${GITHUB_ENV}
+
   docker-build-db:
     runs-on: ubuntu-latest
     steps:
@@ -27,8 +33,8 @@ jobs:
           file: trackdirect-db.dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}-db:latest
-            ghcr.io/${{ github.repository }}-db:${{ github.RUN_ID }}
+            ghcr.io/${{ env.IMAGE_NAME }}-db:latest
+            ghcr.io/${{ env.IMAGE_NAME }}-db:${{ github.RUN_ID }}
 
   docker-build-apache:
     runs-on: ubuntu-latest
@@ -49,8 +55,8 @@ jobs:
           file: trackdirect-apache.dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}-apache:latest
-            ghcr.io/${{ github.repository }}-apache:${{ github.RUN_ID }}
+            ghcr.io/${{ env.IMAGE_NAME }}-apache:latest
+            ghcr.io/${{ env.IMAGE_NAME }}-apache:${{ github.RUN_ID }}
 
   docker-build-python:
     runs-on: ubuntu-latest
@@ -71,8 +77,8 @@ jobs:
           file: trackdirect-python.dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}-python:latest
-            ghcr.io/${{ github.repository }}-python:${{ github.RUN_ID }}
+            ghcr.io/${{ env.IMAGE_NAME }}-python:latest
+            ghcr.io/${{ env.IMAGE_NAME }}-python:${{ github.RUN_ID }}
 
   docker-build-aprsc:
     runs-on: ubuntu-latest
@@ -93,8 +99,8 @@ jobs:
           file: trackdirect-aprsc.dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}-aprsc:latest
-            ghcr.io/${{ github.repository }}-aprsc:${{ github.RUN_ID }}
+            ghcr.io/${{ env.IMAGE_NAME }}-aprsc:latest
+            ghcr.io/${{ env.IMAGE_NAME }}-aprsc:${{ github.RUN_ID }}
 
   docker-build-cron:
     runs-on: ubuntu-latest
@@ -115,5 +121,5 @@ jobs:
           file: trackdirect-cron.dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}-cron:latest
-            ghcr.io/${{ github.repository }}-cron:${{ github.RUN_ID }}
+            ghcr.io/${{ env.IMAGE_NAME }}-cron:latest
+            ghcr.io/${{ env.IMAGE_NAME }}-cron:${{ github.RUN_ID }}
