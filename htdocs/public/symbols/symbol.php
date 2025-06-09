@@ -439,12 +439,15 @@ if (isset($_GET['format']) && $_GET['format'] == 'png') {
     $im->readImageBlob($svgContent);
     $im->setImageFormat("png32");
 
-    if ((!isset($scaleWidth) && !isset($scaleHeight)) || ($scaleWidth == null && $scaleHeight == null)
-            || ($scaleWidth == 24 && $scaleHeight == 24)
-            || ($scaleWidth == 64 && $scaleHeight == 64)
-            || ($scaleWidth == 150 && $scaleHeight == 150)) {
-        $im->writeImage('./' . basename($_SERVER['REQUEST_URI']));
-    }
+    // echo $_SERVER['REQUEST_URI'];
+
+    // Rely on apache cache instead of filling the folder
+    // if ((!isset($scaleWidth) && !isset($scaleHeight)) || ($scaleWidth == null && $scaleHeight == null)
+    //         || ($scaleWidth == 24 && $scaleHeight == 24)
+    //         || ($scaleWidth == 64 && $scaleHeight == 64)
+    //         || ($scaleWidth == 150 && $scaleHeight == 150)) {
+    //     $im->writeImage('./' . basename($_SERVER['REQUEST_URI']));
+    // }
 
     header('Pragma: public');
     header('Cache-Control: max-age=86400, public');
