@@ -1,0 +1,29 @@
+.leaflet-marker-icon {
+    filter: drop-shadow(white 1px 1px 1px) drop-shadow(white -1px -1px 1px) drop-shadow(white -1px 1px 1px) drop-shadow(white 1px -1px 1px) !important;
+}
+
+/*        .leaflet-interactive {
+filter:  drop-shadow(white 1px 1px 1px) drop-shadow(white -1px -1px 1px) drop-shadow(white -1px 1px 1px) drop-shadow(white 1px -1px 1px)!important;
+}*/
+
+.leaflet-tile-pane {
+    filter: opacity(65%)
+}
+
+.leaflet-marker-labeltext {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    box-shadow: none !important;
+    font-weight: bold !important;
+    font-size: 17px !important;
+    border: none !important;
+    border-color: transparent !important;
+    color: white !important;
+    text-shadow:
+        3px 3px 3px #000,
+        -3px 3px 3px #000,
+        -3px -3px 3px #000,
+        3px -3px 3px #000;
+    /*margin-left: 15px;*/
+    padding-left: 10px;
+}
