@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: trackdirect-aprsc.dockerfile
-    #ports:
-    #  - "14501:14501"
+    # ports:
+    #   - "14501:14501"
     volumes:
       - $PWD/config/aprsc.conf:/opt/aprsc/etc/aprsc.conf
 
@@ -26,8 +26,8 @@ services:
     volumes:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
     command: /root/trackdirect/server/scripts/wsserver.sh trackdirect.ini
-    #ports:
-    #  - "8090:8090"
+    ports:
+      - "8090:8090"
     depends_on:
       - "db"
       - "aprsc"
@@ -48,8 +48,8 @@ services:
     volumes:
       - $PWD/config/trackdirect.ini:/root/trackdirect/config/trackdirect.ini
       - ./htdocs/public:/root/trackdirect/htdocs/public # For development
-    #ports:
-    #  - "8080:80"
+    ports:
+     - "8080:80"
     depends_on:
       - "db"
 
@@ -67,13 +67,13 @@ services:
     #ports:
     #  - "5432:5432"
 
-  reverseproxy:
-    build:
-      context: .
-      dockerfile: trackdirect-reverseproxy.dockerfile
-    ports:
-      - "80:80"
-    depends_on:
-      - "web"
-      - "websocket"
+  # reverseproxy:
+  #   build:
+  #     context: .
+  #     dockerfile: trackdirect-reverseproxy.dockerfile
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - "web"
+  #     - "websocket"
 
