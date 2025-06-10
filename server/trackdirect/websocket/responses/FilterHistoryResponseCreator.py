@@ -57,10 +57,11 @@ class FilterHistoryResponseCreator:
         if not station_ids:
             return []
 
-        min_timestamp = max(
-            (self.state.get_station_latest_timestamp_on_map(station_id) for station_id in station_ids),
-            default=self.state.get_map_sector_timestamp(None)
-        )
+        min_timestamp = 0
+        for station_id in station_ids:
+            tmpts = self.state.get_station_latest_timestamp_on_map(station_id)
+            if tmpts is not None and tmpts > min_timestamp:
+                min_timestamp = tmpts
 
         if self.state.latest_time_travel_request is not None:
             if not self.state.is_stations_on_map(station_ids):
