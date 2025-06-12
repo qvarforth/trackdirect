@@ -27,8 +27,8 @@ def validate_config_file(config_file):
         print("\nUsage: script.py [config.ini]")
         sys.exit()
 
-def drop_table_if_exists(cursor, table_name, logger):
-    if DatabaseObjectFinder.check_table_exists(table_name):
+def drop_table_if_exists(cursor, dbobjfinder, table_name, logger):
+    if dbobjfinder.check_table_exists(table_name):
         cursor.execute(f"DROP TABLE {table_name}")
         logger.info(f"Dropped table {table_name}")
 
@@ -99,14 +99,14 @@ def main():
             prev_day = datetime.date.today() - datetime.timedelta(x)
             prev_day_format = prev_day.strftime('%Y%m%d')
             packet_table = f"packet{prev_day_format}_weather"
-            drop_table_if_exists(cursor, packet_table, logger)
+            drop_table_if_exists(cursor,track_direct_db_object_finder, packet_table, logger)
 
         # Drop packet_telemetry
         for x in range(max_days_to_save_telemetry_data, max_days_to_save_telemetry_data + 100):
             prev_day = datetime.date.today() - datetime.timedelta(x)
             prev_day_format = prev_day.strftime('%Y%m%d')
             packet_table = f"packet{prev_day_format}_telemetry"
-            drop_table_if_exists(cursor, packet_table, logger)
+            drop_table_if_exists(cursor,track_direct_db_object_finder, packet_table, logger)
 
         # Drop packets
         for x in range(max_days_to_save_position_data, max_days_to_save_position_data + 100):
@@ -114,9 +114,9 @@ def main():
             prev_day_format = prev_day.strftime('%Y%m%d')
             packet_table = f"packet{prev_day_format}"
 
-            drop_table_if_exists(cursor, f"{packet_table}_ogn", logger)
-            drop_table_if_exists(cursor, f"{packet_table}_path", logger)
-            drop_table_if_exists(cursor, packet_table, logger)
+            drop_table_if_exists(cursor, track_direct_db_object_finder, f"{packet_table}_ogn", logger)
+            drop_table_if_exists(cursor, track_direct_db_object_finder, f"{packet_table}_path", logger)
+            drop_table_if_exists(cursor, track_direct_db_object_finder, packet_table, logger)
 
         # Delete old stations
         timestamp_limit = int(time.time()) - (60 * 60 * 24 * max_days_to_save_station_data)
