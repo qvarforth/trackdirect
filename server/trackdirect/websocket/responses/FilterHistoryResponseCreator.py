@@ -67,9 +67,7 @@ class FilterHistoryResponseCreator:
                 timestamp = self.state.get_station_latest_timestamp_on_map(station_ids)
                 if (timestamp is not None and timestamp > min_timestamp) :
                     min_timestamp = timestamp
-
-        self.logger.info(f"min_timestamp {min_timestamp}")
-
+                    
         if self.state.latest_time_travel_request is not None:
             if not self.state.is_stations_on_map(station_ids):
                 return self.packet_repository.get_object_list_by_station_id_list_and_time_interval(
