@@ -56,7 +56,6 @@
 
         <script type="text/javascript" src="/js/main.js"></script>
         <link rel="stylesheet" href="/css/main.css">
-
         <script>
             $(document).ready(function() {
                 google.charts.load('current', {'packages':['corechart', 'timeline']});

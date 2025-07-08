@@ -70,7 +70,7 @@ class FilterResponseCreator:
         elif request_type == self.PAYLOAD_REQUEST_TYPE_NAME and "namelist" in request:
             station_names = request.get("namelist", [])
             if station_names:
-                min_timestamp = int(time.time()) - (self.TEN_YEARS_IN_SECONDS if self.config.allowTimeTravel else self.TIME_TRAVEL_LIMIT)
+                min_timestamp = int(time.time()) - (self.TEN_YEARS_IN_SECONDS if self.config.allow_time_travel else self.TIME_TRAVEL_LIMIT)
                 for station_name in station_names:
                     stations = self.station_repository.get_object_list_by_name(station_name, None, None, min_timestamp)
                     for station in stations:
