@@ -16,8 +16,10 @@ RUN pecl install imagick && docker-php-ext-enable imagick && docker-php-ext-inst
 COPY . /root/trackdirect
 COPY config/apache-default.conf /etc/apache2/sites-enabled/000-default.conf
 
+RUN mkdir -p /var/cache/apache2/mod_cache_disk/trackdirect/
+RUN chown -R www-data:www-data /var/cache/apache2/mod_cache_disk
 RUN a2enmod rewrite
-RUN chmod a+rx / && chmod a+rx -R /root
-RUN chmod 777 /root/trackdirect/htdocs/public/symbols
-RUN chmod 777 /root/trackdirect/htdocs/public/heatmaps
+RUN a2enmod cache
+RUN a2enmod cache_disk
+RUN chown -R www-data:www-data /root
 
