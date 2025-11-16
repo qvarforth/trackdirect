@@ -36,6 +36,7 @@ class MostRecentPacketsQuery:
         Returns:
             list: A list of packets.
         """
+
         if self.state.latest_time_travel_request is not None:
             timestamp = int(self.state.latest_time_travel_request) - (int(self.state.latest_minutes_request) * 60)
             packets = self.packet_repository.get_most_recent_confirmed_object_list_by_station_id_list_and_time_interval(
@@ -47,7 +48,8 @@ class MostRecentPacketsQuery:
                 station_ids, timestamp
             )
 
-        if len(packets) < len(station_ids):
+        packet_ids = [p.station_id for p in packets]
+        if len(packets) < len(station_ids) or not all(id in packet_ids for id in station_ids): # Checking on array size is not sufficient, we have to make sure we have all the requested ids.
             # If we have no recent markers, we just send the latest that we have
             query = MissingPacketsQuery(self.state, self.db)
             if self.simulate_empty_station:
