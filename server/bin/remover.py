@@ -73,7 +73,7 @@ def main():
         for x in range(2, 16):
             prev_day = datetime.date.today() - datetime.timedelta(x)
             prev_day_timestamp = int(prev_day.strftime("%s"))
-            prev_day_format = datetime.datetime.utcfromtimestamp(prev_day_timestamp).strftime('%Y%m%d')
+            prev_day_format = datetime.datetime.fromtimestamp(prev_day_timestamp, datetime.UTC).strftime('%Y%m%d')
             packet_table = f"packet{prev_day_format}"
 
             if track_direct_db_object_finder.check_table_exists(packet_table):
@@ -99,14 +99,22 @@ def main():
             prev_day = datetime.date.today() - datetime.timedelta(x)
             prev_day_format = prev_day.strftime('%Y%m%d')
             packet_table = f"packet{prev_day_format}_weather"
-            drop_table_if_exists(cursor, packet_table, logger)
+            table_name = packet_table
+            if track_direct_db_object_finder.check_table_exists(table_name):
+                print("exists, deleting table " + table_name)
+                cursor.execute(f"DROP TABLE {table_name}")
+                logger.info(f"Dropped table {table_name}")
 
         # Drop packet_telemetry
         for x in range(max_days_to_save_telemetry_data, max_days_to_save_telemetry_data + 100):
             prev_day = datetime.date.today() - datetime.timedelta(x)
             prev_day_format = prev_day.strftime('%Y%m%d')
             packet_table = f"packet{prev_day_format}_telemetry"
-            drop_table_if_exists(cursor, packet_table, logger)
+            table_name = packet_table
+            if track_direct_db_object_finder.check_table_exists(table_name):
+                print("exists, deleting table " + table_name)
+                cursor.execute(f"DROP TABLE {table_name}")
+                logger.info(f"Dropped table {table_name}")
 
         # Drop packets
         for x in range(max_days_to_save_position_data, max_days_to_save_position_data + 100):
@@ -114,9 +122,24 @@ def main():
             prev_day_format = prev_day.strftime('%Y%m%d')
             packet_table = f"packet{prev_day_format}"
 
-            drop_table_if_exists(cursor, f"{packet_table}_ogn", logger)
-            drop_table_if_exists(cursor, f"{packet_table}_path", logger)
-            drop_table_if_exists(cursor, packet_table, logger)
+            table_name = f"{packet_table}_ogn"
+            if track_direct_db_object_finder.check_table_exists(table_name):
+                print("exists, deleting table " + table_name)
+                cursor.execute(f"DROP TABLE {table_name}")
+                logger.info(f"Dropped table {table_name}")
+
+            table_name = f"{packet_table}_path"
+            if track_direct_db_object_finder.check_table_exists(table_name):
+                print("exists, deleting table " + table_name)
+                cursor.execute(f"DROP TABLE {table_name}")
+                logger.info(f"Dropped table {table_name}")
+
+            table_name = packet_table
+            if track_direct_db_object_finder.check_table_exists(table_name):
+                print("exists, deleting table " + table_name)
+                cursor.execute(f"DROP TABLE {table_name}")
+                logger.info(f"Dropped table {table_name}")
+
 
         # Delete old stations
         timestamp_limit = int(time.time()) - (60 * 60 * 24 * max_days_to_save_station_data)
@@ -148,7 +171,7 @@ def main():
             logger.info(f"Trying to delete station {record['name']} ({record['id']})")
             delete_cursor = db_no_auto_commit.cursor()
             try:
-                for table in ['station_telemetry_bits', 'station_telemetry_eqns', 'station_telemetry_param', 'station_telemetry_unit', 'station_city']:
+                for table in ['station_telemetry_bits', 'station_telemetry_eqns', 'station_telemetry_param', 'station_telemetry_unit']:
                     delete_cursor.execute(f"DELETE FROM {table} WHERE station_id = %s", (record["id"],))
 
                 delete_cursor.execute("DELETE FROM station WHERE id = %s", (record["id"],))
