@@ -87,7 +87,7 @@ def main():
                     logger.info(f"Deleted {deleted_rows} from {packet_table}")
                     if deleted_rows > 0:
                         do_full_vacuum = True
-                    time.sleep(0.5)
+#                    time.sleep(0.5)
                 if do_full_vacuum:
                     cursor.execute(f"VACUUM FULL {packet_table}_path")
                     cursor.execute(f"REINDEX TABLE {packet_table}_path")
@@ -180,7 +180,7 @@ def main():
                 db_no_auto_commit.commit()
                 delete_cursor.close()
                 deleted_rows += 1
-                time.sleep(0.5)
+#                time.sleep(0.5)
             except Exception as e:
                 logger.error(e, exc_info=1)
                 db_no_auto_commit.rollback()
