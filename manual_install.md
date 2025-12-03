@@ -2,7 +2,7 @@
 ## - Update packages
       apt update
 ## - Install postgres and required packages
-      apt install postgresql-16 postgresql-client-common postgresql-client
+      apt install postgresql postgresql-client-common postgresql-client
 ## - Install other required packages
       apt install sudo git libpq-dev libevent-dev libmagickwand-dev imagemagick inkscape
 ## - Install python3 and required packages
