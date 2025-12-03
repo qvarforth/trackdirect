@@ -2,7 +2,7 @@
 ## - Update packages
       apt update
 ## - Install postgres and required packages
-      apt install postgresql postgresql-client-common postgresql-client
+      apt install postgresql-16 postgresql-client-common postgresql-client
 ## - Install python3 and required packages
       apt install python3 python3-dev python3-pip python-is-python3 python3-full
       apt install python3-psycopg2 python3-setuptools python3-autobahn python3-twisted python3-jsmin python3-psutil 
