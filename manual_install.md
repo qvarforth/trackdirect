@@ -40,17 +40,6 @@
   
   ---error2---
   
-  /usr/lib/python3/site-packages/setuptools/_distutils/dist.py:289: UserWarning: Unknown distribution option: 'test_suite'
-    warnings.warn(msg)
-  /usr/lib/python3/site-packages/setuptools/_distutils/dist.py:289: UserWarning: Unknown distribution option: 'tests_require'
-    warnings.warn(msg)
-    
-  --- To fix this error edit setup.py and add line bellow at start of file: ---
-  
-    from setuptools import setup
-  
-  ---error3---
-  
   /usr/lib/python3/dist-packages/setuptools/_distutils/dist.py:289: UserWarning: Unknown distribution option: 'test_suite'
     warnings.warn(msg)
     
