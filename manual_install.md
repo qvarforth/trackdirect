@@ -3,6 +3,8 @@
       apt update
 ## - Install postgres and required packages
       apt install postgresql-16 postgresql-client-common postgresql-client
+## - Install other required packages
+      apt install sudo git libpq-dev libevent-dev libmagickwand-dev imagemagick inkscape
 ## - Install python3 and required packages
       apt install python3 python3-dev python3-pip python-is-python3 python3-full
       apt install python3-psycopg2 python3-setuptools python3-autobahn python3-twisted python3-jsmin python3-psutil 
@@ -12,8 +14,6 @@
       python3 setup.py install
 ## - Install php and required packages
       apt install php libapache2-mod-php php-dom php-pgsql php-imagick php-dev php-pear php-gd
-## - Install other required packages
-      apt install sudo git libpq-dev libevent-dev libmagickwand-dev imagemagick inkscape
 ## - Install pythons aprs library
       cd /opt    
       git clone https://github.com/rossengeorgiev/aprs-python    
