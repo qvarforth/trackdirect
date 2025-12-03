@@ -89,6 +89,8 @@
     CREATE DATABASE trackdirect;    
     GRANT ALL PRIVILEGES ON DATABASE trackdirect to postgres;    
     ALTER USER postgres PASSWORD 'foobar';
+    \q
+    
 ## - Settings for Postgres
 #### Edit pg_hba.conf and add line bellow:
     host    all             all             127.0.0.1/32            md5
