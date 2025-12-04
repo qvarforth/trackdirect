@@ -103,9 +103,9 @@
 #### Restart postgresql
      sudo service postgresql restart
 #### Setup a tables of database
-     cd /root/trackdirect/server/scripts
+     cd /opt/trackdirect/server/scripts
   
-     sudo -u postgres ./db_setup.sh trackdirect 5432 /root/trackdirect/misc/database/tables/
+     sudo -u postgres ./db_setup.sh trackdirect 5432 /opt/trackdirect/misc/database/tables/
 ## - Settings for Apache
 #### Make directoryes for apache
           mkdir /var/www/trackdirect
