@@ -135,6 +135,6 @@
 
       * * * * * ~/trackdirect/server/scripts/wsserver.sh trackdirect.ini 2>&1 &
       * * * * * ~/trackdirect/server/scripts/collector.sh trackdirect.ini 0 2>&1 &
-      30 * * * * ~/trackdirect/server/scripts/remover.sh trackdirect.ini 2>&1 &
-      0 * * * * ~/trackdirect/server/scripts/ogn_devices_install.sh trackdirect 5432 2>&1 &
+      40 * * * * ~/trackdirect/server/scripts/remover.sh trackdirect.ini 2>&1 &
+      */30 * * * * ~/trackdirect/server/scripts/ogn_devices_install.sh trackdirect 5432 2>&1 &
           
