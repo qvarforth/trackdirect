@@ -28,12 +28,12 @@ class TrackDirectWebsocketServer(WebSocketServerProtocol):
         self.max_client_idle_time = None
 
         db_connection = DatabaseConnection()
-        db = db_connection.get_connection(True)
+        self.db = db_connection.get_connection(True)
 
         self.connection_state = WebsocketConnectionState()
-        self.response_creator = WebsocketResponseCreator(self.connection_state, db)
-        self.aprs_is_reader = AprsISReader(self.connection_state, db)
-        self.aprs_is_payload_creator = AprsISPayloadCreator(self.connection_state, db)
+        self.response_creator = WebsocketResponseCreator(self.connection_state, self.db)
+        self.aprs_is_reader = AprsISReader(self.connection_state, self.db)
+        self.aprs_is_payload_creator = AprsISPayloadCreator(self.connection_state, self.db)
 
         self.number_of_real_time_packet_threads = 0
         self.timestamp_sender_call = None
@@ -100,6 +100,8 @@ class TrackDirectWebsocketServer(WebSocketServerProtocol):
             self.connection_state.disconnected = True
             self._stop_timestamp_sender()
             self._stop_real_time_listener(True)
+            if self.db:
+                self.db.close()
         except Exception as e:
             self.logger.error(e, exc_info=True)
 
@@ -144,9 +146,9 @@ class TrackDirectWebsocketServer(WebSocketServerProtocol):
     def _on_request_done(self, request_id):
         """Executed when request is processed."""
         try:
-            if self.connection_state.latest_handled_request_id < request_id:
+            if request_id is not None and self.connection_state.latest_handled_request_id < request_id:
                 self.connection_state.latest_handled_request_id = request_id
-            if self.connection_state.latest_requestId == request_id:
+            if request_id is not None and self.connection_state.latest_requestId == request_id:
                 self._send_response_by_type(35)
 
                 if (self.connection_state.latest_time_travel_request is None
@@ -162,9 +164,8 @@ class TrackDirectWebsocketServer(WebSocketServerProtocol):
 
     def _on_error(self, error):
         """Executed when a deferToThread failed."""
-        if reactor.running:
-            reactor.stop()
-        raise error
+        self.logger.error(f"Error: deferToThread error callback triggered")
+        self.logger.error(error, exc_info=True)
 
     def _start_real_time_listener(self, related_request_id):
         """Start real time APRS-IS listener."""
