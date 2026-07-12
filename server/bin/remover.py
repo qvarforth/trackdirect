@@ -52,11 +52,21 @@ def main():
     max_days_to_save_weather_data = config.days_to_save_weather_data
     max_days_to_save_telemetry_data = config.days_to_save_telemetry_data
 
+    # Use the highest retention across all data types so drop loops cover everything
+    max_retention = max(
+        max_days_to_save_position_data,
+        max_days_to_save_weather_data,
+        max_days_to_save_telemetry_data
+    )
+    # Scan far enough ahead to handle long cron outages (up to ~1 year)
+    drop_lookahead = 365
+
     logger.info("Starting")
     logger.info(f"Saving position data for {max_days_to_save_position_data} days")
     logger.info(f"Saving station data for {max_days_to_save_station_data} days")
     logger.info(f"Saving weather data for {max_days_to_save_weather_data} days")
     logger.info(f"Saving telemetry data for {max_days_to_save_telemetry_data} days")
+    logger.info(f"Drop lookahead set to {drop_lookahead} days (max retention = {max_retention})")
 
     try:
         track_direct_db = DatabaseConnection()
@@ -69,56 +79,50 @@ def main():
         track_direct_db_object_finder = DatabaseObjectFinder(db)
         packet_repository = PacketRepository(db)
 
-        # Loop over the latest days and delete packets that are not needed anymore
-        for x in range(2, 16):
+        for x in range(2, max_days_to_save_position_data + 1):
             prev_day = datetime.date.today() - datetime.timedelta(x)
             prev_day_timestamp = int(prev_day.strftime("%s"))
-            prev_day_format = datetime.datetime.utcfromtimestamp(prev_day_timestamp).strftime('%Y%m%d')
+            prev_day_format = datetime.datetime.fromtimestamp(prev_day_timestamp, datetime.timezone.utc).strftime('%Y%m%d')
             packet_table = f"packet{prev_day_format}"
 
             if track_direct_db_object_finder.check_table_exists(packet_table):
-                deleted_rows = None
-                do_full_vacuum = False
-                while deleted_rows is None or deleted_rows >= 5000:
-                    sql = f"""DELETE FROM {packet_table} WHERE id IN (
-                              SELECT id FROM {packet_table} WHERE map_id NOT IN (1,12) LIMIT 5000)"""
-                    cursor.execute(sql)
-                    deleted_rows = cursor.rowcount
-                    logger.info(f"Deleted {deleted_rows} from {packet_table}")
-                    if deleted_rows > 0:
-                        do_full_vacuum = True
-                    time.sleep(0.5)
-                if do_full_vacuum:
+                # Count rows to delete first
+                cursor.execute(f"SELECT count(*) FROM {packet_table} WHERE map_id NOT IN (1,12)")
+                count = cursor.fetchone()[0]
+                if count == 0:
+                    logger.info(f"No stale rows in {packet_table}, skipping")
+                    continue
+
+                logger.info(f"Deleting {count} stale rows from {packet_table}")
+                cursor.execute(f"DELETE FROM {packet_table} WHERE map_id NOT IN (1,12)")
+                deleted_rows = cursor.rowcount
+                logger.info(f"Deleted {deleted_rows} from {packet_table}")
+
+                if deleted_rows > 0:
                     cursor.execute(f"VACUUM FULL {packet_table}_path")
                     cursor.execute(f"REINDEX TABLE {packet_table}_path")
                     cursor.execute(f"VACUUM FULL {packet_table}")
                     cursor.execute(f"REINDEX TABLE {packet_table}")
 
-        # Drop packet_weather
-        for x in range(max_days_to_save_weather_data, max_days_to_save_weather_data + 100):
+        for x in range(max_retention, max_retention + drop_lookahead + 1):
             prev_day = datetime.date.today() - datetime.timedelta(x)
             prev_day_format = prev_day.strftime('%Y%m%d')
-            packet_table = f"packet{prev_day_format}_weather"
-            drop_table_if_exists(cursor,track_direct_db_object_finder, packet_table, logger)
+            base_table = f"packet{prev_day_format}"
 
-        # Drop packet_telemetry
-        for x in range(max_days_to_save_telemetry_data, max_days_to_save_telemetry_data + 100):
-            prev_day = datetime.date.today() - datetime.timedelta(x)
-            prev_day_format = prev_day.strftime('%Y%m%d')
-            packet_table = f"packet{prev_day_format}_telemetry"
-            drop_table_if_exists(cursor,track_direct_db_object_finder, packet_table, logger)
+            # Drop weather sub-table (only if past weather retention)
+            if x >= max_days_to_save_weather_data:
+                drop_table_if_exists(cursor, track_direct_db_object_finder, f"{base_table}_weather", logger)
 
-        # Drop packets
-        for x in range(max_days_to_save_position_data, max_days_to_save_position_data + 100):
-            prev_day = datetime.date.today() - datetime.timedelta(x)
-            prev_day_format = prev_day.strftime('%Y%m%d')
-            packet_table = f"packet{prev_day_format}"
+            # Drop telemetry sub-table (only if past telemetry retention)
+            if x >= max_days_to_save_telemetry_data:
+                drop_table_if_exists(cursor, track_direct_db_object_finder, f"{base_table}_telemetry", logger)
 
-            drop_table_if_exists(cursor, track_direct_db_object_finder, f"{packet_table}_ogn", logger)
-            drop_table_if_exists(cursor, track_direct_db_object_finder, f"{packet_table}_path", logger)
-            drop_table_if_exists(cursor, track_direct_db_object_finder, packet_table, logger)
+            # Drop position sub-tables and main table (only if past position retention)
+            if x >= max_days_to_save_position_data:
+                drop_table_if_exists(cursor, track_direct_db_object_finder, f"{base_table}_ogn", logger)
+                drop_table_if_exists(cursor, track_direct_db_object_finder, f"{base_table}_path", logger)
+                drop_table_if_exists(cursor, track_direct_db_object_finder, base_table, logger)
 
-        # Delete old stations
         timestamp_limit = int(time.time()) - (60 * 60 * 24 * max_days_to_save_station_data)
         deleted_rows = 0
         sql = """SELECT station.id, station.latest_sender_id, station.name
@@ -172,7 +176,6 @@ def main():
         cursor.execute("VACUUM ANALYZE sender")
         cursor.execute("REINDEX TABLE sender")
 
-        # Close DB connection
         cursor.close()
         db.close()
         logger.info("Done!")
@@ -182,4 +185,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
