@@ -99,10 +99,7 @@ def main():
                 logger.info(f"Deleted {deleted_rows} from {packet_table}")
 
                 if deleted_rows > 0:
-                    cursor.execute(f"VACUUM FULL {packet_table}_path")
-                    cursor.execute(f"REINDEX TABLE {packet_table}_path")
-                    cursor.execute(f"VACUUM FULL {packet_table}")
-                    cursor.execute(f"REINDEX TABLE {packet_table}")
+                    logger.info(f"Cleanup deferred to autovacuum for {packet_table}")
 
         for x in range(max_retention, max_retention + drop_lookahead + 1):
             prev_day = datetime.date.today() - datetime.timedelta(x)
