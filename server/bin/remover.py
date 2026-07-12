@@ -158,7 +158,6 @@ def main():
                 db_no_auto_commit.commit()
                 delete_cursor.close()
                 deleted_rows += 1
-                time.sleep(0.5)
             except Exception as e:
                 logger.error(e, exc_info=1)
                 db_no_auto_commit.rollback()
