@@ -149,7 +149,7 @@ def main():
             logger.info(f"Trying to delete station {record['name']} ({record['id']})")
             delete_cursor = db_no_auto_commit.cursor()
             try:
-                for table in ['station_telemetry_bits', 'station_telemetry_eqns', 'station_telemetry_param', 'station_telemetry_unit', 'station_city']:
+                for table in ['station_telemetry_bits', 'station_telemetry_eqns', 'station_telemetry_param', 'station_telemetry_unit']:
                     delete_cursor.execute(f"DELETE FROM {table} WHERE station_id = %s", (record["id"],))
 
                 delete_cursor.execute("DELETE FROM station WHERE id = %s", (record["id"],))
