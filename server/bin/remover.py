@@ -101,24 +101,39 @@ def main():
                 if deleted_rows > 0:
                     logger.info(f"Cleanup deferred to autovacuum for {packet_table}")
 
+        scanned_days = 0
+        dropped_tables = 0
         for x in range(max_retention, max_retention + drop_lookahead + 1):
+            scanned_days += 1
             prev_day = datetime.date.today() - datetime.timedelta(x)
             prev_day_format = prev_day.strftime('%Y%m%d')
             base_table = f"packet{prev_day_format}"
 
             # Drop weather sub-table (only if past weather retention)
             if x >= max_days_to_save_weather_data:
+                if track_direct_db_object_finder.check_table_exists(f"{base_table}_weather"):
+                    dropped_tables += 1
                 drop_table_if_exists(cursor, track_direct_db_object_finder, f"{base_table}_weather", logger)
 
             # Drop telemetry sub-table (only if past telemetry retention)
             if x >= max_days_to_save_telemetry_data:
+                if track_direct_db_object_finder.check_table_exists(f"{base_table}_telemetry"):
+                    dropped_tables += 1
                 drop_table_if_exists(cursor, track_direct_db_object_finder, f"{base_table}_telemetry", logger)
 
             # Drop position sub-tables and main table (only if past position retention)
             if x >= max_days_to_save_position_data:
+                if track_direct_db_object_finder.check_table_exists(f"{base_table}_ogn"):
+                    dropped_tables += 1
                 drop_table_if_exists(cursor, track_direct_db_object_finder, f"{base_table}_ogn", logger)
+                if track_direct_db_object_finder.check_table_exists(f"{base_table}_path"):
+                    dropped_tables += 1
                 drop_table_if_exists(cursor, track_direct_db_object_finder, f"{base_table}_path", logger)
+                if track_direct_db_object_finder.check_table_exists(base_table):
+                    dropped_tables += 1
                 drop_table_if_exists(cursor, track_direct_db_object_finder, base_table, logger)
+
+        logger.info(f"Phase 2 complete: scanned {scanned_days} days, dropped {dropped_tables} tables")
 
         timestamp_limit = int(time.time()) - (60 * 60 * 24 * max_days_to_save_station_data)
         deleted_rows = 0
